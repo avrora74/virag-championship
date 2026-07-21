@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ViRAG Чемпионат 2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* ===== ГЛОБАЛЬНЫЕ СТИЛИ ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0e1a;
+            color: #e0e8f0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container { max-width: 1300px; width: 100%; }
+
+        /* ===== ХЕДЕР ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            padding: 15px 0;
+            border-bottom: 2px solid #66ccff;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .logo {
+            height: 70px;
+            width: auto;
+            filter: drop-shadow(0 0 20px rgba(102,204,255,0.3));
+        }
+        .header-text { flex: 1; }
+        .header-text h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(102,204,255,0.4);
+            letter-spacing: 1px;
+        }
+        .header-text .sub {
+            font-size: 16px;
+            color: #88ddff;
+            margin-top: 4px;
+            font-weight: 300;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        .header-text .sub span { font-weight: 600; color: #00ff88; }
+        .header-text .sub .rules-link {
+            color: #88ddff;
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(102,204,255,0.3);
+            transition: 0.2s;
+            font-size: 15px;
+        }
+        .header-text .sub .rules-link:hover {
+            color: #66ccff;
+            border-bottom-color: #66ccff;
+        }
+
+        /* ===== ВКЛАДКИ ===== */
+        .tabs {
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(102,204,255,0.15);
+            padding-bottom: 12px;
+        }
+        .main-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .analytics-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            border-top: 1px solid rgba(102,204,255,0.1);
+            padding-top: 10px;
+        }
+        .tab {
+            padding: 8px 20px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(102,204,255,0.15);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #aaccee;
+            transition: all 0.2s;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .tab:hover {
+            background: rgba(102,204,255,0.1);
+            border-color: #66ccff;
+        }
+        .tab.active {
+            background: rgba(102,204,255,0.2);
+            border-color: #66ccff;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(102,204,255,0.1);
+        }
+        .tab.stage-tab {
+            font-size: 13px;
+            padding: 6px 14px;
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(102,204,255,0.08);
+        }
+        .tab.stage-tab.active {
+            background: rgba(102,204,255,0.15);
+            border-color: #66ccff;
+        }
+
+        /* ===== ТАБЛИЦЫ ===== */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid rgba(102,204,255,0.1);
+            background: rgba(255,255,255,0.02);
+            padding: 4px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+        }
+        th {
+            background: rgba(102,204,255,0.08);
+            color: #88ddff;
+            font-weight: 600;
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 2px solid rgba(102,204,255,0.2);
+            white-space: nowrap;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            vertical-align: middle;
+        }
+        tr:hover td { background: rgba(102,204,255,0.04); }
+        .pos {
+            font-weight: 700;
+            text-align: center;
+            width: 50px;
+        }
+        .pos.gold { color: #ffd700; }
+        .pos.silver { color: #c0c0c0; }
+        .pos.bronze { color: #cd7f32; }
+        .pilot-name {
+            font-weight: 600;
+            color: #ffffff;
+            cursor: pointer;
+            transition: color 0.2s;
+            border-bottom: 1px dashed rgba(102,204,255,0.3);
+        }
+        .pilot-name:hover {
+            color: #66ccff;
+            border-bottom-color: #66ccff;
+        }
+        .time { font-weight: 500; color: #66ccff; }
+        .points { font-weight: 700; color: #00ff88; }
+        .podium-bonus { color: #ffcc44; font-size: 0.8em; margin-left: 4px; }
+        .stage-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #66ccff;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px rgba(102,204,255,0.2);
+        }
+        .change-arrow {
+            display: inline-block;
+            font-size: 18px;
+            font-weight: 700;
+            margin-left: 8px;
+            width: 24px;
+            text-align: center;
+        }
+        .change-arrow.up { color: #00ff88; }
+        .change-arrow.down { color: #ff4466; }
+        .change-arrow.same { color: #666; }
+        .dnf-badge {
+            background: #ff446622;
+            color: #ff4466;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 6px;
+        }
+
+        /* ===== МОДАЛЬНОЕ ОКНО СТАТИСТИКИ ПИЛОТА ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #141c2c;
+            border: 1px solid #66ccff;
+            border-radius: 16px;
+            padding: 30px 35px;
+            max-width: 1100px;
+            width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 0 60px rgba(102,204,255,0.2);
+            position: relative;
+        }
+        .modal h2 {
+            color: #66ccff;
+            font-size: 26px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(102,204,255,0.2);
+            padding-bottom: 10px;
+        }
+        .modal .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            color: #8899aa;
+            cursor: pointer;
+            transition: color 0.2s;
+            background: none;
+            border: none;
+        }
+        .modal .close-btn:hover { color: #ff4466; }
+        .modal table { margin-top: 10px; font-size: 13px; }
+        .modal th { background: rgba(102,204,255,0.15); }
+        .modal td, .modal th { padding: 6px 8px; white-space: nowrap; }
+        .modal .stat-summary {
+            margin-top: 16px;
+            font-size: 14px;
+            color: #88ddff;
+            background: rgba(102,204,255,0.05);
+            border-radius: 8px;
+            padding: 10px 16px;
+        }
+        .modal .stat-summary strong { color: #fff; }
+
+        /* ===== АНАЛИТИКА ===== */
+        .analytics-container { padding: 15px 5px; }
+        .analytics-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 8px 16px;
+            border: 1px solid rgba(102,204,255,0.1);
+            flex: 1 1 120px;
+            text-align: center;
+            min-width: 100px;
+        }
+        .stat-card .label {
+            font-size: 11px;
+            color: #88ddff;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-card .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .stat-card .value.green { color: #00ff88; }
+        .stat-card .value.red { color: #ff4466; }
+        .stat-card .value.blue { color: #66ccff; }
+        .stat-card .value.yellow { color: #ffcc44; }
+
+        .progressbar-wrapper {
+            margin: 20px 0 30px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(102,204,255,0.1);
+        }
+        .progressbar-title {
+            font-size: 14px;
+            color: #88ddff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .progressbar-container { position: relative; width: 100%; display: flex; flex-direction: column; }
+
+        .penalty-icons-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            min-height: 28px;
+        }
+        .penalty-icons-cell .penalty-item {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .penalty-icons-cell img {
+            height: 20px;
+            width: 20px;
+            vertical-align: middle;
+        }
+        .penalty-icons-cell .penalty-count {
+            font-size: 11px;
+            color: #ffcc44;
+            font-weight: bold;
+        }
+
+        .segment-value {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .segment-label {
+            text-align: center;
+            font-size: 11px;
+            color: #88ddff;
+        }
+        .edge-space { flex: 0 0 40px; }
+
+        .track-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0 10px;
+        }
+        .track-btn {
+            padding: 5px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(102,204,255,0.2);
+            border-radius: 16px;
+            cursor: pointer;
+            color: #aaccee;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .track-btn:hover {
+            background: rgba(102,204,255,0.1);
+            border-color: #66ccff;
+        }
+        .track-btn.active {
+            background: rgba(102,204,255,0.2);
+            border-color: #66ccff;
+            color: #fff;
+        }
+
+        .attempts-table {
+            width: 100%;
+            font-size: 13px;
+        }
+        .attempts-table th {
+            background: rgba(102,204,255,0.1);
+            white-space: nowrap;
+        }
+        .attempts-table td { padding: 6px 8px; }
+        .penalty-icon {
+            height: 24px;
+            width: 24px;
+            margin: 0 2px;
+            vertical-align: middle;
+        }
+        .dnf-text { color: #ff4466; font-weight: bold; }
+        .best-time { color: #00ff88; font-weight: bold; }
+
+        .pilot-analytics-container { padding: 15px 5px; }
+        .pilot-analytics-container select {
+            background: #141c2c;
+            color: #e0e8f0;
+            border: 1px solid rgba(102,204,255,0.3);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+            min-width: 200px;
+        }
+        .pilot-analytics-container select:hover { border-color: #66ccff; }
+        .chart-container {
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            border: 1px solid rgba(102,204,255,0.1);
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .chart-container .subtitle {
+            font-size: 14px;
+            color: #88ddff;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .pilot-track-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0 15px;
+        }
+        .attempts-chart-wrapper canvas {
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+            background: #0a0e1a;
+            border-radius: 8px;
+        }
+        .dnf-chart-container { max-width: 400px; margin: 0 auto; }
+
+        .update-btn {
+            background: rgba(102,204,255,0.15);
+            border: 1px solid #66ccff;
+            color: #66ccff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .update-btn:hover { background: rgba(102,204,255,0.3); }
+
+        .viz-container {
+            margin-top: 30px;
+            border: 1px solid rgba(102,204,255,0.15);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #0d1225;
+        }
+        .viz-container iframe {
+            display: block;
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+
+        .insights-container { padding: 20px; line-height: 1.6; }
+        .insights-container h2 {
+            color: #66ccff;
+            border-bottom: 1px solid rgba(102,204,255,0.2);
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+        .insight-block {
+            margin: 15px 0;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+        .insight-block.leader { border-color: #ffd700; background: rgba(255,215,0,0.05); }
+        .insight-block.battle { border-color: #66ccff; background: rgba(102,204,255,0.05); }
+        .insight-block.dnf { border-color: #ff4466; background: rgba(255,68,102,0.05); }
+        .insight-block.penalty { border-color: #ffcc44; background: rgba(255,204,68,0.05); }
+        .insight-block.missed { border-color: #88ddff; background: rgba(136,221,255,0.05); }
+        .insight-block.perfect { border-color: #00ff88; background: rgba(0,255,136,0.05); }
+        .insight-block strong { color: #fff; }
+        .insight-block .highlight { color: #ffd700; }
+
+        .loading, .error, .empty {
+            text-align: center;
+            padding: 60px 20px;
+            font-size: 18px;
+        }
+        .loading { color: #88ddff; }
+        .loading::after {
+            content: '...';
+            animation: dots 1.2s steps(3) infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            33% { content: '.'; }
+            66% { content: '..'; }
+            100% { content: '...'; }
+        }
+        .error { color: #ff4466; }
+        .empty { color: #8899aa; }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #556677;
+            font-size: 13px;
+            border-top: 1px solid rgba(102,204,255,0.05);
+            padding-top: 20px;
+        }
+        .footer a {
+            color: #66ccff;
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .header-text h1 { font-size: 24px; }
+            .logo { height: 50px; }
+            .tab { font-size: 13px; padding: 6px 14px; }
+            table { font-size: 13px; }
+            th, td { padding: 8px 6px; }
+            .modal { padding: 20px; }
+            .change-arrow { font-size: 16px; width: 20px; }
+            .rules-content { font-size: 14px; padding: 15px; }
+            .penalty-icons-cell img { height: 16px; width: 16px; }
+            .stat-card .value { font-size: 16px; }
+            .segment-value { font-size: 12px; }
+            .segment-label { font-size: 10px; }
+            .viz-container iframe { height: 400px; }
+            .modal table { font-size: 12px; }
+            .modal td, .modal th { padding: 4px 6px; }
+            .header-text .sub { font-size: 14px; }
+        }
+        @media (max-width: 480px) {
+            .header { gap: 12px; }
+            .header-text h1 { font-size: 20px; }
+            .header-text .sub { font-size: 13px; }
+            .tab { font-size: 12px; padding: 5px 10px; }
+            table { font-size: 12px; }
+            .modal { padding: 16px; }
+            .change-arrow { font-size: 14px; width: 18px; }
+            .penalty-icons-cell img { height: 14px; width: 14px; }
+            .stat-card { min-width: 80px; padding: 6px 10px; }
+            .stat-card .value { font-size: 14px; }
+            .segment-value { font-size: 11px; }
+            .segment-label { font-size: 9px; }
+            .viz-container iframe { height: 300px; }
+            .modal table { font-size: 11px; }
+            .modal td, .modal th { padding: 3px 4px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- ШАПКА -->
+    <div class="header">
+        <img src="ВиРАЖ.png" alt="ViRAG" class="logo" onerror="this.style.display='none'" />
+        <div class="header-text">
+            <h1>🏁 ViRAG ЧЕМПИОНАТ</h1>
+            <div class="sub">
+                Сезон 2026 · этапов <span id="stageCount">0</span> · пилотов <span id="pilotCount">0</span>
+                <button class="update-btn" id="updateBtn">⟳ Обновить</button>
+                <a href="rules.html" target="_blank" class="rules-link">📜 Положение</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВКЛАДКИ (две строки) -->
+    <div class="tabs" id="tabsContainer"></div>
+
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
+    <div id="content" class="table-wrap">
+        <div class="loading">Загрузка данных</div>
+    </div>
+
+    <!-- ФУТЕР -->
+    <div class="footer">
+        Данные из <a href="https://docs.google.com/spreadsheets/d/1U0pam0YIm_5yyfHKMu79RFyq49vrQ7P5QjjrQgbNvGc" target="_blank">Google Таблицы</a> ·
+        Обновлено: <span id="updateTime">—</span>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО СТАТИСТИКИ ПИЛОТА -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <button class="close-btn" id="modalCloseBtn">&times;</button>
+        <h2 id="modalTitle">Статистика пилота</h2>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script>
+    // ================================================================
+    //  МОДУЛЬ 1: КОНФИГУРАЦИЯ
+    // ================================================================
+    class Config {
+        static SPREADSHEET_ID = '1U0pam0YIm_5yyfHKMu79RFyq49vrQ7P5QjjrQgbNvGc';
+        static API_KEY = 'AIzaSyAS6GFgfMFXhEHqL5NFx9RBD9FnQ86rs7E';
+        static SHEET_NAME = 'Results';
+        static TOTAL_STAGES = 8;
+    }
+
+    // ================================================================
+    //  МОДУЛЬ 2: ЗАГРУЗЧИК ДАННЫХ
+    // ================================================================
+    class DataLoader {
+        async fetchData() {
+            const range = encodeURIComponent(Config.SHEET_NAME + '!A:P');
+            const url =
+                `https://sheets.googleapis.com/v4/spreadsheets/${Config.SPREADSHEET_ID}/values/${range}?key=${Config.API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+            }
+            const json = await response.json();
+            if (!json.values || json.values.length < 2) {
+                throw new Error('В таблице нет данных');
+            }
+            return json.values;
+        }
+    }
+
+    // ================================================================
+    //  МОДУЛЬ 3: КАЛЬКУЛЯТОР РЕЗУЛЬТАТОВ
+    // ================================================================
+    class ScoreCalculator {
+        constructor(rows, headers) {
+            this.rows = rows;
+            this.headers = headers;
+            this.columnIndices = this._findColumns(headers);
+            this.stages = {};
+            this.overall = {};
+            this.previousPositions = {};
+            this._pilotStatsCache = new Map();
+            console.log('[ViRAG] Найденные индексы колонок:', this.columnIndices);
+        }
+
+        _normalize(str) {
+            return str.replace(/\s+/g, ' ').trim().toLowerCase();
+        }
+
+        _findColumns(headers) {
+            const normalizedHeaders = headers.map(h => this._normalize(h || ''));
+            const find = (variants) => {
+                for (let v of variants) {
+                    const vLower = this._normalize(v);
+                    let idx = normalizedHeaders.findIndex(h => h === vLower);
+                    if (idx !== -1) return idx;
+                    const words = vLower.split(/\s+/).filter(w => w.length > 0);
+                    if (words.length > 0) {
+                        for (let i = 0; i < normalizedHeaders.length; i++) {
+                            const h = normalizedHeaders[i];
+                            if (words.every(w => h.includes(w))) {
+                                return i;
+                            }
+                        }
+                    }
+                }
+                return -1;
+            };
+            const indices = {
+                nameIdx: find(['Пилот', 'Имя пилота', 'Имя', 'Pilot']),
+                trackIdx: find(['Трасса', 'Трек', 'Track', 'Stage', 'Этап']),
+                statusIdx: find(['Статус', 'Status', 'Результат']),
+                timeIdx: find(['Зачётное время (сек)', 'Зачётное время', 'Valid time', 'Время']),
+                totalTimeIdx: find(['Общее время (сек)', 'Общее время', 'Total time', 'TotalTime', 'Чистое время', 'Чистое']),
+                penaltyIdx: find(['Штраф (сек)', 'Штраф', 'Penalty']),
+                penaltyCodesIdx: find(['Коды штрафов', 'Penalty codes', 'Codes']),
+                intermediatesIdx: find(['Промежуточные времена', 'Intermediates', 'IntermediateTimes']),
+                penaltyDetailsIdx: find(['Детали штрафов', 'PenaltyDetails', 'Penalty details']),
+                timestampIdx: find(['Дата/Время', 'Timestamp', 'Дата', 'Время', 'DateTime', 'Date', 'Время создания']),
+                startSpeedIdx: find(['Стартовая скорость', 'Стартовая скорость (км/ч)', 'Start speed', 'StartSpeed', 'Speed start']),
+                startFuelIdx: find(['Топливо на старте', 'Стартовое топливо', 'Топливо старта', 'Start fuel', 'StartFuel', 'Fuel start']),
+                dnfReasonIdx: find(['Причина DNF', 'DNF Reason', 'Reason']),
+            };
+            const required = ['nameIdx', 'trackIdx', 'statusIdx', 'timeIdx'];
+            for (let key of required) {
+                if (indices[key] === -1) {
+                    throw new Error(`Не найдена колонка: ${key}. Доступные заголовки: ${headers.join(', ')}`);
+                }
+            }
+            return indices;
+        }
+
+        process() {
+            const { nameIdx, trackIdx, statusIdx, timeIdx, penaltyIdx } = this.columnIndices;
+            const attempts = {};
+
+            this.rows.forEach(row => {
+                const track = (row[trackIdx] || '').trim();
+                if (!track) return;
+                const name = (row[nameIdx] || '').trim();
+                if (!name) return;
+                const status = (row[statusIdx] || '').trim();
+                const timeStr = (row[timeIdx] || '').replace(',', '.').trim();
+                const time = parseFloat(timeStr);
+
+                if (!attempts[track]) attempts[track] = {};
+                if (!attempts[track][name]) {
+                    attempts[track][name] = { total: 0, finished: 0, bestTime: Infinity };
+                }
+                const pilotData = attempts[track][name];
+                pilotData.total += 1;
+
+                if (status === 'ФИНИШ' && !isNaN(time) && time > 0) {
+                    pilotData.finished += 1;
+                    if (time < pilotData.bestTime) {
+                        pilotData.bestTime = time;
+                    }
+                }
+            });
+
+            const newStages = {};
+            for (const [track, pilots] of Object.entries(attempts)) {
+                const finishedPilots = [];
+                for (const [name, data] of Object.entries(pilots)) {
+                    if (data.finished > 0 && isFinite(data.bestTime)) {
+                        const dnfCount = data.total - data.finished;
+                        finishedPilots.push({ name, time: data.bestTime, dnf: dnfCount });
+                    }
+                }
+                finishedPilots.sort((a, b) => a.time - b.time);
+
+                const pointsMap = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+                const podiumBonus = [3, 2, 1];
+                const results = finishedPilots.map((p, idx) => {
+                    let pts = 0;
+                    if (idx < pointsMap.length) pts = pointsMap[idx];
+                    let bonus = 0;
+                    if (idx < podiumBonus.length) bonus = podiumBonus[idx];
+                    let basePoints = pts + bonus;
+                    let finalPoints = Math.max(0, basePoints - p.dnf);
+                    return {
+                        name: p.name,
+                        time: p.time,
+                        place: idx + 1,
+                        points: finalPoints,
+                        bonus: bonus,
+                        dnf: p.dnf,
+                        basePoints: basePoints,
+                    };
+                });
+                newStages[track] = results;
+            }
+            this.stages = newStages;
+
+            const newOverall = {};
+            for (const [track, results] of Object.entries(this.stages)) {
+                results.forEach(r => {
+                    if (!newOverall[r.name]) newOverall[r.name] = 0;
+                    newOverall[r.name] += r.points;
+                });
+            }
+            this.overall = newOverall;
+            this._updatePositions();
+            return { stages: this.stages, overall: this.overall, previousPositions: this.previousPositions };
+        }
+
+        _updatePositions() {
+            const pilotData = [];
+            for (const [name, points] of Object.entries(this.overall)) {
+                let gold = 0, silver = 0, bronze = 0;
+                for (const [track, results] of Object.entries(this.stages)) {
+                    const pilotResult = results.find(r => r.name === name);
+                    if (pilotResult) {
+                        if (pilotResult.place === 1) gold++;
+                        else if (pilotResult.place === 2) silver++;
+                        else if (pilotResult.place === 3) bronze++;
+                    }
+                }
+                pilotData.push({ name, points, gold, silver, bronze });
+            }
+            pilotData.sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.gold !== a.gold) return b.gold - a.gold;
+                if (b.silver !== a.silver) return b.silver - a.silver;
+                return b.bronze - a.bronze;
+            });
+
+            const currentPositions = {};
+            pilotData.forEach(({ name }, idx) => { currentPositions[name] = idx; });
+
+            const changes = {};
+            for (const [name, curPos] of Object.entries(currentPositions)) {
+                const prevPos = this.previousPositions[name];
+                if (prevPos !== undefined) {
+                    const diff = prevPos - curPos;
+                    if (diff > 0) changes[name] = 'up';
+                    else if (diff < 0) changes[name] = 'down';
+                    else changes[name] = 'same';
+                } else {
+                    changes[name] = 'new';
+                }
+            }
+            this.previousPositions = currentPositions;
+            return changes;
+        }
+
+        getPilotStats(pilotName) {
+            if (this._pilotStatsCache.has(pilotName)) {
+                return this._pilotStatsCache.get(pilotName);
+            }
+
+            const { nameIdx, trackIdx, statusIdx, penaltyIdx, intermediatesIdx, penaltyDetailsIdx,
+                timeIdx, totalTimeIdx, penaltyCodesIdx,
+                timestampIdx, startSpeedIdx, startFuelIdx, dnfReasonIdx } = this.columnIndices;
+            if (nameIdx === undefined) return null;
+
+            const stats = {};
+            this.rows.forEach((row, rowIndex) => {
+                const name = (row[nameIdx] || '').trim();
+                if (name !== pilotName) return;
+                const track = (row[trackIdx] || '').trim();
+                if (!track) return;
+                const status = (row[statusIdx] || '').trim();
+                const penalty = parseFloat((row[penaltyIdx] || '').replace(',', '.')) || 0;
+
+                if (!stats[track]) stats[track] = { total: 0, dnf: 0, penaltySum: 0, attempts: [] };
+                const s = stats[track];
+                s.total += 1;
+
+                const timestamp = (timestampIdx !== undefined && timestampIdx !== -1) ? (row[timestampIdx] || '').trim() : '';
+                const startSpeedRaw = (startSpeedIdx !== undefined && startSpeedIdx !== -1) ? (row[startSpeedIdx] || '').trim() : '';
+                const startFuelRaw = (startFuelIdx !== undefined && startFuelIdx !== -1) ? (row[startFuelIdx] || '').trim() : '';
+                const dnfReason = (dnfReasonIdx !== undefined && dnfReasonIdx !== -1) ? (row[dnfReasonIdx] || '').trim() : '';
+
+                let startSpeed = null;
+                if (startSpeedRaw !== '') {
+                    const parsed = parseFloat(startSpeedRaw.replace(',', '.'));
+                    if (!isNaN(parsed)) startSpeed = parsed;
+                }
+                let startFuel = null;
+                if (startFuelRaw !== '') {
+                    const parsed = parseFloat(startFuelRaw.replace(',', '.'));
+                    if (!isNaN(parsed)) startFuel = parsed;
+                }
+
+                if (status !== 'ФИНИШ') {
+                    s.dnf += 1;
+                    const penaltyCodesStr = (row[penaltyCodesIdx] || '').trim();
+                    s.attempts.push({
+                        rowIndex, isDnf: true,
+                        validTime: null, totalTime: null,
+                        penalty: penalty,
+                        penaltyCodes: penaltyCodesStr,
+                        penaltyDetails: [],
+                        intermediates: [],
+                        timestamp, startSpeed, startFuel,
+                        dnfReason: dnfReason,
+                    });
+                } else {
+                    const validTime = parseFloat((row[timeIdx] || '').replace(',', '.')) || 0;
+                    let totalTime = 0;
+                    if (totalTimeIdx !== undefined && totalTimeIdx !== -1 && row[totalTimeIdx]) {
+                        totalTime = parseFloat((row[totalTimeIdx] || '').replace(',', '.')) || 0;
+                    }
+                    const penaltyCodesStr = (row[penaltyCodesIdx] || '').trim();
+                    let intermediates = [];
+                    if (intermediatesIdx !== undefined && intermediatesIdx !== -1 && row[intermediatesIdx]) {
+                        const interStr = row[intermediatesIdx].trim();
+                        if (interStr) {
+                            intermediates = interStr.split(',').map(t => parseFloat(t.trim()));
+                        }
+                    }
+                    let penaltyDetails = [];
+                    if (penaltyDetailsIdx !== undefined && penaltyDetailsIdx !== -1 && row[penaltyDetailsIdx]) {
+                        const detStr = row[penaltyDetailsIdx].trim();
+                        if (detStr) {
+                            try {
+                                const parsed = JSON.parse(detStr);
+                                if (Array.isArray(parsed)) penaltyDetails = parsed;
+                            } catch (e) { /* ignore */ }
+                        }
+                    }
+                    s.attempts.push({
+                        rowIndex, isDnf: false,
+                        validTime: validTime,
+                        totalTime: totalTime,
+                        penalty: penalty,
+                        penaltyCodes: penaltyCodesStr,
+                        intermediates,
+                        penaltyDetails,
+                        timestamp, startSpeed, startFuel,
+                        dnfReason: '',
+                    });
+                    s.penaltySum += penalty;
+                }
+            });
+
+            for (const track in stats) {
+                const atts = stats[track].attempts;
+                atts.sort((a, b) => a.rowIndex - b.rowIndex);
+                atts.forEach((att, idx) => att.attemptNumber = idx + 1);
+            }
+
+            this._pilotStatsCache.set(pilotName, stats);
+            return stats;
+        }
+
+        getStages() { return this.stages; }
+        getOverall() { return this.overall; }
+        getPreviousPositions() { return this.previousPositions; }
+        getColumnIndices() { return this.columnIndices; }
+        getAllRows() { return this.rows; }
+    }
+
+    // ================================================================
+    //  МОДУЛЬ 4: РЕНДЕРИНГ
+    // ================================================================
+    class Renderer {
+        constructor(containerId, modalOverlayId) {
+            this.container = document.getElementById(containerId);
+            this.modalOverlay = document.getElementById(modalOverlayId);
+            this.modalTitle = document.getElementById('modalTitle');
+            this.modalBody = document.getElementById('modalBody');
+            this.modalCloseBtn = document.getElementById('modalCloseBtn');
+            this._bindModalEvents();
+            this.chartInstances = {};
+        }
+
+        _bindModalEvents() {
+            this.modalCloseBtn.addEventListener('click', () => this.hideModal());
+            this.modalOverlay.addEventListener('click', (e) => {
+                if (e.target === this.modalOverlay) this.hideModal();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.hideModal();
+            });
+        }
+
+        showModal(title, html) {
+            this.modalTitle.textContent = title;
+            this.modalBody.innerHTML = html;
+            this.modalOverlay.classList.add('active');
+            this._initModalCharts();
+        }
+
+        hideModal() {
+            this.modalOverlay.classList.remove('active');
+            if (this.chartInstances.pilotDnf) {
+                this.chartInstances.pilotDnf.destroy();
+                delete this.chartInstances.pilotDnf;
+            }
+        }
+
+        _initModalCharts() {}
+
+        showLoading() {
+            this.container.innerHTML = '<div class="loading">Загрузка данных</div>';
+        }
+
+        showError(message) {
+            this.container.innerHTML = `<div class="error">⚠️ Ошибка: ${message}</div>`;
+        }
+
+        showEmpty(message = 'Нет данных для отображения') {
+            this.container.innerHTML = `<div class="empty">${message}</div>`;
+        }
+
+        updateHeader(pilotCount, stageCount) {
+            document.getElementById('pilotCount').textContent = pilotCount;
+            document.getElementById('stageCount').textContent = stageCount;
+            document.getElementById('updateTime').textContent = new Date().toLocaleString();
+        }
+
+        renderTabs(stages, currentTab = 'overall') {
+            const container = document.getElementById('tabsContainer');
+            container.innerHTML = '';
+
+            // ---- Первая строка: Общий зачёт + этапы ----
+            const mainTabsDiv = document.createElement('div');
+            mainTabsDiv.className = 'main-tabs';
+            const mainTabIds = ['overall', ...Object.keys(stages).sort()];
+            const mainLabels = { overall: 'Общий зачёт' };
+
+            mainTabIds.forEach(tabId => {
+                const btn = document.createElement('div');
+                btn.className = 'tab';
+                if (tabId !== 'overall') btn.classList.add('stage-tab');
+                if (tabId === currentTab) btn.classList.add('active');
+                btn.dataset.tab = tabId;
+                btn.textContent = mainLabels[tabId] || tabId;
+                mainTabsDiv.appendChild(btn);
+            });
+            container.appendChild(mainTabsDiv);
+
+            // ---- Вторая строка: аналитика ----
+            const analyticsTabsDiv = document.createElement('div');
+            analyticsTabsDiv.className = 'analytics-tabs';
+            const analyticsTabIds = ['championship_analytics', 'track_analytics', 'pilot_analytics'];
+            const analyticsLabels = {
+                championship_analytics: 'Аналитика чемпионата',
+                track_analytics: 'Аналитика трассы',
+                pilot_analytics: 'Аналитика пилота'
+            };
+
+            analyticsTabIds.forEach(tabId => {
+                const btn = document.createElement('div');
+                btn.className = 'tab';
+                if (tabId === currentTab) btn.classList.add('active');
+                btn.dataset.tab = tabId;
+                btn.textContent = analyticsLabels[tabId];
+                analyticsTabsDiv.appendChild(btn);
+            });
+            container.appendChild(analyticsTabsDiv);
+
+            // Общий обработчик кликов
+            container.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    const tabName = e.currentTarget.dataset.tab;
+                    document.dispatchEvent(new CustomEvent('tabChange', { detail: { tab: tabName } }));
+                });
+            });
+        }
+
+        renderTab(tabName, calculator, changes) {
+            if (tabName === 'overall') {
+                this._renderOverall(calculator);
+            } else if (tabName === 'championship_analytics') {
+                this._renderInsights(calculator);
+            } else if (tabName === 'track_analytics') {
+                this._renderAnalytics(calculator);
+            } else if (tabName === 'pilot_analytics') {
+                this._renderPilotAnalytics(calculator);
+            } else {
+                this._renderStage(tabName, calculator);
+            }
+        }
+
+        _getStageOrder(calculator) {
+            const rows = calculator.getAllRows();
+            const indices = calculator.getColumnIndices();
+            const trackIdx = indices.trackIdx;
+            const timestampIdx = indices.timestampIdx;
+            const stages = calculator.getStages();
+            const allStageNames = Object.keys(stages);
+
+            if (timestampIdx === undefined || timestampIdx === -1) {
+                return allStageNames.sort();
+            }
+
+            const stageDates = {};
+            rows.forEach(row => {
+                const track = (row[trackIdx] || '').trim();
+                if (!track || !allStageNames.includes(track)) return;
+                const timestamp = row[timestampIdx] ? new Date(row[timestampIdx]) : null;
+                if (timestamp && !isNaN(timestamp)) {
+                    if (!stageDates[track] || timestamp < stageDates[track]) {
+                        stageDates[track] = timestamp;
+                    }
+                }
+            });
+
+            const ordered = Object.keys(stageDates).sort((a, b) => stageDates[a] - stageDates[b]);
+            const missing = allStageNames.filter(s => !ordered.includes(s));
+            return ordered.concat(missing);
+        }
+
+        _renderOverall(calculator) {
+            const overall = calculator.getOverall();
+            const stages = calculator.getStages();
+            const stageOrder = this._getStageOrder(calculator);
+
+            const pilotData = [];
+            for (const [name, points] of Object.entries(overall)) {
+                let gold = 0, silver = 0, bronze = 0;
+                let totalDnf = 0;
+                const stagePoints = {};
+                for (const track of stageOrder) {
+                    const results = stages[track] || [];
+                    const pilotResult = results.find(r => r.name === name);
+                    if (pilotResult) {
+                        stagePoints[track] = pilotResult.points;
+                        totalDnf += pilotResult.dnf || 0;
+                        if (pilotResult.place === 1) gold++;
+                        else if (pilotResult.place === 2) silver++;
+                        else if (pilotResult.place === 3) bronze++;
+                    } else {
+                        stagePoints[track] = 0;
+                    }
+                }
+                pilotData.push({ name, points, gold, silver, bronze, dnf: totalDnf, stagePoints });
+            }
+
+            pilotData.sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.gold !== a.gold) return b.gold - a.gold;
+                if (b.silver !== a.silver) return b.silver - a.silver;
+                if (b.bronze !== a.bronze) return b.bronze - a.bronze;
+                return a.dnf - b.dnf;
+            });
+
+            if (pilotData.length === 0) {
+                this.container.innerHTML = '<div class="empty">Нет данных для общего зачёта</div>';
+                return;
+            }
+
+            let html = `<table>
+                <thead><tr>
+                    <th>#</th>
+                    <th>Пилот</th>
+                    <th>Сумма очков</th>
+                    <th>DNF</th>`;
+
+            for (const track of stageOrder) {
+                html += `<th>${track}</th>`;
+            }
+
+            html += `<th>Подиумы (🥇/🥈/🥉)</th>
+                </tr></thead><tbody>`;
+
+            let pos = 0;
+            for (const p of pilotData) {
+                pos++;
+                const cls = pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
+                const podiumStr = `${p.gold>0?'🥇'+p.gold:''} ${p.silver>0?'🥈'+p.silver:''} ${p.bronze>0?'🥉'+p.bronze:''}`.trim() || '—';
+
+                html += `<tr>
+                    <td class="pos ${cls}">${pos}</td>
+                    <td><span class="pilot-name" data-pilot="${p.name}">${p.name}</span></td>
+                    <td><span class="points">${p.points}</span></td>
+                    <td>${p.dnf > 0 ? `<span class="dnf-badge">${p.dnf}</span>` : '—'}`;
+
+                for (const track of stageOrder) {
+                    const pts = p.stagePoints[track] || 0;
+                    html += `<td>${pts}</td>`;
+                }
+
+                html += `<td>${podiumStr}</td>
+                </tr>`;
+            }
+
+            html += '</tbody></table>';
+            this.container.innerHTML = html;
+
+            this.container.querySelectorAll('.pilot-name').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    const pilot = e.currentTarget.dataset.pilot;
+                    document.dispatchEvent(new CustomEvent('showPilotStats', { detail: { pilot } }));
+                });
+            });
+        }
+
+        _renderInsights(calculator) {
+            const overall = calculator.getOverall();
+            const stages = calculator.getStages();
+            const stageOrder = this._getStageOrder(calculator);
+
+            const pilotStats = {};
+            for (const [name, points] of Object.entries(overall)) {
+                let gold = 0, silver = 0, bronze = 0;
+                let totalDnf = 0;
+                let totalPenalty = 0;
+                let stagesParticipated = 0;
+
+                for (const track of stageOrder) {
+                    const results = stages[track] || [];
+                    const pilotResult = results.find(r => r.name === name);
+                    if (pilotResult) {
+                        stagesParticipated++;
+                        totalDnf += pilotResult.dnf || 0;
+                        if (pilotResult.place === 1) gold++;
+                        else if (pilotResult.place === 2) silver++;
+                        else if (pilotResult.place === 3) bronze++;
+                        const stats = calculator.getPilotStats(name);
+                        if (stats && stats[track]) {
+                            totalPenalty += stats[track].penaltySum || 0;
+                        }
+                    }
+                }
+
+                pilotStats[name] = {
+                    points, gold, silver, bronze, dnf: totalDnf,
+                    participated: stagesParticipated,
+                    penalty: totalPenalty,
+                    totalStages: stageOrder.length,
+                };
+            }
+
+            const sorted = Object.entries(pilotStats).sort((a, b) => {
+                if (b[1].points !== a[1].points) return b[1].points - a[1].points;
+                if (b[1].gold !== a[1].gold) return b[1].gold - a[1].gold;
+                if (b[1].silver !== a[1].silver) return b[1].silver - a[1].silver;
+                if (b[1].bronze !== a[1].bronze) return b[1].bronze - a[1].bronze;
+                return a[1].dnf - b[1].dnf;
+            });
+
+            if (sorted.length === 0) {
+                this.container.innerHTML = '<div class="empty">Недостаточно данных для анализа.</div>';
+                return;
+            }
+
+            let html = `<div class="insights-container">`;
+            html += `<h2>📋 Аналитика чемпионата</h2>`;
+
+            const leader = sorted[0];
+            const leaderName = leader[0];
+            const leaderData = leader[1];
+            const bestTrack = this._getBestTrack(leaderName, stages);
+            html += `<div class="insight-block leader">`;
+            html += `<strong style="color: #ffd700;">🏆 Лидер определился</strong> – <strong>${leaderName}</strong> показывает стабильно высокие результаты, имеет <strong>${leaderData.dnf} DNF</strong> (${leaderData.dnf === 0 ? 'идеально' : 'всего ' + leaderData.dnf}) и лучшее время на этапе <strong>${bestTrack}</strong>.`;
+            html += `</div>`;
+
+            if (sorted.length >= 3) {
+                const second = sorted[1];
+                const third = sorted[2];
+                const diff2 = leaderData.points - second[1].points;
+                const diff3 = leaderData.points - third[1].points;
+                const remaining = Math.max(0, Config.TOTAL_STAGES - stageOrder.length);
+                html += `<div class="insight-block battle">`;
+                html += `<strong style="color: #66ccff;">⚔️ Борьба за призовую тройку</strong> – <strong>${second[0]}</strong> и <strong>${third[0]}</strong> отстают на <strong>${diff2}</strong> и <strong>${diff3}</strong> очков соответственно. `;
+                if (remaining > 0) {
+                    html += `Впереди ещё <strong>${remaining}</strong> этапов (всего планируется ${Config.TOTAL_STAGES}). Интрига сохраняется!`;
+                } else {
+                    html += `Все этапы завершены, интрига позади.`;
+                }
+                html += `</div>`;
+            }
+
+            const dnfPilots = Object.entries(pilotStats)
+                .filter(([_, data]) => data.dnf > 0)
+                .sort((a, b) => b[1].dnf - a[1].dnf);
+            if (dnfPilots.length > 0) {
+                html += `<div class="insight-block dnf">`;
+                html += `<strong style="color: #ff4466;">⚠️ Проблемы с DNF</strong> – у пилотов <strong>${dnfPilots.map(p => p[0]).join(', ')}</strong> есть DNF-попытки, которые существенно снижают их очки. `;
+                html += `Рекомендуется этим пилотам внимательнее следить за <strong>стартовой скоростью</strong> и <strong>высотой</strong>, а также избегать сбитых пилонов.`;
+                html += `</div>`;
+            }
+
+            const penaltyPilots = Object.entries(pilotStats)
+                .filter(([_, data]) => data.penalty > 0)
+                .sort((a, b) => b[1].penalty - a[1].penalty);
+            if (penaltyPilots.length > 0) {
+                const worstPenalty = penaltyPilots[0];
+                html += `<div class="insight-block penalty">`;
+                html += `<strong style="color: #ffcc44;">📊 Штрафы</strong> – наибольшее количество штрафов у <strong>${worstPenalty[0]}</strong> (${worstPenalty[1].penalty.toFixed(1)} сек), что говорит о нестабильном пилотировании. `;
+                html += `Снижение штрафов может поднять его в общем зачёте.`;
+                html += `</div>`;
+            }
+
+            const missedPilots = Object.entries(pilotStats)
+                .filter(([_, data]) => data.participated < data.totalStages)
+                .sort((a, b) => a[1].participated - b[1].participated);
+            if (missedPilots.length > 0) {
+                html += `<div class="insight-block missed">`;
+                html += `<strong style="color: #88ddff;">⏳ Отсутствие данных</strong> – пилоты <strong>${missedPilots.map(p => p[0]).join(', ')}</strong> не участвовали в некоторых этапах, что лишает их шансов на высокие места. `;
+                html += `Для борьбы за топ-3 необходимо участие во всех этапах.`;
+                html += `</div>`;
+            }
+
+            if (leaderData.dnf === 0) {
+                html += `<div class="insight-block perfect">`;
+                html += `<strong style="color: #00ff88;">✅ Лидер без DNF</strong> – <strong>${leaderName}</strong> не имеет ни одной DNF-попытки. Это отличный показатель! Рекомендуется продолжать в том же духе.`;
+                html += `</div>`;
+            }
+
+            html += `<div class="insight-block" style="border-color: #66ccff; background: rgba(102,204,255,0.02);">`;
+            html += `<strong>💡 Общая рекомендация:</strong> Для улучшения результатов пилотам рекомендуется работать над стабильностью прохождения трасс, минимизировать штрафы и DNF, а также участвовать во всех этапах чемпионата.`;
+            html += `</div>`;
+
+            html += `</div>`;
+            this.container.innerHTML = html;
+        }
+
+        _getBestTrack(pilotName, stages) {
+            let bestTime = Infinity;
+            let bestTrack = '';
+            for (const [track, results] of Object.entries(stages)) {
+                const r = results.find(p => p.name === pilotName);
+                if (r && r.time < bestTime) {
+                    bestTime = r.time;
+                    bestTrack = track;
+                }
+            }
+            return bestTrack || '—';
+        }
+
+        _renderStage(tabName, calculator) {
+            const results = calculator.getStages()[tabName];
+            if (!results || results.length === 0) {
+                this.container.innerHTML = `<div class="empty">Нет результатов для этапа «${tabName}»</div>`;
+                return;
+            }
+            let html = `<div class="stage-title">🏁 Этап: ${tabName}</div>`;
+            html += `<table>
+                <thead><tr>
+                    <th>#</th>
+                    <th>Пилот</th>
+                    <th>Зачётное время</th>
+                    <th>Итого</th>
+                    <th>Очки (место+бонус)</th>
+                    <th>DNF</th>
+                </tr></thead><tbody>`;
+            results.forEach(r => {
+                const cls = r.place === 1 ? 'gold' : r.place === 2 ? 'silver' : r.place === 3 ? 'bronze' : '';
+                const basePoints = r.basePoints !== undefined ? r.basePoints : r.points + (r.dnf || 0);
+                html += `<tr>
+                    <td class="pos ${cls}">${r.place}</td>
+                    <td><span class="pilot-name" data-pilot="${r.name}">${r.name}</span></td>
+                    <td><span class="time">${this._formatTime(r.time)}</span></td>
+                    <td><span class="points">${r.points}</span></td>
+                    <td>${basePoints}</td>
+                    <td>${r.dnf > 0 ? `<span class="dnf-badge">${r.dnf}</span>` : '—'}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            this.container.innerHTML = html;
+            this.container.querySelectorAll('.pilot-name').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    const pilot = e.currentTarget.dataset.pilot;
+                    document.dispatchEvent(new CustomEvent('showPilotStats', { detail: { pilot } }));
+                });
+            });
+        }
+
+        _getTrackFileMap() {
+            return {
+                "Новороссийск": "Novorossiysk.html",
+                "Анапа": "Anapa.html",
+                "Крымск": "Krymsk.html",
+                "Майкоп": "Maykop.html",
+                "Геленджик": "Gelenjik.html",
+                "Минеральные Воды": "MinVody.html",
+                "Гудаута": "Gudauta.html",
+                "Сочи": "Sochi.html",
+                "Пашковский": "Pashkovsky.html",
+                "Novorossiysk": "Novorossiysk.html",
+                "Anapa": "Anapa.html",
+                "Krymsk": "Krymsk.html",
+                "Maykop": "Maykop.html",
+                "Gelenjik": "Gelenjik.html",
+                "MinVody": "MinVody.html",
+                "Gudauta": "Gudauta.html",
+                "Sochi": "Sochi.html",
+                "Pashkovsky": "Pashkovsky.html"
+            };
+        }
+
+        _findTrackFile(trackName) {
+            const map = this._getTrackFileMap();
+            if (map[trackName]) return map[trackName];
+            const lowerTrack = trackName.toLowerCase();
+            for (const [key, file] of Object.entries(map)) {
+                if (key.toLowerCase() === lowerTrack) {
+                    return file;
+                }
+            }
+            return null;
+        }
+
+        _normalizeDnfReason(reason, penaltyCodes) {
+            if (penaltyCodes) {
+                const codes = penaltyCodes.split(',').map(c => parseInt(c.trim())).filter(c => !isNaN(c) && c >= 1 && c <= 6);
+                if (codes.includes(6)) return 'Сбит пилон';
+                if (codes.includes(5)) return 'Опасная высота';
+                if (codes.includes(3)) return 'Крен > 10°';
+                if (codes.includes(4)) return 'Тангаж > 10°';
+                if (codes.includes(1)) return 'Превышение скорости';
+                if (codes.includes(2)) return 'Недостаток топлива';
+            }
+            if (reason) {
+                const r = reason.toLowerCase();
+                if (r.includes('превышена стартовая скорость') || r.includes('превышение скорости')) return 'Превышение скорости';
+                if (r.includes('недостаток топлива') || r.includes('топливо')) return 'Недостаток топлива';
+                if (r.includes('сбит пилон') || r.includes('пилон')) return 'Сбит пилон';
+                if (r.includes('опасная высота') || r.includes('ошибка высоты') || r.includes('высота')) return 'Опасная высота';
+                if (r.includes('крен')) return 'Крен > 10°';
+                if (r.includes('тангаж')) return 'Тангаж > 10°';
+                if (r.includes('пропуск') || r.includes('таймаут') || r.includes('сход')) return 'Пропуск/сход';
+                if (reason.length > 30) return reason.substring(0, 27) + '...';
+                return reason;
+            }
+            return 'Другое';
+        }
+
+        _renderAnalytics(calculator) {
+            const stageNames = Object.keys(calculator.getStages()).sort();
+            if (stageNames.length === 0) {
+                this.container.innerHTML = '<div class="empty">Нет данных для аналитики</div>';
+                return;
+            }
+
+            let html = `<div class="analytics-container">`;
+            html += `<div class="track-selector" id="analyticsTrackSelector">`;
+            stageNames.forEach((track, idx) => {
+                const active = idx === 0 ? 'active' : '';
+                html += `<button class="track-btn ${active}" data-track="${track}">${track}</button>`;
+            });
+            html += `</div>`;
+            html += `<div id="analyticsContent"><div class="loading">Загрузка аналитики...</div></div>`;
+            html += `</div>`;
+            this.container.innerHTML = html;
+
+            const buttons = this.container.querySelectorAll('#analyticsTrackSelector .track-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    buttons.forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    const track = e.currentTarget.dataset.track;
+                    this._renderAnalyticsForTrack(track, calculator);
+                });
+            });
+
+            if (stageNames.length > 0) {
+                this._renderAnalyticsForTrack(stageNames[0], calculator);
+            }
+        }
+
+        _renderAnalyticsForTrack(track, calculator) {
+            const container = document.getElementById('analyticsContent');
+            if (!container) return;
+
+            const indices = calculator.getColumnIndices();
+            const rows = calculator.getAllRows();
+            const { trackIdx, statusIdx, timeIdx, intermediatesIdx, penaltyDetailsIdx, totalTimeIdx } = indices;
+
+            const finishRows = rows.filter(row => {
+                const t = (row[trackIdx] || '').trim();
+                const status = (row[statusIdx] || '').trim();
+                return t === track && status === 'ФИНИШ';
+            });
+
+            const allAttemptsOnTrack = rows.filter(row => {
+                const t = (row[trackIdx] || '').trim();
+                return t === track;
+            });
+            const dnfCount = allAttemptsOnTrack.length - finishRows.length;
+
+            if (finishRows.length === 0) {
+                container.innerHTML = '<div class="empty">Нет финишных попыток на этой трассе</div>';
+                return;
+            }
+
+            let allIntermediates = [];
+            let allPenaltyDetails = [];
+            let validTimes = [];
+            let totalTimes = [];
+
+            finishRows.forEach(row => {
+                const interStr = (row[intermediatesIdx] || '').trim();
+                if (interStr) {
+                    const arr = interStr.split(',').map(t => parseFloat(t.trim()));
+                    const clean = arr.filter(v => !isNaN(v) && v > 0);
+                    if (clean.length > 0) {
+                        allIntermediates.push(clean);
+                    }
+                }
+                let totalTime = 0;
+                if (totalTimeIdx !== undefined && totalTimeIdx !== -1 && row[totalTimeIdx]) {
+                    totalTime = parseFloat((row[totalTimeIdx] || '').replace(',', '.')) || 0;
+                }
+                if (totalTime <= 0) {
+                    const valid = parseFloat((row[timeIdx] || '').replace(',', '.')) || 0;
+                    totalTime = valid;
+                }
+                if (totalTime > 0) {
+                    validTimes.push(totalTime);
+                    totalTimes.push(totalTime);
+                }
+
+                const detailsStr = (row[penaltyDetailsIdx] || '').trim();
+                if (detailsStr) {
+                    try {
+                        const parsed = JSON.parse(detailsStr);
+                        if (Array.isArray(parsed)) {
+                            allPenaltyDetails.push(parsed);
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+            });
+
+            if (allIntermediates.length === 0) {
+                container.innerHTML =
+                    '<div class="empty">Нет данных о промежуточных временах для этой трассы. Добавьте колонку "Промежуточные времена" в Google Таблицу.</div>';
+                return;
+            }
+
+            let maxInter = 0;
+            allIntermediates.forEach(arr => { if (arr.length > maxInter) maxInter = arr.length; });
+            const SEG_COUNT = maxInter + 1;
+
+            const paddedIntermediates = allIntermediates.map(arr => {
+                const padded = [];
+                for (let i = 0; i < maxInter; i++) {
+                    padded.push(i < arr.length ? arr[i] : null);
+                }
+                return padded;
+            });
+
+            const segmentTimes = paddedIntermediates.map((inter, idx) => {
+                const total = totalTimes[idx] || 0;
+                const segs = [];
+                for (let i = 0; i < inter.length; i++) {
+                    segs.push(inter[i] !== null && inter[i] > 0 ? inter[i] : null);
+                }
+                segs.push(total > 0 ? total : null);
+                return segs;
+            });
+
+            const segStats = [];
+            for (let s = 0; s < SEG_COUNT; s++) {
+                let sum = 0, count = 0, best = Infinity, worst = -Infinity;
+                segmentTimes.forEach(segs => {
+                    if (segs.length > s && segs[s] !== null && segs[s] > 0) {
+                        const val = segs[s];
+                        sum += val;
+                        count++;
+                        if (val < best) best = val;
+                        if (val > worst) worst = val;
+                    }
+                });
+                segStats.push({
+                    best: count > 0 ? best : null,
+                    worst: count > 0 ? worst : null,
+                    avg: count > 0 ? sum / count : null,
+                    count: count
+                });
+            }
+
+            const penaltiesByGate = {};
+            allPenaltyDetails.forEach(details => {
+                details.forEach(item => {
+                    const gate = item.gate;
+                    const code = item.code;
+                    if (gate && code) {
+                        if (!penaltiesByGate[gate]) penaltiesByGate[gate] = [];
+                        penaltiesByGate[gate].push(code);
+                    }
+                });
+            });
+
+            const sortedTimes = [...validTimes].sort((a, b) => a - b);
+            const bestTime = sortedTimes[0] || 0;
+            const worstTime = sortedTimes[sortedTimes.length - 1] || 0;
+            const avgTime = validTimes.reduce((a, b) => a + b, 0) / validTimes.length || 0;
+            const totalPenalties = Object.values(penaltiesByGate).reduce((sum, arr) => sum + arr.length, 0);
+
+            let html = `<div class="analytics-stats">`;
+            html += `<div class="stat-card"><div class="label">Попыток</div><div class="value blue">${finishRows.length}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Лучшее</div><div class="value green">${this._formatTime(bestTime)}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Худшее</div><div class="value red">${this._formatTime(worstTime)}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Среднее</div><div class="value yellow">${this._formatTime(avgTime)}</div></div>`;
+            html += `<div class="stat-card"><div class="label">DNF</div><div class="value red">${dnfCount}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Всего штрафов</div><div class="value red">${totalPenalties}</div></div>`;
+            html += `</div>`;
+
+            html += `<div class="progressbar-wrapper">`;
+            html += `<div class="progressbar-title">Время прохождения отрезков (сек) — лучшие / средние / худшие (${SEG_COUNT} сегментов, ${SEG_COUNT+1} ворот)</div>`;
+            html += `<div class="progressbar-container">`;
+
+            html += `<div style="display:flex; margin-bottom:6px;">`;
+            const codesGate1 = penaltiesByGate[1] || [];
+            const icons1 = this._formatPenaltyIcons(codesGate1);
+            html += `<div style="flex:0 0 50px; text-align:center; min-height:28px; display:flex; flex-direction:column; align-items:center; justify-content:center;">${icons1}</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const gateNumber = i + 2;
+                const codes = penaltiesByGate[gateNumber] || [];
+                const iconsHtml = this._formatPenaltyIcons(codes);
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; min-height:28px; display:flex; flex-direction:column; align-items:center; justify-content:center;">${iconsHtml}</div>`;
+            }
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin:2px 0;">`;
+            html += `<div style="flex:0 0 50px; text-align:center; color:#88ddff;">СТАРТ</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const stat = segStats[i];
+                const val = stat.best !== null ? stat.best.toFixed(2) : '—';
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; color:#00ff88;">${val}</div>`;
+            }
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin:2px 0;">`;
+            html += `<div style="flex:0 0 50px; text-align:center; color:#88ddff;">СТАРТ</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const stat = segStats[i];
+                const val = stat.avg !== null ? stat.avg.toFixed(2) : '—';
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; color:#66ccff;">${val}</div>`;
+            }
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin:2px 0;">`;
+            html += `<div style="flex:0 0 50px; text-align:center; color:#88ddff;">СТАРТ</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const stat = segStats[i];
+                const val = stat.worst !== null ? stat.worst.toFixed(2) : '—';
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; color:#ff4466;">${val}</div>`;
+            }
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin-top:6px;">`;
+            html += `<div style="flex:0 0 50px; text-align:center; font-size:11px; color:#88ddff;">1</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const gateNumber = i + 2;
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; font-size:11px; color:#88ddff;">${gateNumber}</div>`;
+            }
+            html += `</div>`;
+            html += `</div></div>`;
+
+            html += `<div style="margin-top:20px; padding:10px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(102,204,255,0.1);">`;
+            html += `<div style="color:#88ddff; font-size:13px; margin-bottom:8px;">📌 Коды штрафов:</div>`;
+            const penaltyDescriptions = {
+                1: 'Превышение скорости',
+                2: 'Недостаток топлива',
+                3: 'Крен > 10°',
+                4: 'Тангаж > 10°',
+                5: 'Опасная высота',
+                6: 'Сбит пилон'
+            };
+            for (let code = 1; code <= 6; code++) {
+                html += `<div style="display:inline-block; margin-right:12px; font-size:13px;">`;
+                html += `<img src="penalty_${code}.png" style="height:20px;width:20px;vertical-align:middle;" onerror="this.style.display='none'">`;
+                html += ` <span style="color:#e0e8f0;">${code} – ${penaltyDescriptions[code]}</span>`;
+                html += `</div>`;
+            }
+            html += `</div>`;
+
+            const fileName = this._findTrackFile(track);
+            if (fileName) {
+                html += `<div class="viz-container">`;
+                html += `<iframe src="${fileName}" title="Визуализация трассы «${track}»"></iframe>`;
+                html += `</div>`;
+            } else {
+                const allKeys = Object.keys(this._getTrackFileMap());
+                html += `<div style="margin-top:30px; padding:20px; text-align:center; color:#8899aa; border:1px dashed rgba(102,204,255,0.2); border-radius:8px;">
+                    🗺️ Визуализация для трассы «${track}» не найдена.<br>
+                    <span style="font-size:13px;">Доступные названия в маппинге: ${allKeys.join(', ')}</span><br>
+                    <span style="font-size:13px;">Убедитесь, что файл "${track}.html" (или его синоним) лежит в той же папке.</span>
+                </div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        _renderPilotAnalytics(calculator) {
+            const pilots = Object.keys(calculator.getOverall()).sort();
+            if (pilots.length === 0) {
+                this.container.innerHTML = '<div class="empty">Нет данных для аналитики пилота</div>';
+                return;
+            }
+
+            let html = `<div class="pilot-analytics-container">`;
+            html += `<div style="margin-bottom:15px;">`;
+            html += `<label for="pilotSelect" style="color:#88ddff; font-weight:500; margin-right:10px;">Выберите пилота:</label>`;
+            html += `<select id="pilotSelect">`;
+            pilots.forEach(p => {
+                html += `<option value="${p}">${p}</option>`;
+            });
+            html += `</select>`;
+            html += `</div>`;
+            html += `<div id="pilotAnalyticsContent"><div class="loading">Загрузка...</div></div>`;
+            html += `</div>`;
+            this.container.innerHTML = html;
+
+            const select = document.getElementById('pilotSelect');
+            select.addEventListener('change', () => {
+                this._renderPilotAnalyticsData(select.value, calculator);
+            });
+            this._renderPilotAnalyticsData(pilots[0], calculator);
+        }
+
+        _renderPilotAnalyticsData(pilotName, calculator) {
+            const container = document.getElementById('pilotAnalyticsContent');
+            if (!container) return;
+
+            const stats = calculator.getPilotStats(pilotName);
+            if (!stats || Object.keys(stats).length === 0) {
+                container.innerHTML = '<div class="empty">Нет данных для выбранного пилота</div>';
+                return;
+            }
+
+            const tracks = Object.keys(stats).sort();
+            let totalAttempts = 0, totalDnf = 0, totalPenalty = 0;
+            let bestOverall = Infinity, worstOverall = 0, sumValid = 0, countValid = 0;
+            const trackData = {};
+
+            tracks.forEach(track => {
+                const s = stats[track];
+                totalAttempts += s.total;
+                totalDnf += s.dnf;
+                totalPenalty += s.penaltySum;
+                const finishAttempts = s.attempts.filter(a => !a.isDnf && a.validTime > 0);
+                const times = finishAttempts.map(a => a.validTime);
+                if (times.length > 0) {
+                    const best = Math.min(...times);
+                    const worst = Math.max(...times);
+                    const avg = times.reduce((a, b) => a + b, 0) / times.length;
+                    if (best < bestOverall) bestOverall = best;
+                    if (worst > worstOverall) worstOverall = worst;
+                    sumValid += times.reduce((a, b) => a + b, 0);
+                    countValid += times.length;
+                    trackData[track] = { best, worst, avg, count: times.length, dnf: s.dnf, penaltySum: s.penaltySum };
+                } else {
+                    trackData[track] = { best: null, worst: null, avg: null, count: 0, dnf: s.dnf, penaltySum: s.penaltySum };
+                }
+            });
+
+            const totalPoints = calculator.getOverall()[pilotName] || 0;
+
+            let html = `<div class="analytics-stats">`;
+            html += `<div class="stat-card"><div class="label">Попыток</div><div class="value blue">${totalAttempts}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Финишей</div><div class="value green">${totalAttempts - totalDnf}</div></div>`;
+            html += `<div class="stat-card"><div class="label">DNF</div><div class="value red">${totalDnf}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Штрафов (сек)</div><div class="value red">${totalPenalty.toFixed(1)}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Сумма очков</div><div class="value blue">${totalPoints}</div></div>`;
+            html += `<div class="stat-card" style="flex: 1 1 200px;"><div class="label">Трассы</div><div class="value" style="font-size:14px; font-weight:400;">${tracks.join(', ')}</div></div>`;
+            html += `</div>`;
+
+            html += `<div style="margin-top:20px; overflow-x:auto;">`;
+            html += `<table style="font-size:13px;">`;
+            html += `<thead><tr><th>Трасса</th><th>Лучшее</th><th>Рекорд трассы</th><th>Отставание (сек)</th></tr></thead><tbody>`;
+            tracks.forEach(track => {
+                const data = trackData[track];
+                const best = data.best !== null ? data.best : null;
+                const stageResults = calculator.getStages()[track] || [];
+                const record = stageResults.length > 0 ? stageResults[0].time : null;
+                const recordName = stageResults.length > 0 ? stageResults[0].name : null;
+                const diff = (best !== null && record !== null) ? (best - record) : null;
+                html += `<tr><td><strong>${track}</strong></td>`;
+                html += `<td><strong>${best !== null ? this._formatTime(best) : '—'}</strong></td>`;
+                if (record !== null && recordName) {
+                    html += `<td><strong>${recordName}</strong> (<strong>${this._formatTime(record)}</strong>)</td>`;
+                } else {
+                    html += `<td>—</td>`;
+                }
+                html += `<td style="color:${diff !== null && diff > 0 ? '#ff4466' : '#00ff88'}; font-weight: bold;">${diff !== null ? diff.toFixed(2) : '—'}</td>`;
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+
+            // Единый блок с селектором трасс
+            html += `<div style="margin-top:20px;">`;
+            html += `<div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Выберите трассу для анализа</div>`;
+            html += `<div class="pilot-track-selector" id="pilotTrackSelector">`;
+            // кнопки будут добавлены позже
+            html += `</div>`;
+
+            // Сравнение с рекордом
+            html += `<div style="margin-top:20px;">`;
+            html += `<div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Сравнение с рекордом по сегментам</div>`;
+            html += `<div id="pilotSegmentChartContainer"><div class="loading">Выберите трассу</div></div>`;
+            html += `</div>`;
+
+            // Динамика по попыткам
+            html += `<div style="margin-top:20px;">`;
+            html += `<div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Динамика по попыткам</div>`;
+            html += `<div id="pilotAttemptsChartContainer" class="attempts-chart-wrapper"><div class="loading">Выберите трассу</div></div>`;
+            html += `</div>`;
+            html += `</div>`;
+
+            // DNF
+            html += `<div style="margin-top:20px;">`;
+            html += `<div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Причины DNF</div>`;
+            html += `<div id="pilotDnfChartContainer" class="dnf-chart-container"><div class="loading">Загрузка...</div></div>`;
+            html += `</div>`;
+
+            container.innerHTML = html;
+
+            // Добавляем кнопки в селектор
+            const selector = document.getElementById('pilotTrackSelector');
+            if (selector && tracks.length > 0) {
+                tracks.forEach((track, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'track-btn' + (idx === 0 ? ' active' : '');
+                    btn.dataset.track = track;
+                    btn.textContent = track;
+                    selector.appendChild(btn);
+                });
+
+                selector.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.track-btn');
+                    if (!btn) return;
+                    selector.querySelectorAll('.track-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const track = btn.dataset.track;
+                    this._drawPilotSegmentChart(pilotName, track, stats, calculator);
+                    this._drawPilotAttemptsChart(pilotName, track, stats);
+                });
+
+                const firstTrack = tracks[0];
+                this._drawPilotSegmentChart(pilotName, firstTrack, stats, calculator);
+                this._drawPilotAttemptsChart(pilotName, firstTrack, stats);
+            }
+
+            this._drawPilotDnfChart(pilotName, stats);
+        }
+
+        _drawPilotDnfChart(pilotName, stats) {
+            const container = document.getElementById('pilotDnfChartContainer');
+            if (!container) return;
+
+            const reasons = {};
+            for (const track in stats) {
+                const trackData = stats[track];
+                trackData.attempts.forEach(att => {
+                    if (!att.isDnf) return;
+                    const normReason = this._normalizeDnfReason(att.dnfReason, att.penaltyCodes);
+                    if (!reasons[normReason]) reasons[normReason] = 0;
+                    reasons[normReason]++;
+                });
+            }
+
+            const total = Object.values(reasons).reduce((a, b) => a + b, 0);
+            if (total === 0) {
+                container.innerHTML = '<p style="color:#8899aa;">Нет DNF у этого пилота</p>';
+                return;
+            }
+
+            container.innerHTML = `<canvas id="pilotDnfCanvasModal" width="400" height="400"></canvas>`;
+            const canvas = document.getElementById('pilotDnfCanvasModal');
+            if (!canvas) return;
+
+            if (this.chartInstances.pilotDnf) {
+                this.chartInstances.pilotDnf.destroy();
+            }
+            const ctx = canvas.getContext('2d');
+            const labels = Object.keys(reasons);
+            const data = labels.map(label => reasons[label]);
+            const colors = ['#ff4466', '#ff8844', '#ffcc44', '#44ff88', '#4488ff', '#aa66ff', '#ff66aa'];
+
+            this.chartInstances.pilotDnf = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: '#0a0e1a',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#e0e8f0', font: { size: 12 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    let value = context.parsed || 0;
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    let percentage = ((value / total) * 100).toFixed(0);
+                                    return label + ': ' + value + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        _drawPilotSegmentChart(pilotName, track, stats, calculator) {
+            const container = document.getElementById('pilotSegmentChartContainer');
+            if (!container) return;
+
+            const trackData = stats[track];
+            if (!trackData || trackData.attempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет попыток на этой трассе</div>';
+                return;
+            }
+
+            const finishAttempts = trackData.attempts.filter(a => !a.isDnf && a.validTime > 0 && a.intermediates.length > 0);
+            if (finishAttempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет финишных попыток с промежуточными временами</div>';
+                return;
+            }
+
+            let bestAttempt = null;
+            let bestTime = Infinity;
+            finishAttempts.forEach(a => {
+                if (a.validTime < bestTime) {
+                    bestTime = a.validTime;
+                    bestAttempt = a;
+                }
+            });
+            if (!bestAttempt) {
+                container.innerHTML = '<div class="empty">Нет подходящей попытки</div>';
+                return;
+            }
+
+            const intermediates = bestAttempt.intermediates;
+            const totalTime = bestAttempt.totalTime || bestAttempt.validTime;
+            const fullTimes = [0, ...intermediates, totalTime];
+            const segCount = fullTimes.length - 1;
+
+            const stageResults = calculator.getStages()[track] || [];
+            if (stageResults.length === 0) {
+                container.innerHTML = '<div class="empty">Нет рекорда трассы</div>';
+                return;
+            }
+            const recordPilot = stageResults[0].name;
+            const recordTime = stageResults[0].time;
+
+            const recordStats = calculator.getPilotStats(recordPilot);
+            if (!recordStats || !recordStats[track]) {
+                container.innerHTML = '<div class="empty">Нет данных рекордсмена</div>';
+                return;
+            }
+            const recordAttempts = recordStats[track].attempts.filter(a => !a.isDnf && a.validTime === recordTime && a.intermediates.length > 0);
+            if (recordAttempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет подходящей попытки рекордсмена</div>';
+                return;
+            }
+            const recordAttempt = recordAttempts[0];
+            const recordInter = recordAttempt.intermediates;
+            const recordTotal = recordAttempt.totalTime || recordAttempt.validTime;
+            const recordFull = [0, ...recordInter, recordTotal];
+
+            const diffs = [];
+            for (let i = 0; i < segCount; i++) {
+                const pilotSeg = fullTimes[i + 1] - fullTimes[i];
+                const recordSeg = recordFull[i + 1] - recordFull[i];
+                const diff = pilotSeg - recordSeg;
+                diffs.push(diff);
+            }
+
+            let html = `<div style="width:100%; padding:10px 0;">`;
+            html += `<div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;">`;
+            html += `<span style="color:#00ff88;">▲ быстрее</span> <span style="color:#ff4466;">▼ медленнее</span>`;
+            html += `</div>`;
+            html += `<div style="display:flex; align-items:flex-end; height:150px; margin-top:10px;">`;
+            html += `<div style="flex:0 0 40px;"></div>`;
+            const maxDiff = Math.max(...diffs.map(d => Math.abs(d)), 0.1);
+            for (let i = 0; i < diffs.length; i++) {
+                const diff = diffs[i];
+                const heightPct = (Math.abs(diff) / maxDiff) * 100;
+                const color = diff > 0 ? '#ff4466' : '#00ff88';
+                const barHeight = Math.max(5, heightPct / 100 * 120);
+                html += `<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;">`;
+                html += `<div style="font-size:10px; color:#88ddff;">${diff.toFixed(2)}</div>`;
+                html += `<div style="width:80%; background:${color}; height:${barHeight}px; border-radius:4px 4px 0 0; transition:0.2s;"></div>`;
+                html += `</div>`;
+            }
+            html += `<div style="flex:0 0 40px;"></div>`;
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin-top:4px;">`;
+            html += `<div style="flex:0 0 40px; text-align:center; font-size:11px; color:#88ddff;">1</div>`;
+            for (let i = 0; i < segCount; i++) {
+                html += `<div style="flex:1; text-align:center; font-size:11px; color:#88ddff;">${i+2}</div>`;
+            }
+            html += `<div style="flex:0 0 40px;"></div>`;
+            html += `</div>`;
+
+            html += `<div style="text-align:center; color:#8899aa; font-size:12px; margin-top:10px;">Разница времени на сегменте (пилот – рекорд)</div>`;
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        _drawPilotAttemptsChart(pilotName, track, stats) {
+            const container = document.getElementById('pilotAttemptsChartContainer');
+            if (!container) return;
+
+            const trackData = stats[track];
+            if (!trackData || trackData.attempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет попыток на этой трассе</div>';
+                return;
+            }
+
+            const attempts = trackData.attempts;
+            const validAttempts = attempts.filter(a => !a.isDnf && a.validTime > 0);
+            if (validAttempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет финишных попыток</div>';
+                return;
+            }
+
+            const times = attempts.map(a => a.isDnf ? null : a.validTime);
+            const validTimes = times.filter(t => t !== null);
+            const maxVal = Math.max(...validTimes) * 1.15;
+
+            let html = `<div style="width:100%;">`;
+            html += `<canvas id="pilotAttemptsCanvas" width="1000" height="300" style="width:100%; height:auto; max-width:100%; background:#0a0e1a; border-radius:8px;"></canvas>`;
+            html += `</div>`;
+            container.innerHTML = html;
+
+            const canvas = document.getElementById('pilotAttemptsCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            const padding = { top: 30, right: 30, bottom: 40, left: 70 };
+            const chartW = w - padding.left - padding.right;
+            const chartH = h - padding.top - padding.bottom;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const dataLength = times.length;
+            const xScale = (i) => padding.left + (i / (dataLength - 1 || 1)) * chartW;
+            const yScale = (val) => padding.top + chartH - ((val) / maxVal) * chartH;
+
+            ctx.strokeStyle = 'rgba(102,204,255,0.15)';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#88ddff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const steps = 5;
+            for (let i = 0; i <= steps; i++) {
+                const val = (i / steps) * maxVal;
+                const y = yScale(val);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(w - padding.right, y);
+                ctx.stroke();
+                ctx.fillStyle = '#88ddff';
+                ctx.fillText(this._formatTime(val), padding.left - 10, y);
+            }
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#66ccff';
+            ctx.lineWidth = 2.5;
+            let started = false;
+            times.forEach((val, i) => {
+                if (val === null) { started = false; return; }
+                const x = xScale(i);
+                const y = yScale(val);
+                if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            times.forEach((val, i) => {
+                const x = xScale(i);
+                const isDnf = (val === null);
+                const y = isDnf ? padding.top + chartH + 10 : yScale(val);
+                ctx.beginPath();
+                ctx.arc(x, isDnf ? padding.top + chartH : yScale(val), 6, 0, 2 * Math.PI);
+                ctx.fillStyle = isDnf ? '#ff4466' : '#00ff88';
+                ctx.fill();
+                if (!isDnf) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(val.toFixed(2), x, y - 8);
+                } else {
+                    ctx.fillStyle = '#ff4466';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText('DNF', x, padding.top + chartH + 4);
+                }
+            });
+
+            ctx.fillStyle = '#88ddff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.font = '12px Arial';
+            for (let i = 0; i < dataLength; i++) {
+                const x = xScale(i);
+                ctx.fillText(i + 1, x, h - padding.bottom + 4);
+            }
+        }
+
+        _formatTime(seconds) {
+            if (!seconds || seconds <= 0) return '0:00.00';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toFixed(2).padStart(5, '0')}`;
+        }
+
+        _formatPenaltyIcons(codesArray) {
+            if (!codesArray || codesArray.length === 0) return '';
+            const counts = {};
+            codesArray.forEach(code => {
+                const num = parseInt(code);
+                if (!isNaN(num) && num >= 1 && num <= 6) {
+                    counts[num] = (counts[num] || 0) + 1;
+                }
+            });
+            let result = '';
+            for (let code = 1; code <= 6; code++) {
+                if (counts[code]) {
+                    const count = counts[code];
+                    result += `<div class="penalty-item">`;
+                    result += `<img src="penalty_${code}.png" title="Штраф код ${code}" alt="${code}" style="height:20px;width:20px;" onerror="this.style.display='none'">`;
+                    if (count > 1) {
+                        result += `<span class="penalty-count">×${count}</span>`;
+                    }
+                    result += `</div>`;
+                }
+            }
+            return result;
+        }
+    }
+
+    // ================================================================
+    //  МОДУЛЬ 5: ГЛАВНОЕ ПРИЛОЖЕНИЕ
+    // ================================================================
+    class App {
+        constructor() {
+            this.loader = new DataLoader();
+            this.renderer = new Renderer('content', 'modalOverlay');
+            this.calculator = null;
+            this.currentTab = 'overall';
+            this.isLoading = false;
+            this._bindEvents();
+        }
+
+        _bindEvents() {
+            document.addEventListener('tabChange', (e) => {
+                this.switchTab(e.detail.tab);
+            });
+
+            document.addEventListener('showPilotStats', (e) => {
+                this.showPilotStats(e.detail.pilot);
+            });
+
+            document.getElementById('updateBtn').addEventListener('click', () => {
+                this.init();
+            });
+        }
+
+        async init() {
+            if (this.isLoading) return;
+            this.isLoading = true;
+            this.renderer.showLoading();
+
+            try {
+                const values = await this.loader.fetchData();
+                const headers = values[0];
+                const rows = values.slice(1);
+
+                this.calculator = new ScoreCalculator(rows, headers);
+                const result = this.calculator.process();
+                const stages = result.stages;
+                const overall = result.overall;
+
+                this.renderer.updateHeader(Object.keys(overall).length, Object.keys(stages).length);
+
+                this.renderer.renderTabs(stages, this.currentTab);
+                this.renderer.renderTab(this.currentTab, this.calculator, null);
+            } catch (err) {
+                console.error(err);
+                this.renderer.showError(err.message || 'Ошибка загрузки данных');
+            } finally {
+                this.isLoading = false;
+            }
+        }
+
+        switchTab(tabName) {
+            if (!this.calculator) return;
+            this.currentTab = tabName;
+            const tabsContainer = document.getElementById('tabsContainer');
+            tabsContainer.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tabName);
+            });
+            this.renderer.renderTab(tabName, this.calculator, null);
+        }
+
+        showPilotStats(pilotName) {
+            if (!this.calculator) return;
+            const stats = this.calculator.getPilotStats(pilotName);
+            if (!stats || Object.keys(stats).length === 0) {
+                this.renderer.showModal(`Статистика: ${pilotName}`, '<p style="color:#8899aa;">Нет данных для этого пилота.</p>');
+                return;
+            }
+
+            const tracks = Object.keys(stats).sort();
+            let totalAll = 0, totalDnf = 0, totalPenalty = 0;
+            tracks.forEach(track => {
+                const s = stats[track];
+                totalAll += s.total;
+                totalDnf += s.dnf;
+                totalPenalty += s.penaltySum;
+            });
+
+            let html = `<div style="margin-bottom:15px;">
+                <p><strong>Всего попыток:</strong> ${totalAll} &nbsp;|&nbsp;
+                <strong>Всего DNF:</strong> ${totalDnf} &nbsp;|&nbsp;
+                <strong>Сумма штрафов (сек):</strong> ${totalPenalty.toFixed(1)}</p>
+            </div>`;
+
+            html += `<div class="track-selector" id="modalTrackSelector">`;
+            tracks.forEach((track, idx) => {
+                const active = idx === 0 ? 'active' : '';
+                html += `<button class="track-btn ${active}" data-track="${track}">${track}</button>`;
+            });
+            html += `</div>`;
+
+            html += `<div id="modalAttemptsContainer"></div>`;
+
+            this.renderer.showModal(`Статистика: ${pilotName}`, html);
+
+            const renderAttempts = (track) => {
+                const container = document.getElementById('modalAttemptsContainer');
+                const trackData = stats[track];
+                if (!trackData || trackData.attempts.length === 0) {
+                    container.innerHTML = '<p style="color:#8899aa;">Нет попыток на этой трассе.</p>';
+                    return;
+                }
+
+                let bestValidTime = Infinity;
+                trackData.attempts.forEach(att => {
+                    if (!att.isDnf && att.validTime > 0 && att.validTime < bestValidTime) {
+                        bestValidTime = att.validTime;
+                    }
+                });
+
+                let tableHtml = `<table class="attempts-table">
+                    <thead><tr>
+                        <th>№ попытки</th>
+                        <th>Дата/время</th>
+                        <th>Стартовая скорость (км/ч)</th>
+                        <th>Стартовое топливо (%)</th>
+                        <th>Зачётное время</th>
+                        <th>Чистое время</th>
+                        <th>Штраф (сек)</th>
+                        <th>Коды штрафов</th>
+                        <th>Причина DNF</th>
+                    </tr></thead><tbody>`;
+
+                trackData.attempts.forEach(att => {
+                    const isDnf = att.isDnf;
+                    let validTimeDisplay;
+                    let tdClass = '';
+                    if (isDnf) {
+                        validTimeDisplay = '<span class="dnf-text">DNF</span>';
+                    } else {
+                        const timeValue = att.validTime || 0;
+                        const isBest = (timeValue === bestValidTime && bestValidTime !== Infinity);
+                        tdClass = isBest ? 'best-time' : '';
+                        validTimeDisplay = this.renderer._formatTime(timeValue);
+                    }
+
+                    let totalTimeDisplay = '—';
+                    if (!isDnf && att.totalTime > 0) {
+                        totalTimeDisplay = this.renderer._formatTime(att.totalTime);
+                    }
+                    const penalty = att.penalty || 0;
+                    let imagesHtml = '';
+                    if (att.penaltyCodes) {
+                        const codes = att.penaltyCodes.split(',').map(s => s.trim()).filter(s => s !== '');
+                        codes.forEach(code => {
+                            const num = parseInt(code);
+                            if (!isNaN(num) && num >= 1 && num <= 6) {
+                                imagesHtml += `<img src="penalty_${num}.png" class="penalty-icon" alt="штраф ${num}" title="Код ${num}" onerror="this.style.display='none'">`;
+                            }
+                        });
+                    }
+                    if (!imagesHtml) imagesHtml = '—';
+
+                    let timestampDisplay = '—';
+                    if (att.timestamp) {
+                        try {
+                            const date = new Date(att.timestamp);
+                            if (!isNaN(date.getTime())) {
+                                timestampDisplay = date.toLocaleString('ru-RU', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                });
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+
+                    const startSpeedDisplay = (att.startSpeed !== null && att.startSpeed !== undefined && !isNaN(att.startSpeed)) ? att.startSpeed.toFixed(1) : '—';
+                    const startFuelDisplay = (att.startFuel !== null && att.startFuel !== undefined && !isNaN(att.startFuel)) ? att.startFuel.toFixed(1) : '—';
+
+                    let dnfReasonDisplay = '—';
+                    if (isDnf) {
+                        const norm = this.renderer._normalizeDnfReason(att.dnfReason, att.penaltyCodes);
+                        dnfReasonDisplay = norm;
+                    }
+
+                    tableHtml += `<tr>
+                        <td>${att.attemptNumber}</td>
+                        <td>${timestampDisplay}</td>
+                        <td>${startSpeedDisplay}</td>
+                        <td>${startFuelDisplay}</td>
+                        <td class="${tdClass}">${validTimeDisplay}</td>
+                        <td>${totalTimeDisplay}</td>
+                        <td>${penalty.toFixed(1)}</td>
+                        <td>${imagesHtml}</td>
+                        <td>${dnfReasonDisplay}</td>
+                    </tr>`;
+                });
+
+                tableHtml += '</tbody></table>';
+                container.innerHTML = tableHtml;
+            };
+
+            const modalButtons = document.querySelectorAll('#modalTrackSelector .track-btn');
+            modalButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    modalButtons.forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    const track = e.currentTarget.dataset.track;
+                    renderAttempts(track);
+                });
+            });
+
+            if (tracks.length > 0) {
+                renderAttempts(tracks[0]);
+            }
+        }
+    }
+
+    // ================================================================
+    //  ЗАПУСК
+    // ================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        const app = new App();
+        app.init();
+    });
+</script>
+</body>
+</html>

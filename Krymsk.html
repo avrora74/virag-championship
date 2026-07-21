@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Трасса «Крымск» — ViRAG</title>
+    <style>
+        body {
+            background: #0a0e1a;
+            color: #e0e8f0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #66ccff;
+            text-shadow: 0 0 20px rgba(102,204,255,0.3);
+            margin-bottom: 10px;
+        }
+        .info {
+            color: #88ddff;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        canvas {
+            border: 1px solid rgba(102,204,255,0.2);
+            border-radius: 12px;
+            background: #0d1225;
+            box-shadow: 0 0 40px rgba(102,204,255,0.05);
+            max-width: 100%;
+            height: auto;
+        }
+        .legend {
+            margin-top: 15px;
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-size: 14px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        .legend-color.polygon { background: #66ccff; }
+        .legend-color.pylon { background: #ff4466; width: 12px; height: 12px; border-radius: 50%; }
+        .legend-color.red { background: #ff4466; }
+        .legend-color.blue { background: #4488ff; }
+        .footer {
+            margin-top: 20px;
+            color: #556677;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <h1>✈️ Трасса «Крымск»</h1>
+    <div class="info">19 ворот · 14 пилонов · вид сверху</div>
+    <canvas id="trackCanvas" width="1000" height="700"></canvas>
+    <div class="legend">
+        <span class="legend-item"><span class="legend-color polygon"></span> Ворота (полигоны)</span>
+        <span class="legend-item"><span class="legend-color pylon"></span> Пилоны</span>
+        <span class="legend-item"><span class="legend-color red"></span> 1 круг</span>
+        <span class="legend-item"><span class="legend-color blue"></span> 2 круг</span>
+    </div>
+    <div class="footer">Данные из миссии ViRAG · масштабировано автоматически</div>
+
+    <script>
+        // ============================================================
+        //  Данные трассы (извлечены из mission.txt)
+        // ============================================================
+
+        const gates = [
+            { id: 1, vertices: [
+                {x: -6122.0876702439, y: 293918.26480278},
+                {x: -6149.3123593696, y: 293947.46313675},
+                {x: -6144.2621505126, y: 293952.04895858},
+                {x: -6116.9213646316, y: 293922.96672137}
+            ]},
+            { id: 2, vertices: [
+                {x: -6428.9765588147, y: 293776.86577624},
+                {x: -6425.5428327524, y: 293782.69084723},
+                {x: -6383.357055415, y: 293757.79633328},
+                {x: -6386.913414551, y: 293752.21652843}
+            ]},
+            { id: 3, vertices: [
+                {x: -6529.5205442007, y: 293585.47593575},
+                {x: -6546.9063007658, y: 293632.67380694},
+                {x: -6540.6095363688, y: 293635.1256444},
+                {x: -6523.2237798038, y: 293588.03922037}
+            ]},
+            { id: 4, vertices: [
+                {x: -6692.6285879666, y: 293492.60666022},
+                {x: -6723.2943933873, y: 293530.24963972},
+                {x: -6717.4425699676, y: 293534.69477482},
+                {x: -6687.0018346784, y: 293496.77045766}
+            ]},
+            { id: 5, vertices: [
+                {x: -6849.9873032117, y: 293229.01104645},
+                {x: -6877.2146734164, y: 293257.73618948},
+                {x: -6872.1864360898, y: 293262.7644268},
+                {x: -6844.8520821122, y: 293233.45087303}
+            ]},
+            { id: 6, vertices: [
+                {x: -6909.6898148338, y: 293639.68772045},
+                {x: -6934.3119492276, y: 293671.11333934},
+                {x: -6928.0484238117, y: 293675.1630325},
+                {x: -6904.1282362317, y: 293643.79140951}
+            ]},
+            { id: 7, vertices: [
+                {x: -6590.8517345145, y: 293868.42166582},
+                {x: -6615.3251471352, y: 293900.33548781},
+                {x: -6609.2375394733, y: 293904.08643798},
+                {x: -6585.1945637579, y: 293872.6030529}
+            ]},
+            { id: 8, vertices: [
+                {x: -6404.9182485508, y: 294251.2180524},
+                {x: -6428.9075356808, y: 294283.14899851},
+                {x: -6423.1566791771, y: 294287.14721303},
+                {x: -6399.167392047, y: 294255.59965735}
+            ]},
+            { id: 9, vertices: [
+                {x: -5976.2635491341, y: 294308.62214562},
+                {x: -5980.9091972228, y: 294313.96782287},
+                {x: -5940.943895857, y: 294344.76910609},
+                {x: -5936.2346087534, y: 294339.10523376}
+            ]},
+            { id: 10, vertices: [
+                {x: -6122.0876702439, y: 293918.26480278},
+                {x: -6149.2543109919, y: 293947.46313675},
+                {x: -6144.2621505126, y: 293951.9909102},
+                {x: -6116.9794130092, y: 293922.96672137}
+            ]},
+            { id: 11, vertices: [
+                {x: -6386.913414551, y: 293752.27784497},
+                {x: -6429.0991918884, y: 293777.04972585},
+                {x: -6425.4815162155, y: 293782.75216377},
+                {x: -6383.2957388782, y: 293757.73501675}
+            ]},
+            { id: 12, vertices: [
+                {x: -6529.464820622, y: 293585.53165933},
+                {x: -6546.9063007658, y: 293632.61808336},
+                {x: -6540.5538127901, y: 293635.18136798},
+                {x: -6523.2237798038, y: 293587.87204964}
+            ]},
+            { id: 13, vertices: [
+                {x: -6692.7411230324, y: 293492.49412516},
+                {x: -6723.2943933873, y: 293530.24963972},
+                {x: -6717.3300349018, y: 293534.75104235},
+                {x: -6686.9455671455, y: 293496.65792259}
+            ]},
+            { id: 14, vertices: [
+                {x: -6850.0407950981, y: 293228.95755457},
+                {x: -6877.1611815299, y: 293257.78968136},
+                {x: -6872.1329442033, y: 293262.71093492},
+                {x: -6844.8520821122, y: 293233.5578568}
+            ]},
+            { id: 15, vertices: [
+                {x: -6909.7044469477, y: 293639.78949043},
+                {x: -6934.2932525837, y: 293671.05746683},
+                {x: -6928.1024197204, y: 293675.21702841},
+                {x: -6904.1282362317, y: 293643.84540542}
+            ]},
+            { id: 16, vertices: [
+                {x: -6590.790243528, y: 293868.48315681},
+                {x: -6615.2021651622, y: 293900.21250584},
+                {x: -6609.2375394733, y: 293904.08643798},
+                {x: -6585.2560547444, y: 293872.54156192}
+            ]},
+            { id: 17, vertices: [
+                {x: -6404.8087084269, y: 294251.27282246},
+                {x: -6428.8527656189, y: 294283.09422845},
+                {x: -6423.1019091151, y: 294287.14721303},
+                {x: -6399.1126219851, y: 294255.59965735}
+            ]},
+            { id: 18, vertices: [
+                {x: -5980.8455582079, y: 294313.96782287},
+                {x: -5940.8166178272, y: 294344.70546708},
+                {x: -5936.2346087534, y: 294339.04159475},
+                {x: -5976.2635491341, y: 294308.55850661}
+            ]},
+            { id: 19, vertices: [
+                {x: -6122.1457186216, y: 293918.26480278},
+                {x: -6149.3123593696, y: 293947.52118512},
+                {x: -6144.2621505126, y: 293952.04895858},
+                {x: -6116.9213646316, y: 293922.96672137}
+            ]}
+        ];
+
+        const pylons = [
+            { id: 1, x: -6929.7514606918, y: 293665.88019438 },
+            { id: 2, x: -6913.9809586526, y: 293645.15208853 },
+            { id: 3, x: -6610.8628756718, y: 293894.70928073 },
+            { id: 4, x: -6595.0823819403, y: 293873.80050157 },
+            { id: 5, x: -6424.5471946423, y: 294277.62641539 },
+            { id: 6, x: -6408.8888015524, y: 294256.77069907 },
+            { id: 7, x: -5975.1588359287, y: 294318.23131223 },
+            { id: 8, x: -6139.4471125813, y: 293947.08539688 },
+            { id: 9, x: -6121.7551321028, y: 293927.99012592 },
+            { id: 10, x: -6389.0610831496, y: 293761.66720099 },
+            { id: 11, x: -6538.3128682066, y: 293628.6799617 },
+            { id: 12, x: -6691.4898585659, y: 293501.90927307 },
+            { id: 13, x: -6867.3147272096, y: 293257.62796689 },
+            { id: 14, x: -6849.5591126943, y: 293238.60556823 }
+        ];
+
+        // ============================================================
+        //  Отрисовка (логика как в Anapa.html)
+        // ============================================================
+
+        const canvas = document.getElementById('trackCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let allPoints = [];
+        gates.forEach(g => {
+            g.vertices.forEach(v => {
+                allPoints.push({x: v.x, y: v.y});
+            });
+        });
+        pylons.forEach(p => {
+            allPoints.push({x: p.x, y: p.y});
+        });
+
+        const minX = Math.min(...allPoints.map(p => p.x));
+        const maxX = Math.max(...allPoints.map(p => p.x));
+        const minY = Math.min(...allPoints.map(p => p.y));
+        const maxY = Math.max(...allPoints.map(p => p.y));
+
+        const rangeX = maxX - minX;
+        const rangeY = maxY - minY;
+
+        const marginTop = 80;
+        const marginBottom = 120;
+        const marginLeft = 80;
+        const marginRight = 80;
+
+        const canvasW = canvas.width;
+        const canvasH = canvas.height;
+        const drawW = canvasW - marginLeft - marginRight;
+        const drawH = canvasH - marginTop - marginBottom;
+
+        const scale = Math.min(drawW / rangeX, drawH / rangeY);
+        const offsetX = (drawW - rangeX * scale) / 2 + marginLeft;
+        const offsetY = (drawH - rangeY * scale) / 2 + marginTop;
+
+        function toPixel(x, y) {
+            return { x: (x - minX) * scale + offsetX, y: (y - minY) * scale + offsetY };
+        }
+
+        ctx.clearRect(0, 0, canvasW, canvasH);
+
+        // Сетка
+        ctx.strokeStyle = 'rgba(102,204,255,0.05)';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 10; i++) {
+            const x = marginLeft + i * drawW / 10;
+            ctx.beginPath();
+            ctx.moveTo(x, marginTop);
+            ctx.lineTo(x, canvasH - marginBottom);
+            ctx.stroke();
+            const y = marginTop + i * drawH / 10;
+            ctx.beginPath();
+            ctx.moveTo(marginLeft, y);
+            ctx.lineTo(canvasW - marginRight, y);
+            ctx.stroke();
+        }
+
+        // Центры ворот
+        const gateCenters = gates.map(g => {
+            let cx = 0, cy = 0;
+            g.vertices.forEach(v => { cx += v.x; cy += v.y; });
+            cx /= g.vertices.length;
+            cy /= g.vertices.length;
+            return { id: g.id, x: cx, y: cy };
+        });
+
+        // Рисуем полигоны ворот
+        gates.forEach(g => {
+            const pts = g.vertices.map(v => toPixel(v.x, v.y));
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) {
+                ctx.lineTo(pts[i].x, pts[i].y);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = '#66ccff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(102,204,255,0.08)';
+            ctx.fill();
+        });
+
+        // ---- Подписи пар (1,10) ... (9,18) ----
+        const labelOffset = 35;
+
+        for (let i = 1; i <= 9; i++) {
+            const small = gateCenters.find(c => c.id === i);
+            const big = gateCenters.find(c => c.id === i + 9); // 10..18
+            if (!small || !big) continue;
+            const midX = (small.x + big.x) / 2;
+            const midY = (small.y + big.y) / 2;
+            const pos = toPixel(midX, midY);
+
+            // Верхняя подпись – малый номер (или СТАРТ для i=1)
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            let label = (i === 1) ? 'СТАРТ' : i.toString();
+            ctx.fillStyle = (i === 1) ? '#ff4466' : '#ff4466';
+            ctx.font = (i === 1) ? 'bold 18px Arial' : 'bold 16px Arial';
+            ctx.fillText(label, pos.x, pos.y - labelOffset);
+
+            // Нижняя подпись – большой номер (10 белый, остальные синие)
+            let bigLabel = big.id.toString();
+            let color = (big.id === 10) ? '#ffffff' : '#4488ff';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = color;
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(bigLabel, pos.x, pos.y + labelOffset);
+        }
+
+        // Финиш (ворота 19)
+        const finish = gateCenters.find(c => c.id === 19);
+        if (finish) {
+            const pos = toPixel(finish.x, finish.y);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = '#4488ff';
+            ctx.font = 'bold 18px Arial';
+            ctx.fillText('ФИНИШ', pos.x, pos.y + 65);
+        }
+
+        // Рисуем пилоны (без номеров)
+        pylons.forEach(p => {
+            const pos = toPixel(p.x, p.y);
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ff4466';
+            ctx.fill();
+            ctx.strokeStyle = '#ff8899';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        });
+    </script>
+</body>
+</html>

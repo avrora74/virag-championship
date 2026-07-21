@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Трасса «Майкоп» — ViRAG</title>
+    <style>
+        body {
+            background: #0a0e1a;
+            color: #e0e8f0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #66ccff;
+            text-shadow: 0 0 20px rgba(102,204,255,0.3);
+            margin-bottom: 10px;
+        }
+        .info {
+            color: #88ddff;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        canvas {
+            border: 1px solid rgba(102,204,255,0.2);
+            border-radius: 12px;
+            background: #0d1225;
+            box-shadow: 0 0 40px rgba(102,204,255,0.05);
+            max-width: 100%;
+            height: auto;
+        }
+        .legend {
+            margin-top: 15px;
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-size: 14px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        .legend-color.polygon { background: #66ccff; }
+        .legend-color.pylon { background: #ff4466; width: 12px; height: 12px; border-radius: 50%; }
+        .legend-color.red { background: #ff4466; }
+        .legend-color.blue { background: #4488ff; }
+        .footer {
+            margin-top: 20px;
+            color: #556677;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <h1>✈️ Трасса «Майкоп»</h1>
+    <div class="info">17 ворот · 12 пилонов · вид сверху</div>
+    <canvas id="trackCanvas" width="1000" height="700"></canvas>
+    <div class="legend">
+        <span class="legend-item"><span class="legend-color polygon"></span> Ворота (полигоны)</span>
+        <span class="legend-item"><span class="legend-color pylon"></span> Пилоны</span>
+        <span class="legend-item"><span class="legend-color red"></span> 1 круг</span>
+        <span class="legend-item"><span class="legend-color blue"></span> 2 круг</span>
+    </div>
+    <div class="footer">Данные из миссии ViRAG · масштабировано автоматически</div>
+
+    <script>
+        // ============================================================
+        //  Данные трассы (извлечены из mission.txt)
+        // ============================================================
+
+        const gates = [
+            { id: 1, vertices: [
+                {x: -26547.327943895, y: 461806.40748165},
+                {x: -26580.398408549, y: 461829.18242429},
+                {x: -26576.155405537, y: 461834.67336937},
+                {x: -26543.209735089, y: 461812.02322094}
+            ]},
+            { id: 2, vertices: [
+                {x: -26231.87684762, y: 462084.90400453},
+                {x: -26257.100539603, y: 462116.28832174},
+                {x: -26251.288629008, y: 462120.06606363},
+                {x: -26226.413651661, y: 462089.08858016}
+            ]},
+            { id: 3, vertices: [
+                {x: -26212.03280175, y: 462503.19627066},
+                {x: -26243.81934779, y: 462542.64076088},
+                {x: -26237.923946326, y: 462547.13828364},
+                {x: -26206.745173632, y: 462507.87612544}
+            ]},
+            { id: 4, vertices: [
+                {x: -25871.771877714, y: 462752.60500275},
+                {x: -25903.489254841, y: 462777.46298409},
+                {x: -25898.916324313, y: 462782.62218776},
+                {x: -25867.667965702, y: 462758.23322494}
+            ]},
+            { id: 5, vertices: [
+                {x: -25636.314225192, y: 463073.59732097},
+                {x: -25668.221347498, y: 463098.96077921},
+                {x: -25663.516398955, y: 463104.20652643},
+                {x: -25631.87967599, y: 463079.22162727}
+            ]},
+            { id: 6, vertices: [
+                {x: -25875.993044356, y: 462747.15266251},
+                {x: -25908.238067313, y: 462771.77613459},
+                {x: -25903.547882156, y: 462777.40435677},
+                {x: -25871.830505029, y: 462752.60500275}
+            ]},
+            { id: 7, vertices: [
+                {x: -25996.631034793, y: 462341.68831728},
+                {x: -26025.289529012, y: 462383.05824038},
+                {x: -26019.627165235, y: 462387.10278594},
+                {x: -25991.026450238, y: 462345.55952516}
+            ]},
+            { id: 8, vertices: [
+                {x: -26390.410622395, y: 462194.18696772},
+                {x: -26415.369128824, y: 462226.36875954},
+                {x: -26409.672716769, y: 462230.59702416},
+                {x: -26385.007839826, y: 462198.59141003}
+            ]},
+            { id: 9, vertices: [
+                {x: -26547.265546792, y: 461806.34508455},
+                {x: -26580.398408549, y: 461829.12002719},
+                {x: -26576.093008434, y: 461834.61097227},
+                {x: -26543.272132192, y: 461812.08561804}
+            ]},
+            { id: 10, vertices: [
+                {x: -26231.87684762, y: 462084.78776632},
+                {x: -26257.042420497, y: 462116.23020264},
+                {x: -26251.346748114, y: 462120.12418273},
+                {x: -26226.413651661, y: 462089.08858016}
+            ]},
+            { id: 11, vertices: [
+                {x: -26211.911247081, y: 462503.19627066},
+                {x: -26243.758570456, y: 462542.51920621},
+                {x: -26237.923946326, y: 462547.19906098},
+                {x: -26206.745173632, y: 462507.8153481}
+            ]},
+            { id: 12, vertices: [
+                {x: -25871.830505029, y: 462752.60500275},
+                {x: -25903.430627527, y: 462777.46298409},
+                {x: -25898.916324313, y: 462782.50493313},
+                {x: -25867.667965702, y: 462758.29185226}
+            ]},
+            { id: 13, vertices: [
+                {x: -25636.314225192, y: 463073.5432411},
+                {x: -25668.16726763, y: 463098.96077921},
+                {x: -25663.462319086, y: 463104.20652643},
+                {x: -25631.933755858, y: 463079.27570714}
+            ]},
+            { id: 14, vertices: [
+                {x: -25875.993044356, y: 462747.09403519},
+                {x: -25908.179439999, y: 462771.77613459},
+                {x: -25903.60650947, y: 462777.46298409},
+                {x: -25871.771877714, y: 462752.60500275}
+            ]},
+            { id: 15, vertices: [
+                {x: -25996.688814015, y: 462341.63053805},
+                {x: -26025.23174979, y: 462383.00046116},
+                {x: -26019.569386013, y: 462387.10278594},
+                {x: -25990.968671016, y: 462345.50174594}
+            ]},
+            { id: 16, vertices: [
+                {x: -26390.351896497, y: 462194.18696772},
+                {x: -26415.369128824, y: 462226.31003365},
+                {x: -26409.672716769, y: 462230.53829826},
+                {x: -26384.890388031, y: 462198.53268414}
+            ]},
+            { id: 17, vertices: [
+                {x: -26584.579014458, y: 461823.3794937},
+                {x: -26580.460805652, y: 461829.2448214},
+                {x: -26547.390340998, y: 461806.34508455},
+                {x: -26551.508549804, y: 461800.79174237}
+            ]}
+        ];
+
+        const pylons = [
+            { id: 1, x: -26574.671405716, y: 461825.09529038 },
+            { id: 2, x: -26553.012793214, y: 461810.27091527 },
+            { id: 3, x: -26252.590996836, y: 462110.74194777 },
+            { id: 4, x: -26236.313741172, y: 462090.31958411 },
+            { id: 5, x: -26216.235989401, y: 462508.57717618 },
+            { id: 6, x: -25897.869376505, y: 462772.94679359 },
+            { id: 7, x: -25877.193479529, y: 462756.87482061 },
+            { id: 8, x: -25662.45929842, y: 463094.50460252 },
+            { id: 9, x: -25641.646427999, y: 463077.92677674 },
+            { id: 10, x: -26015.59766822, y: 462381.41073035 },
+            { id: 11, x: -26405.3112871, y: 462225.04150647 },
+            { id: 12, x: -26389.231836427, y: 462204.09247766 }
+        ];
+
+        // ============================================================
+        //  Отрисовка с изменёнными подписями
+        // ============================================================
+
+        const canvas = document.getElementById('trackCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let allPoints = [];
+        gates.forEach(g => {
+            g.vertices.forEach(v => {
+                allPoints.push({x: v.x, y: v.y});
+            });
+        });
+        pylons.forEach(p => {
+            allPoints.push({x: p.x, y: p.y});
+        });
+
+        const minX = Math.min(...allPoints.map(p => p.x));
+        const maxX = Math.max(...allPoints.map(p => p.x));
+        const minY = Math.min(...allPoints.map(p => p.y));
+        const maxY = Math.max(...allPoints.map(p => p.y));
+
+        const rangeX = maxX - minX;
+        const rangeY = maxY - minY;
+
+        const marginTop = 80;
+        const marginBottom = 120;
+        const marginLeft = 80;
+        const marginRight = 80;
+
+        const canvasW = canvas.width;
+        const canvasH = canvas.height;
+        const drawW = canvasW - marginLeft - marginRight;
+        const drawH = canvasH - marginTop - marginBottom;
+
+        const scale = Math.min(drawW / rangeX, drawH / rangeY);
+        const offsetX = (drawW - rangeX * scale) / 2 + marginLeft;
+        const offsetY = (drawH - rangeY * scale) / 2 + marginTop;
+
+        function toPixel(x, y) {
+            return { x: (x - minX) * scale + offsetX, y: (y - minY) * scale + offsetY };
+        }
+
+        ctx.clearRect(0, 0, canvasW, canvasH);
+
+        // Сетка
+        ctx.strokeStyle = 'rgba(102,204,255,0.05)';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 10; i++) {
+            const x = marginLeft + i * drawW / 10;
+            ctx.beginPath();
+            ctx.moveTo(x, marginTop);
+            ctx.lineTo(x, canvasH - marginBottom);
+            ctx.stroke();
+            const y = marginTop + i * drawH / 10;
+            ctx.beginPath();
+            ctx.moveTo(marginLeft, y);
+            ctx.lineTo(canvasW - marginRight, y);
+            ctx.stroke();
+        }
+
+        // Центры ворот
+        const gateCenters = gates.map(g => {
+            let cx = 0, cy = 0;
+            g.vertices.forEach(v => { cx += v.x; cy += v.y; });
+            cx /= g.vertices.length;
+            cy /= g.vertices.length;
+            return { id: g.id, x: cx, y: cy };
+        });
+
+        // Рисуем полигоны ворот
+        gates.forEach(g => {
+            const pts = g.vertices.map(v => toPixel(v.x, v.y));
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) {
+                ctx.lineTo(pts[i].x, pts[i].y);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = '#66ccff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(102,204,255,0.08)';
+            ctx.fill();
+        });
+
+        // ---- Подписи с изменениями ----
+        const labelOffset = 35;
+
+        for (let i = 1; i <= 8; i++) {
+            const small = gateCenters.find(c => c.id === i);
+            const big = gateCenters.find(c => c.id === i + 8);
+            if (!small || !big) continue;
+            const midX = (small.x + big.x) / 2;
+            const midY = (small.y + big.y) / 2;
+            const pos = toPixel(midX, midY);
+
+            let topLabel = '';
+            let bottomLabel = '';
+            let topColor = '#ff4466';
+            let bottomColor = '#4488ff';
+
+            // Особые случаи
+            if (i === 1) {
+                topLabel = 'СТАРТ';
+                bottomLabel = '9';
+                bottomColor = '#ffffff';
+            } else if (i === 4) {
+                topLabel = '4, 6';
+                bottomLabel = '12, 14';
+            } else if (i === 6) {
+                // Убираем обе подписи (6 и 14 уже объединены)
+                topLabel = '';
+                bottomLabel = '';
+            } else {
+                topLabel = i.toString();
+                bottomLabel = (i + 8).toString();
+                if (i + 8 === 9) bottomColor = '#ffffff';
+            }
+
+            // Вывод верхней подписи
+            if (topLabel) {
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillStyle = topColor;
+                ctx.font = (i === 1) ? 'bold 18px Arial' : 'bold 16px Arial';
+                ctx.fillText(topLabel, pos.x, pos.y - labelOffset);
+            }
+
+            // Вывод нижней подписи
+            if (bottomLabel) {
+                ctx.textBaseline = 'top';
+                ctx.fillStyle = bottomColor;
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText(bottomLabel, pos.x, pos.y + labelOffset);
+            }
+        }
+
+        // Финиш (ворота 17) – синий
+        const finish = gateCenters.find(c => c.id === 17);
+        if (finish) {
+            const pos = toPixel(finish.x, finish.y);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = '#4488ff';
+            ctx.font = 'bold 18px Arial';
+            ctx.fillText('ФИНИШ', pos.x, pos.y + 65);
+        }
+
+        // Рисуем пилоны (без номеров)
+        pylons.forEach(p => {
+            const pos = toPixel(p.x, p.y);
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ff4466';
+            ctx.fill();
+            ctx.strokeStyle = '#ff8899';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        });
+    </script>
+</body>
+</html>
