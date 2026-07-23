@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Трасса «Гудаута» — ViRAG</title>
+    <title>Трасса «Гудаута» — ViRAG (интерактив)</title>
     <style>
         body {
             background: #0a0e1a;
@@ -15,72 +15,122 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
+            user-select: none;
         }
         h1 {
             color: #66ccff;
             text-shadow: 0 0 20px rgba(102,204,255,0.3);
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+            font-size: 24px;
         }
         .info {
             color: #88ddff;
-            margin-bottom: 20px;
-            font-size: 14px;
+            margin-bottom: 10px;
+            font-size: 13px;
         }
-        canvas {
+        .canvas-wrapper {
+            position: relative;
             border: 1px solid rgba(102,204,255,0.2);
             border-radius: 12px;
             background: #0d1225;
             box-shadow: 0 0 40px rgba(102,204,255,0.05);
+            overflow: hidden;
+            cursor: grab;
+            touch-action: none;
+        }
+        .canvas-wrapper:active {
+            cursor: grabbing;
+        }
+        canvas {
+            display: block;
+            width: 1000px;
+            height: 650px;
             max-width: 100%;
             height: auto;
+            background: #0d1225;
         }
-        .legend {
-            margin-top: 15px;
+        .controls-hint {
+            margin-top: 10px;
             display: flex;
-            gap: 25px;
+            gap: 20px;
             flex-wrap: wrap;
             justify-content: center;
-            font-size: 14px;
+            font-size: 12px;
+            color: #88ddff;
+            opacity: 0.7;
         }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        .controls-hint span {
+            background: rgba(255,255,255,0.05);
+            padding: 4px 12px;
+            border-radius: 12px;
         }
-        .legend-color {
-            width: 20px;
-            height: 4px;
-            border-radius: 2px;
-        }
-        .legend-color.polygon { background: #66ccff; }
-        .legend-color.pylon { background: #ff4466; width: 12px; height: 12px; border-radius: 50%; }
-        .legend-color.red { background: #ff4466; }
-        .legend-color.blue { background: #4488ff; }
-        .footer {
-            margin-top: 20px;
-            color: #556677;
+        .reset-btn {
+            background: rgba(102,204,255,0.15);
+            border: 1px solid #66ccff;
+            color: #66ccff;
+            padding: 4px 16px;
+            border-radius: 16px;
+            cursor: pointer;
             font-size: 13px;
+            transition: 0.2s;
+        }
+        .reset-btn:hover {
+            background: rgba(102,204,255,0.3);
+        }
+        .legend {
+            margin-top: 10px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-size: 13px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-color { width: 20px; height: 4px; border-radius: 2px; }
+        .legend-color.polygon { background: #66ccff; }
+        .legend-color.pylon {
+            display: inline-block;
+            width: 0; height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 16px solid #ff4466;
+        }
+        .footer {
+            margin-top: 10px;
+            color: #556677;
+            font-size: 12px;
+        }
+        @media (max-width: 1024px) {
+            canvas { width: 100%; height: auto; }
         }
     </style>
 </head>
 <body>
     <h1>✈️ Трасса «Гудаута»</h1>
-    <div class="info">19 ворот · 14 пилонов · вид сверху</div>
-    <canvas id="trackCanvas" width="1000" height="700"></canvas>
-    <div class="legend">
-        <span class="legend-item"><span class="legend-color polygon"></span> Ворота (полигоны)</span>
-        <span class="legend-item"><span class="legend-color pylon"></span> Пилоны</span>
-        <span class="legend-item"><span style="color:#88ddff;">Цифры</span> — номера ворот</span>
-        <span class="legend-item"><span class="legend-color red"></span> 1 круг</span>
-        <span class="legend-item"><span class="legend-color blue"></span> 2 круг</span>
-        <!-- номер 10 выделен белым, пояснение не выводим, но он будет виден -->
+    <div class="info">19 ворот · 14 пилонов</div>
+    <div class="canvas-wrapper" id="canvasWrapper">
+        <canvas id="trackCanvas" width="1000" height="650"></canvas>
     </div>
-    <div class="footer">Данные из миссии ViRAG · масштабировано автоматически</div>
+    <div class="controls-hint">
+        <span>🖱 ЛКМ + drag = панорамирование</span>
+        <span>🔄 ПКМ + drag = вращение</span>
+        <span>🔍 Колесо = масштаб</span>
+        <span>🔄 Двойной клик = сброс</span>
+        <button class="reset-btn" id="resetViewBtn">Сбросить вид</button>
+    </div>
+    <div class="legend">
+        <span class="legend-item"><span class="legend-color polygon"></span> Ворота</span>
+        <span class="legend-item"><span class="legend-color pylon"></span> Пилоны (конусы)</span>
+        <span class="legend-item"><span style="color:#88ddff;">Цифры</span> — номера ворот</span>
+        <span class="legend-item"><span style="color:#ff4466;">Круг-1</span>
+        <span class="legend-item"><span style="color:#4488ff;">Круг-2</span>
+    </div>
+    <div class="footer">Данные из миссии ViRAG</div>
 
     <script>
         // ============================================================
-        //  Данные трассы (извлечены из Gudauta mission.txt)
+        //  Данные трассы «Гудаута»
         // ============================================================
 
         const gates = [
@@ -218,150 +268,288 @@
         ];
 
         // ============================================================
-        //  Отрисовка
+        //  Состояние камеры
         // ============================================================
+
+        const state = {
+            rotation: 0,
+            scale: 1,
+            offsetX: 0,
+            offsetY: 0,
+            baseScale: 1,
+        };
 
         const canvas = document.getElementById('trackCanvas');
         const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
 
         let allPoints = [];
-        gates.forEach(g => {
-            g.vertices.forEach(v => {
-                allPoints.push({x: v.x, y: v.y});
-            });
-        });
-        pylons.forEach(p => {
-            allPoints.push({x: p.x, y: p.y});
-        });
+        gates.forEach(g => g.vertices.forEach(v => allPoints.push({x: v.x, z: v.y})));
+        pylons.forEach(p => allPoints.push({x: p.x, z: p.y}));
 
         const minX = Math.min(...allPoints.map(p => p.x));
         const maxX = Math.max(...allPoints.map(p => p.x));
-        const minY = Math.min(...allPoints.map(p => p.y));
-        const maxY = Math.max(...allPoints.map(p => p.y));
+        const minZ = Math.min(...allPoints.map(p => p.z));
+        const maxZ = Math.max(...allPoints.map(p => p.z));
 
         const rangeX = maxX - minX;
-        const rangeY = maxY - minY;
+        const rangeZ = maxZ - minZ;
 
-        const marginTop = 80;
-        const marginBottom = 120;
-        const marginLeft = 80;
-        const marginRight = 80;
+        const margin = 100;
+        const drawW = W - 2 * margin;
+        const drawH = H - 2 * margin;
+        const cosA = 0.8;
+        const sinA = 0.6;
+        const approxWidth = (rangeX + rangeZ) * cosA;
+        const approxHeight = (rangeX + rangeZ) * sinA;
+        state.baseScale = Math.min(drawW / approxWidth, drawH / approxHeight);
 
-        const canvasW = canvas.width;
-        const canvasH = canvas.height;
-        const drawW = canvasW - marginLeft - marginRight;
-        const drawH = canvasH - marginTop - marginBottom;
+        const centerX = (minX + maxX) / 2;
+        const centerZ = (minZ + maxZ) / 2;
 
-        const scale = Math.min(drawW / rangeX, drawH / rangeY);
-        const offsetX = (drawW - rangeX * scale) / 2 + marginLeft;
-        const offsetY = (drawH - rangeY * scale) / 2 + marginTop;
+        function isoProject(x, z, height = 0) {
+            let dx = x - centerX;
+            let dz = z - centerZ;
 
-        function toPixel(x, y) {
-            return { x: (x - minX) * scale + offsetX, y: (y - minY) * scale + offsetY };
+            const rot = state.rotation;
+            const cosR = Math.cos(rot);
+            const sinR = Math.sin(rot);
+            const rx = dx * cosR - dz * sinR;
+            const rz = dx * sinR + dz * cosR;
+
+            const screenX = (rx - rz) * cosA * state.baseScale * state.scale + W/2 + state.offsetX;
+            const screenY = (rx + rz) * sinA * state.baseScale * state.scale - height * state.baseScale * state.scale + H/2 + state.offsetY;
+
+            return { x: screenX, y: screenY };
         }
 
-        ctx.clearRect(0, 0, canvasW, canvasH);
+        // ============================================================
+        //  Управление мышью
+        // ============================================================
 
-        // Сетка
-        ctx.strokeStyle = 'rgba(102,204,255,0.05)';
-        ctx.lineWidth = 0.5;
-        for (let i = 0; i < 10; i++) {
-            const x = marginLeft + i * drawW / 10;
-            ctx.beginPath();
-            ctx.moveTo(x, marginTop);
-            ctx.lineTo(x, canvasH - marginBottom);
-            ctx.stroke();
-            const y = marginTop + i * drawH / 10;
-            ctx.beginPath();
-            ctx.moveTo(marginLeft, y);
-            ctx.lineTo(canvasW - marginRight, y);
-            ctx.stroke();
-        }
+        let isPanning = false;
+        let isRotating = false;
+        let prevMouseX = 0, prevMouseY = 0;
 
-        // Центры ворот
-        const gateCenters = gates.map(g => {
-            let cx = 0, cy = 0;
-            g.vertices.forEach(v => { cx += v.x; cy += v.y; });
-            cx /= g.vertices.length;
-            cy /= g.vertices.length;
-            return { id: g.id, x: cx, y: cy };
-        });
+        const wrapper = document.getElementById('canvasWrapper');
 
-        // Рисуем ворота (полигоны)
-        gates.forEach(g => {
-            const pts = g.vertices.map(v => toPixel(v.x, v.y));
-            ctx.beginPath();
-            ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) {
-                ctx.lineTo(pts[i].x, pts[i].y);
+        wrapper.addEventListener('mousedown', (e) => {
+            if (e.button === 0) {
+                isPanning = true;
+                prevMouseX = e.clientX;
+                prevMouseY = e.clientY;
+                wrapper.style.cursor = 'grabbing';
+            } else if (e.button === 2) {
+                isRotating = true;
+                prevMouseX = e.clientX;
+                prevMouseY = e.clientY;
+                wrapper.style.cursor = 'grabbing';
             }
-            ctx.closePath();
-            ctx.strokeStyle = '#66ccff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            ctx.fillStyle = 'rgba(102,204,255,0.08)';
-            ctx.fill();
         });
 
-        // ---- Подписи ----
-        // Первый круг: 1-9 (красные), второй круг: 10-18 (синие, но 10 - белый), финиш: 19 (синий)
-        // Подписи размещаем между парами: 1-10, 2-11, ... 9-18
-        // Для пары 7-16 смещаем влево на 30px, для 8-17 — вправо на 30px
-        const labelOffset = 22;
+        window.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                const dx = e.clientX - prevMouseX;
+                const dy = e.clientY - prevMouseY;
+                state.offsetX += dx;
+                state.offsetY += dy;
+                prevMouseX = e.clientX;
+                prevMouseY = e.clientY;
+                render();
+            } else if (isRotating) {
+                const dx = e.clientX - prevMouseX;
+                state.rotation += dx * 0.01;
+                prevMouseX = e.clientX;
+                prevMouseY = e.clientY;
+                render();
+            }
+        });
 
-        for (let i = 1; i <= 9; i++) {
-            const small = gateCenters.find(c => c.id === i);
-            const big = gateCenters.find(c => c.id === i + 9);
-            if (!small || !big) continue;
-            const midX = (small.x + big.x) / 2;
-            const midY = (small.y + big.y) / 2;
-            const pos = toPixel(midX, midY);
+        window.addEventListener('mouseup', () => {
+            if (isPanning || isRotating) {
+                isPanning = false;
+                isRotating = false;
+                wrapper.style.cursor = 'grab';
+            }
+        });
 
-            // Смещение по X для конкретных пар
-            let dx = 0;
-            if (i === 7) dx = -30;   // влево
-            if (i === 8) dx = 30;    // вправо
+        wrapper.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            state.scale = Math.min(Math.max(state.scale * delta, 0.2), 5);
+            render();
+        }, { passive: false });
 
-            // Верхняя подпись – малый номер (красный)
-            ctx.textAlign = 'center';
+        wrapper.addEventListener('dblclick', resetView);
+        document.getElementById('resetViewBtn').addEventListener('click', resetView);
+
+        function resetView() {
+            state.rotation = 0;
+            state.scale = 1;
+            state.offsetX = 0;
+            state.offsetY = 0;
+            render();
+        }
+
+        wrapper.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // ============================================================
+        //  Рендеринг
+        // ============================================================
+
+        function render() {
+            ctx.clearRect(0, 0, W, H);
+
+            // Сетка
+            ctx.strokeStyle = 'rgba(102,204,255,0.05)';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < 10; i++) {
+                const t = i / 9;
+                const x = minX + t * rangeX;
+                const z = minZ + t * rangeZ;
+                const p1 = isoProject(x, minZ);
+                const p2 = isoProject(x, maxZ);
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                const p3 = isoProject(minX, z);
+                const p4 = isoProject(maxX, z);
+                ctx.beginPath();
+                ctx.moveTo(p3.x, p3.y);
+                ctx.lineTo(p4.x, p4.y);
+                ctx.stroke();
+            }
+
+            // Ворота
+            gates.forEach(g => {
+                const pts = g.vertices.map(v => isoProject(v.x, v.y, 0));
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(pts[i].x, pts[i].y);
+                }
+                ctx.closePath();
+                ctx.strokeStyle = '#66ccff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(102,204,255,0.08)';
+                ctx.fill();
+            });
+
+            // Пилоны – конусы
+            const coneHeight = 25;
+            const coneRadius = 4.5;
+
+            pylons.forEach(p => {
+                const baseCenter = isoProject(p.x, p.y, 0);
+                const tip = isoProject(p.x, p.y, coneHeight);
+
+                const r = coneRadius * state.baseScale * state.scale;
+                const rx = r;
+                const ry = r * 0.5;
+
+                ctx.beginPath();
+                ctx.ellipse(baseCenter.x, baseCenter.y, rx, ry, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#661122';
+                ctx.fill();
+                ctx.strokeStyle = '#ff4466';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                const left = { x: baseCenter.x - rx, y: baseCenter.y };
+                const right = { x: baseCenter.x + rx, y: baseCenter.y };
+                ctx.beginPath();
+                ctx.moveTo(tip.x, tip.y);
+                ctx.lineTo(left.x, left.y);
+                ctx.lineTo(right.x, right.y);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(255,68,102,0.25)';
+                ctx.fill();
+                ctx.strokeStyle = '#ff4466';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                const angleStep = Math.PI / 6;
+                for (let ang = 0; ang < Math.PI * 2; ang += angleStep) {
+                    const ex = baseCenter.x + rx * Math.cos(ang);
+                    const ey = baseCenter.y + ry * Math.sin(ang);
+                    ctx.beginPath();
+                    ctx.moveTo(tip.x, tip.y);
+                    ctx.lineTo(ex, ey);
+                    ctx.strokeStyle = 'rgba(255,68,102,0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.arc(tip.x, tip.y, 3, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ff4466';
+                ctx.fill();
+            });
+
+            // Подписи ворот
+            const gateCenters = gates.map(g => {
+                let cx = 0, cz = 0;
+                g.vertices.forEach(v => { cx += v.x; cz += v.y; });
+                cx /= g.vertices.length;
+                cz /= g.vertices.length;
+                return { id: g.id, x: cx, z: cz };
+            });
+
+            const labelOffset = 30;
+
+            // Пары 1-10, 2-11, ... 9-18
+            for (let i = 1; i <= 9; i++) {
+                const small = gateCenters.find(c => c.id === i);
+                const big = gateCenters.find(c => c.id === i + 9);
+                if (!small || !big) continue;
+                const midX = (small.x + big.x) / 2;
+                const midZ = (small.z + big.z) / 2;
+                const pos = isoProject(midX, midZ, 0);
+
+                // Смещение для пар 7 и 8
+                let dx = 0;
+                if (i === 7) dx = -30;
+                if (i === 8) dx = 30;
+
+                // Верхняя подпись – малый номер (красный)
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                let label = (i === 1) ? 'СТАРТ' : i.toString();
+                ctx.fillStyle = '#ff4466';
+                ctx.font = (i === 1) ? 'bold 16px Arial' : 'bold 14px Arial';
+                ctx.fillText(label, pos.x + dx, pos.y - labelOffset);
+
+                // Нижняя подпись – большой номер
+                const bigId = i + 9;
+                ctx.textBaseline = 'top';
+                ctx.fillStyle = (bigId === 10) ? '#ffffff' : '#4488ff';
+                ctx.font = 'bold 14px Arial';
+                ctx.fillText(bigId.toString(), pos.x + dx, pos.y + labelOffset);
+            }
+
+            // Финиш (ворота 19)
+            const finish = gateCenters.find(c => c.id === 19);
+            if (finish) {
+                const pos = isoProject(finish.x, finish.z, 0);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillStyle = '#4488ff';
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText('ФИНИШ', pos.x, pos.y + 45);
+            }
+
+            // Информация о масштабе
+            ctx.fillStyle = '#556677';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'left';
             ctx.textBaseline = 'bottom';
-            let label = (i === 1) ? 'СТАРТ' : i.toString();
-            ctx.fillStyle = '#ff4466';
-            ctx.font = (i === 1) ? 'bold 18px Arial' : 'bold 16px Arial';
-            ctx.fillText(label, pos.x + dx, pos.y - labelOffset);
-
-            // Нижняя подпись – большой номер
-            const bigId = i + 9;
-            ctx.textBaseline = 'top';
-            // Номер 10 делаем белым, остальные синие
-            ctx.fillStyle = (bigId === 10) ? '#ffffff' : '#4488ff';
-            ctx.font = 'bold 16px Arial';
-            ctx.fillText(bigId.toString(), pos.x + dx, pos.y + labelOffset);
+            ctx.fillText(`Масштаб: ${(state.scale * state.baseScale).toFixed(3)}`, 15, H - 10);
         }
 
-        // Финиш (ворота 19) – синий
-        const finish = gateCenters.find(c => c.id === 19);
-        if (finish) {
-            const pos = toPixel(finish.x, finish.y);
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            ctx.fillStyle = '#4488ff';
-            ctx.font = 'bold 18px Arial';
-            ctx.fillText('ФИНИШ', pos.x, pos.y + 45);
-        }
-
-        // Рисуем пилоны
-        pylons.forEach(p => {
-            const pos = toPixel(p.x, p.y);
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 6, 0, 2 * Math.PI);
-            ctx.fillStyle = '#ff4466';
-            ctx.fill();
-            ctx.strokeStyle = '#ff8899';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-        });
-
+        resetView();
+        console.log('Gudauta interactive ready');
     </script>
 </body>
 </html>
