@@ -75,6 +75,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            align-items: center;
         }
         .analytics-tabs {
             display: flex;
@@ -116,6 +117,14 @@
         .tab.stage-tab.active {
             background: rgba(102,204,255,0.15);
             border-color: #66ccff;
+        }
+        .tab-separator {
+            padding: 8px 10px;
+            color: #88ddff;
+            font-weight: 600;
+            font-size: 14px;
+            user-select: none;
+            display: inline-block;
         }
 
         /* ===== ТАБЛИЦЫ ===== */
@@ -518,6 +527,7 @@
             .modal table { font-size: 12px; }
             .modal td, .modal th { padding: 4px 6px; }
             .header-text .sub { font-size: 14px; }
+            .tab-separator { font-size: 12px; padding: 6px 8px; }
         }
         @media (max-width: 480px) {
             .header { gap: 12px; }
@@ -535,6 +545,7 @@
             .viz-container iframe { height: 300px; }
             .modal table { font-size: 11px; }
             .modal td, .modal th { padding: 3px 4px; }
+            .tab-separator { font-size: 11px; padding: 5px 6px; }
         }
     </style>
 </head>
@@ -952,25 +963,40 @@
             document.getElementById('updateTime').textContent = new Date().toLocaleString();
         }
 
-        renderTabs(stages, currentTab = 'overall') {
+        // ===== НОВАЯ ВЕРСИЯ renderTabs с разделителем и правильным порядком =====
+        renderTabs(stages, currentTab = 'overall', calculator) {
             const container = document.getElementById('tabsContainer');
             container.innerHTML = '';
 
             // ---- Первая строка: Общий зачёт + этапы ----
             const mainTabsDiv = document.createElement('div');
             mainTabsDiv.className = 'main-tabs';
-            const mainTabIds = ['overall', ...Object.keys(stages).sort()];
-            const mainLabels = { overall: 'Общий зачёт' };
 
-            mainTabIds.forEach(tabId => {
+            // Кнопка "Общий зачёт"
+            const overallBtn = document.createElement('div');
+            overallBtn.className = 'tab';
+            if (currentTab === 'overall') overallBtn.classList.add('active');
+            overallBtn.dataset.tab = 'overall';
+            overallBtn.textContent = 'Общий зачёт';
+            mainTabsDiv.appendChild(overallBtn);
+
+            // Разделитель "ЭТАПЫ:"
+            const sep = document.createElement('span');
+            sep.className = 'tab-separator';
+            sep.textContent = 'ЭТАПЫ:';
+            mainTabsDiv.appendChild(sep);
+
+            // Получаем порядок этапов по датам
+            const stageOrder = this._getStageOrder(calculator);
+            stageOrder.forEach(tabId => {
                 const btn = document.createElement('div');
-                btn.className = 'tab';
-                if (tabId !== 'overall') btn.classList.add('stage-tab');
+                btn.className = 'tab stage-tab';
                 if (tabId === currentTab) btn.classList.add('active');
                 btn.dataset.tab = tabId;
-                btn.textContent = mainLabels[tabId] || tabId;
+                btn.textContent = tabId;
                 mainTabsDiv.appendChild(btn);
             });
+
             container.appendChild(mainTabsDiv);
 
             // ---- Вторая строка: аналитика ----
@@ -1341,7 +1367,7 @@
             if (penaltyCodes) {
                 const codes = penaltyCodes.split(',').map(c => parseInt(c.trim())).filter(c => !isNaN(c) && c >= 1 && c <= 6);
                 if (codes.includes(6)) return 'Сбит пилон';
-                if (codes.includes(5)) return 'Опасная высота';
+                if (codes.includes(5)) return 'Ошибка по высоте';
                 if (codes.includes(3)) return 'Крен > 10°';
                 if (codes.includes(4)) return 'Тангаж > 10°';
                 if (codes.includes(1)) return 'Превышение скорости';
@@ -1352,7 +1378,7 @@
                 if (r.includes('превышена стартовая скорость') || r.includes('превышение скорости')) return 'Превышение скорости';
                 if (r.includes('недостаток топлива') || r.includes('топливо')) return 'Недостаток топлива';
                 if (r.includes('сбит пилон') || r.includes('пилон')) return 'Сбит пилон';
-                if (r.includes('опасная высота') || r.includes('ошибка высоты') || r.includes('высота')) return 'Опасная высота';
+                if (r.includes('опасная высота') || r.includes('ошибка по высоте') || r.includes('ошибка высоты') || r.includes('высота')) return 'Ошибка по высоте';
                 if (r.includes('крен')) return 'Крен > 10°';
                 if (r.includes('тангаж')) return 'Тангаж > 10°';
                 if (r.includes('пропуск') || r.includes('таймаут') || r.includes('сход')) return 'Пропуск/сход';
@@ -1597,7 +1623,7 @@
                 2: 'Недостаток топлива',
                 3: 'Крен > 10°',
                 4: 'Тангаж > 10°',
-                5: 'Опасная высота',
+                5: 'Ошибка по высоте',
                 6: 'Сбит пилон'
             };
             for (let code = 1; code <= 6; code++) {
@@ -2123,7 +2149,8 @@
 
                 this.renderer.updateHeader(Object.keys(overall).length, Object.keys(stages).length);
 
-                this.renderer.renderTabs(stages, this.currentTab);
+                // Передаём calculator в renderTabs для правильного порядка этапов
+                this.renderer.renderTabs(stages, this.currentTab, this.calculator);
                 this.renderer.renderTab(this.currentTab, this.calculator, null);
             } catch (err) {
                 console.error(err);
