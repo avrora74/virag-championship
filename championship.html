@@ -1292,7 +1292,7 @@
 				imagesHtml += `<img src="penalty_${code}.png" style="height:20px;width:20px;vertical-align:middle;margin:0 4px;" title="Код ${code} (${pct}%)" />`;
 				imagesHtml += `<span style="font-size:12px;color:#88ddff;margin-right:12px;">${pct}%</span>`;
 			});
-			return `<div class="insight-block error" style="text-align: left;">
+			return `<div class="insight-block error" style="text-align: left; padding: 6px 12px; margin: 8px 0;">
 				<strong style="color: #ff8844;">📊 Самые частые ошибки</strong> – ${imagesHtml}
 				</div>`;
 		}
