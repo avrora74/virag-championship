@@ -75,7 +75,6 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            align-items: center;
         }
         .analytics-tabs {
             display: flex;
@@ -117,14 +116,6 @@
         .tab.stage-tab.active {
             background: rgba(102,204,255,0.15);
             border-color: #66ccff;
-        }
-        .tab-separator {
-            padding: 8px 10px;
-            color: #88ddff;
-            font-weight: 600;
-            font-size: 14px;
-            user-select: none;
-            display: inline-block;
         }
 
         /* ===== ТАБЛИЦЫ ===== */
@@ -475,6 +466,11 @@
         .insight-block.penalty { border-color: #ffcc44; background: rgba(255,204,68,0.05); }
         .insight-block.missed { border-color: #88ddff; background: rgba(136,221,255,0.05); }
         .insight-block.perfect { border-color: #00ff88; background: rgba(0,255,136,0.05); }
+        .insight-block.error { border-color: #ff8844; background: rgba(255,136,68,0.05); }
+        .insight-block.stability { border-color: #66ccff; background: rgba(102,204,255,0.05); }
+        .insight-block.trend { border-color: #88ddff; background: rgba(136,221,255,0.05); }
+        .insight-block.forecast { border-color: #ffd700; background: rgba(255,215,0,0.05); }
+        .insight-block.recommendation { border-color: #66ccff; background: rgba(102,204,255,0.02); }
         .insight-block strong { color: #fff; }
         .insight-block .highlight { color: #ffd700; }
 
@@ -527,7 +523,6 @@
             .modal table { font-size: 12px; }
             .modal td, .modal th { padding: 4px 6px; }
             .header-text .sub { font-size: 14px; }
-            .tab-separator { font-size: 12px; padding: 6px 8px; }
         }
         @media (max-width: 480px) {
             .header { gap: 12px; }
@@ -545,7 +540,6 @@
             .viz-container iframe { height: 300px; }
             .modal table { font-size: 11px; }
             .modal td, .modal th { padding: 3px 4px; }
-            .tab-separator { font-size: 11px; padding: 5px 6px; }
         }
     </style>
 </head>
@@ -963,40 +957,25 @@
             document.getElementById('updateTime').textContent = new Date().toLocaleString();
         }
 
-        // ===== НОВАЯ ВЕРСИЯ renderTabs с разделителем и правильным порядком =====
-        renderTabs(stages, currentTab = 'overall', calculator) {
+        renderTabs(stages, currentTab = 'overall') {
             const container = document.getElementById('tabsContainer');
             container.innerHTML = '';
 
             // ---- Первая строка: Общий зачёт + этапы ----
             const mainTabsDiv = document.createElement('div');
             mainTabsDiv.className = 'main-tabs';
+            const mainTabIds = ['overall', ...Object.keys(stages).sort()];
+            const mainLabels = { overall: 'Общий зачёт' };
 
-            // Кнопка "Общий зачёт"
-            const overallBtn = document.createElement('div');
-            overallBtn.className = 'tab';
-            if (currentTab === 'overall') overallBtn.classList.add('active');
-            overallBtn.dataset.tab = 'overall';
-            overallBtn.textContent = 'Общий зачёт';
-            mainTabsDiv.appendChild(overallBtn);
-
-            // Разделитель "ЭТАПЫ:"
-            const sep = document.createElement('span');
-            sep.className = 'tab-separator';
-            sep.textContent = 'ЭТАПЫ:';
-            mainTabsDiv.appendChild(sep);
-
-            // Получаем порядок этапов по датам
-            const stageOrder = this._getStageOrder(calculator);
-            stageOrder.forEach(tabId => {
+            mainTabIds.forEach(tabId => {
                 const btn = document.createElement('div');
-                btn.className = 'tab stage-tab';
+                btn.className = 'tab';
+                if (tabId !== 'overall') btn.classList.add('stage-tab');
                 if (tabId === currentTab) btn.classList.add('active');
                 btn.dataset.tab = tabId;
-                btn.textContent = tabId;
+                btn.textContent = mainLabels[tabId] || tabId;
                 mainTabsDiv.appendChild(btn);
             });
-
             container.appendChild(mainTabsDiv);
 
             // ---- Вторая строка: аналитика ----
@@ -1156,6 +1135,322 @@
             });
         }
 
+        // ===================== РАСШИРЕННАЯ АНАЛИТИКА =====================
+
+        // 1. Лидер – перечисляем все этапы, где установлен рекорд
+        _insightLeader(calculator, stageOrder, sorted) {
+            if (sorted.length === 0) return '';
+            const leader = sorted[0];
+            const leaderName = leader[0];
+            const leaderData = leader[1];
+            const stages = calculator.getStages();
+
+            let recordTracks = [];
+            for (const [track, results] of Object.entries(stages)) {
+                if (results.length === 0) continue;
+                const bestTime = results[0].time;
+                const pilotResult = results.find(r => r.name === leaderName);
+                if (pilotResult && Math.abs(pilotResult.time - bestTime) < 0.001) {
+                    recordTracks.push({ track, time: bestTime });
+                }
+            }
+
+            let trackText = '';
+            if (recordTracks.length > 0) {
+                const trackList = recordTracks.map(rt => `${rt.track} (${this._formatTime(rt.time)})`).join(', ');
+                trackText = `установил рекорды на этапах: ${trackList}`;
+            } else {
+                let bestPersonal = Infinity;
+                let bestPersonalTrack = '';
+                for (const [track, results] of Object.entries(stages)) {
+                    const pilotResult = results.find(r => r.name === leaderName);
+                    if (pilotResult && pilotResult.time < bestPersonal) {
+                        bestPersonal = pilotResult.time;
+                        bestPersonalTrack = track;
+                    }
+                }
+                if (bestPersonalTrack) {
+                    trackText = `показал личный рекорд на <strong>${bestPersonalTrack}</strong> (${this._formatTime(bestPersonal)})`;
+                } else {
+                    trackText = 'ещё не финишировал ни на одном этапе';
+                }
+            }
+
+            return `<div class="insight-block leader">
+                <strong style="color: #ffd700;">🏆 Лидер определился</strong> – <strong>${leaderName}</strong> показывает стабильно высокие результаты, имеет <strong>${leaderData.dnf} DNF</strong> (${leaderData.dnf === 0 ? 'идеально' : 'всего ' + leaderData.dnf}) и ${trackText}.
+                </div>`;
+        }
+
+        // 2. Борьба за тройку
+        _insightBattle(calculator, stageOrder, sorted) {
+            if (sorted.length < 3) return '';
+            const leader = sorted[0];
+            const second = sorted[1];
+            const third = sorted[2];
+            const leaderData = leader[1];
+            const diff2 = leaderData.points - second[1].points;
+            const diff3 = leaderData.points - third[1].points;
+            const remaining = Math.max(0, Config.TOTAL_STAGES - stageOrder.length);
+            return `<div class="insight-block battle">
+                <strong style="color: #66ccff;">⚔️ Борьба за призовую тройку</strong> – <strong>${second[0]}</strong> и <strong>${third[0]}</strong> отстают от лидера на <strong>${diff2}</strong> и <strong>${diff3}</strong> очков соответственно. ${remaining > 0 ? `Впереди ещё <strong>${remaining}</strong> этапов (всего планируется ${Config.TOTAL_STAGES}). Интрига сохраняется!` : 'Все этапы завершены, интрига позади.'}
+                </div>`;
+        }
+
+        // 3. DNF – только пилоты с максимальным числом DNF
+        _insightDNF(calculator, sorted) {
+            if (sorted.length === 0) return '';
+            const maxDnf = sorted.reduce((max, [_, data]) => Math.max(max, data.dnf), 0);
+            if (maxDnf === 0) return '';
+
+            const worstDnfPilots = sorted.filter(([_, data]) => data.dnf === maxDnf);
+            const dnfList = worstDnfPilots.map(p => p[0]).join(', ');
+            return `<div class="insight-block dnf">
+                <strong style="color: #ff4466;">⚠️ Рекордсмены по DNF</strong> – <strong>${dnfList}</strong> имеют наибольшее количество DNF (${maxDnf}). Это существенно снижает их очки. Рекомендуется этим пилотам внимательнее следить за <strong>стартовой скоростью</strong> и <strong>высотой</strong>, а также избегать сбитых пилонов.
+                </div>`;
+        }
+
+        // 4. Штрафы
+        _insightPenalties(calculator, sorted) {
+            const penaltyPilots = sorted
+                .map(([name, data]) => {
+                    const stats = calculator.getPilotStats(name);
+                    let totalPenalty = 0;
+                    if (stats) {
+                        for (const track in stats) {
+                            totalPenalty += stats[track].penaltySum || 0;
+                        }
+                    }
+                    return { name, penalty: totalPenalty };
+                })
+                .filter(p => p.penalty > 0)
+                .sort((a, b) => b.penalty - a.penalty);
+            if (penaltyPilots.length === 0) return '';
+            const worst = penaltyPilots[0];
+            return `<div class="insight-block penalty">
+                <strong style="color: #ffcc44;">📊 Штрафы</strong> – наибольшее количество штрафов у <strong>${worst.name}</strong> (${worst.penalty.toFixed(1)} сек), что говорит о нестабильном пилотировании. Снижение штрафов может поднять его в общем зачёте.
+                </div>`;
+        }
+
+        // 5. Пропущенные этапы
+        _insightMissedStages(calculator, stageOrder, sorted) {
+            const total = stageOrder.length;
+            const missed = sorted
+                .map(([name, data]) => {
+                    let participated = 0;
+                    const stages = calculator.getStages();
+                    for (const track of stageOrder) {
+                        const results = stages[track] || [];
+                        if (results.some(r => r.name === name)) participated++;
+                    }
+                    return { name, participated, missed: total - participated };
+                })
+                .filter(p => p.missed > 0)
+                .sort((a, b) => a.missed - b.missed);
+            if (missed.length === 0) return '';
+            const missedList = missed.map(p => p.name).join(', ');
+            return `<div class="insight-block missed">
+                <strong style="color: #88ddff;">⏳ Отсутствие данных</strong> – пилоты <strong>${missedList}</strong> не участвовали в некоторых этапах, что лишает их шансов на высокие места. Для борьбы за топ‑3 необходимо участие во всех этапах.
+                </div>`;
+        }
+
+        // 6. Лидер без DNF
+        _insightPerfectLeader(calculator, sorted) {
+            if (sorted.length === 0) return '';
+            const leader = sorted[0];
+            if (leader[1].dnf > 0) return '';
+            return `<div class="insight-block perfect">
+                <strong style="color: #00ff88;">✅ Лидер без DNF</strong> – <strong>${leader[0]}</strong> не имеет ни одной DNF-попытки. Это отличный показатель! Рекомендуется продолжать в том же духе.
+                </div>`;
+        }
+
+        // 7. Частота ошибок – теперь с картинками и единым стилем
+        _insightErrorFrequency(calculator) {
+			const allRows = calculator.getAllRows();
+			const idx = calculator.getColumnIndices();
+			const statusIdx = idx.statusIdx;
+			const codesIdx = idx.penaltyCodesIdx;
+			const penaltyCodeCount = {1:0,2:0,3:0,4:0,5:0,6:0};
+			allRows.forEach(row => {
+				const status = (row[statusIdx] || '').trim();
+				if (status !== 'ФИНИШ' && status !== 'DNF') return;
+				const codesStr = (row[codesIdx] || '').trim();
+				if (!codesStr) return;
+				codesStr.split(',').forEach(c => {
+					const code = parseInt(c.trim());
+					if (code >= 1 && code <= 6) penaltyCodeCount[code] = (penaltyCodeCount[code] || 0) + 1;
+				});
+			});
+			const totalPenalties = Object.values(penaltyCodeCount).reduce((a,b) => a+b, 0);
+			if (totalPenalties === 0) return '';
+			const sortedCodes = Object.entries(penaltyCodeCount)
+				.filter(([_, cnt]) => cnt > 0)
+				.sort((a,b) => b[1] - a[1]);
+			const mostCommon = sortedCodes.slice(0, 3);
+			let imagesHtml = '';
+			mostCommon.forEach(([code, cnt]) => {
+				const pct = (cnt/totalPenalties*100).toFixed(0);
+				imagesHtml += `<img src="penalty_${code}.png" style="height:20px;width:20px;vertical-align:middle;margin:0 4px;" title="Код ${code} (${pct}%)" />`;
+				imagesHtml += `<span style="font-size:12px;color:#88ddff;margin-right:12px;">${pct}%</span>`;
+			});
+			return `<div class="insight-block error" style="text-align: left;">
+				<strong style="color: #ff8844;">📊 Самые частые ошибки</strong> – ${imagesHtml}
+				</div>`;
+		}
+
+        // 8. Стабильность
+        _insightStability(calculator) {
+            const pilots = Object.keys(calculator.getOverall());
+            if (pilots.length < 2) return '';
+
+            let stabilityData = pilots.map(name => {
+                const stats = calculator.getPilotStats(name);
+                if (!stats) return null;
+                let allTimes = [];
+                for (const track in stats) {
+                    const atts = stats[track].attempts.filter(a => !a.isDnf && a.validTime > 0);
+                    atts.forEach(a => allTimes.push(a.validTime));
+                }
+                if (allTimes.length < 2) return null;
+                const mean = allTimes.reduce((s, t) => s + t, 0) / allTimes.length;
+                const variance = allTimes.reduce((s, t) => s + (t - mean) ** 2, 0) / allTimes.length;
+                const std = Math.sqrt(variance);
+                return { name, std, mean, count: allTimes.length };
+            }).filter(d => d !== null);
+
+            if (stabilityData.length < 2) return '';
+
+            stabilityData.sort((a, b) => a.std - b.std);
+            const mostStable = stabilityData[0];
+            const leastStable = stabilityData[stabilityData.length - 1];
+
+            return `<div class="insight-block stability">
+                <strong style="color: #66ccff;">🎯 Стабильность</strong> – самый стабильный пилот: <strong>${mostStable.name}</strong> (среднее отклонение ±${mostStable.std.toFixed(2)} сек, ${mostStable.count} попыток).<br>
+                Самый нестабильный: <strong>${leastStable.name}</strong> (отклонение ±${leastStable.std.toFixed(2)} сек). Ему стоит работать над повторяемостью прохождения трассы.
+                </div>`;
+        }
+
+        // 9. Тренды
+        _insightTrends(calculator, stageOrder) {
+            const pilots = Object.keys(calculator.getOverall());
+            if (pilots.length === 0) return '';
+
+            let trendData = [];
+            pilots.forEach(name => {
+                const stats = calculator.getPilotStats(name);
+                if (!stats) return;
+                let totalImprovement = 0;
+                let countImprovement = 0;
+                for (const track in stats) {
+                    const atts = stats[track].attempts.filter(a => !a.isDnf && a.validTime > 0);
+                    if (atts.length < 2) continue;
+                    let prev = null;
+                    let improvements = 0;
+                    for (const att of atts) {
+                        if (prev !== null && att.validTime < prev) {
+                            improvements++;
+                        }
+                        prev = att.validTime;
+                    }
+                    if (atts.length > 1) {
+                        const impRatio = improvements / (atts.length - 1);
+                        totalImprovement += impRatio;
+                        countImprovement++;
+                    }
+                }
+                if (countImprovement > 0) {
+                    const avgImp = totalImprovement / countImprovement;
+                    trendData.push({ name, avgImp, count: countImprovement });
+                }
+            });
+
+            if (trendData.length === 0) return '';
+
+            trendData.sort((a, b) => b.avgImp - a.avgImp);
+            const top = trendData[0];
+            if (top.avgImp < 0.3) return '';
+
+            return `<div class="insight-block trend">
+                <strong style="color: #88ddff;">📈 Восходящая звезда</strong> – <strong>${top.name}</strong> показывает наилучший прогресс: в среднем улучшает своё время в <strong>${(top.avgImp*100).toFixed(0)}%</strong> следующих попыток. Это говорит о хорошем обучении и адаптации к трассам.
+                </div>`;
+        }
+
+        // 10. Прогноз
+        _insightForecast(calculator, stageOrder) {
+            const total = Config.TOTAL_STAGES;
+            const done = stageOrder.length;
+            if (done >= total) return '';
+
+            const remaining = total - done;
+            const overall = calculator.getOverall();
+            const sorted = Object.entries(overall).sort((a, b) => b[1] - a[1]);
+            if (sorted.length < 2) return '';
+
+            const leader = sorted[0];
+            const second = sorted[1];
+            const diff = leader[1] - second[1];
+
+            const maxPointsPerStage = 13;
+            const maxCatch = remaining * maxPointsPerStage;
+            const needed = diff + 1;
+
+            let forecastText = '';
+            if (needed <= maxCatch) {
+                forecastText = `Второму месту (${second[0]}) нужно набрать как минимум <strong>${needed}</strong> очков больше, чем лидеру, на оставшихся ${remaining} этапах. Это возможно при стабильных победах.`;
+            } else {
+                forecastText = `Даже при максимальных результатах (${maxCatch} очков) второй пилот (${second[0]}) не сможет догнать лидера (${leader[0]}), так как необходимо набрать на ${needed} очков больше. Лидер практически гарантированно выигрывает чемпионат.`;
+            }
+
+            return `<div class="insight-block forecast">
+                <strong style="color: #ffd700;">🔮 Прогноз на оставшиеся этапы</strong> – осталось <strong>${remaining}</strong> этапов из ${total}. ${forecastText}
+                </div>`;
+        }
+
+        // 11. Основная рекомендация – с картинкой самого частого штрафа
+        _insightGeneralRecommendation(calculator) {
+			const allRows = calculator.getAllRows();
+			const idx = calculator.getColumnIndices();
+			const statusIdx = idx.statusIdx;
+			const codesIdx = idx.penaltyCodesIdx;
+			const penaltyCodeCount = {1:0,2:0,3:0,4:0,5:0,6:0};
+			let totalDnf = 0;
+			allRows.forEach(row => {
+				const status = (row[statusIdx] || '').trim();
+				if (status === 'DNF') totalDnf++;
+				if (status !== 'ФИНИШ' && status !== 'DNF') return;
+				const codesStr = (row[codesIdx] || '').trim();
+				if (!codesStr) return;
+				codesStr.split(',').forEach(c => {
+					const code = parseInt(c.trim());
+					if (code >= 1 && code <= 6) penaltyCodeCount[code] = (penaltyCodeCount[code] || 0) + 1;
+				});
+			});
+
+			const totalPenalties = Object.values(penaltyCodeCount).reduce((a,b) => a+b, 0);
+			let advice = '';
+			if (totalPenalties > 0) {
+				const sortedCodes = Object.entries(penaltyCodeCount)
+					.filter(([_, cnt]) => cnt > 0)
+					.sort((a,b) => b[1] - a[1]);
+				const most = sortedCodes[0];
+				const code = parseInt(most[0]);
+				const pct = (most[1]/totalPenalties*100).toFixed(0);
+				const desc = {1:'превышение скорости', 2:'недостаток топлива', 3:'крен', 4:'тангаж', 5:'высота', 6:'сбит пилон'};
+				const descText = desc[code];
+				const imageHtml = `<img src="penalty_${code}.png" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;" title="${descText}" />`;
+				advice = `Наиболее частые ошибки связаны с ${imageHtml} (${pct}% от всех штрафов). Рекомендуется уделить внимание отработке именно этого аспекта.`;
+			} else {
+				advice = 'Все пилоты отлично справляются со штрафами! Можно сконцентрироваться на увеличении скорости прохождения.';
+			}
+			if (totalDnf > 0) {
+				advice += ` Также отмечено ${totalDnf} случаев DNF – стоит повысить стабильность и избегать критических ошибок.`;
+			}
+			return `<div class="insight-block recommendation">
+				<strong>💡 Основная рекомендация:</strong> ${advice}
+				</div>`;
+		}
+
+        // ===================== ОСНОВНАЯ ФУНКЦИЯ АНАЛИТИКИ =====================
+
         _renderInsights(calculator) {
             const overall = calculator.getOverall();
             const stages = calculator.getStages();
@@ -1208,87 +1503,24 @@
             let html = `<div class="insights-container">`;
             html += `<h2>📋 Аналитика чемпионата</h2>`;
 
-            const leader = sorted[0];
-            const leaderName = leader[0];
-            const leaderData = leader[1];
-            const bestTrack = this._getBestTrack(leaderName, stages);
-            html += `<div class="insight-block leader">`;
-            html += `<strong style="color: #ffd700;">🏆 Лидер определился</strong> – <strong>${leaderName}</strong> показывает стабильно высокие результаты, имеет <strong>${leaderData.dnf} DNF</strong> (${leaderData.dnf === 0 ? 'идеально' : 'всего ' + leaderData.dnf}) и лучшее время на этапе <strong>${bestTrack}</strong>.`;
-            html += `</div>`;
-
-            if (sorted.length >= 3) {
-                const second = sorted[1];
-                const third = sorted[2];
-                const diff2 = leaderData.points - second[1].points;
-                const diff3 = leaderData.points - third[1].points;
-                const remaining = Math.max(0, Config.TOTAL_STAGES - stageOrder.length);
-                html += `<div class="insight-block battle">`;
-                html += `<strong style="color: #66ccff;">⚔️ Борьба за призовую тройку</strong> – <strong>${second[0]}</strong> и <strong>${third[0]}</strong> отстают на <strong>${diff2}</strong> и <strong>${diff3}</strong> очков соответственно. `;
-                if (remaining > 0) {
-                    html += `Впереди ещё <strong>${remaining}</strong> этапов (всего планируется ${Config.TOTAL_STAGES}). Интрига сохраняется!`;
-                } else {
-                    html += `Все этапы завершены, интрига позади.`;
-                }
-                html += `</div>`;
-            }
-
-            const dnfPilots = Object.entries(pilotStats)
-                .filter(([_, data]) => data.dnf > 0)
-                .sort((a, b) => b[1].dnf - a[1].dnf);
-            if (dnfPilots.length > 0) {
-                html += `<div class="insight-block dnf">`;
-                html += `<strong style="color: #ff4466;">⚠️ Проблемы с DNF</strong> – у пилотов <strong>${dnfPilots.map(p => p[0]).join(', ')}</strong> есть DNF-попытки, которые существенно снижают их очки. `;
-                html += `Рекомендуется этим пилотам внимательнее следить за <strong>стартовой скоростью</strong> и <strong>высотой</strong>, а также избегать сбитых пилонов.`;
-                html += `</div>`;
-            }
-
-            const penaltyPilots = Object.entries(pilotStats)
-                .filter(([_, data]) => data.penalty > 0)
-                .sort((a, b) => b[1].penalty - a[1].penalty);
-            if (penaltyPilots.length > 0) {
-                const worstPenalty = penaltyPilots[0];
-                html += `<div class="insight-block penalty">`;
-                html += `<strong style="color: #ffcc44;">📊 Штрафы</strong> – наибольшее количество штрафов у <strong>${worstPenalty[0]}</strong> (${worstPenalty[1].penalty.toFixed(1)} сек), что говорит о нестабильном пилотировании. `;
-                html += `Снижение штрафов может поднять его в общем зачёте.`;
-                html += `</div>`;
-            }
-
-            const missedPilots = Object.entries(pilotStats)
-                .filter(([_, data]) => data.participated < data.totalStages)
-                .sort((a, b) => a[1].participated - b[1].participated);
-            if (missedPilots.length > 0) {
-                html += `<div class="insight-block missed">`;
-                html += `<strong style="color: #88ddff;">⏳ Отсутствие данных</strong> – пилоты <strong>${missedPilots.map(p => p[0]).join(', ')}</strong> не участвовали в некоторых этапах, что лишает их шансов на высокие места. `;
-                html += `Для борьбы за топ-3 необходимо участие во всех этапах.`;
-                html += `</div>`;
-            }
-
-            if (leaderData.dnf === 0) {
-                html += `<div class="insight-block perfect">`;
-                html += `<strong style="color: #00ff88;">✅ Лидер без DNF</strong> – <strong>${leaderName}</strong> не имеет ни одной DNF-попытки. Это отличный показатель! Рекомендуется продолжать в том же духе.`;
-                html += `</div>`;
-            }
-
-            html += `<div class="insight-block" style="border-color: #66ccff; background: rgba(102,204,255,0.02);">`;
-            html += `<strong>💡 Общая рекомендация:</strong> Для улучшения результатов пилотам рекомендуется работать над стабильностью прохождения трасс, минимизировать штрафы и DNF, а также участвовать во всех этапах чемпионата.`;
-            html += `</div>`;
+            // Последовательно добавляем все блоки (Совет дня удалён)
+            html += this._insightLeader(calculator, stageOrder, sorted);
+            html += this._insightBattle(calculator, stageOrder, sorted);
+            html += this._insightDNF(calculator, sorted);
+            html += this._insightPenalties(calculator, sorted);
+            html += this._insightMissedStages(calculator, stageOrder, sorted);
+            html += this._insightPerfectLeader(calculator, sorted);
+            html += this._insightErrorFrequency(calculator);
+            html += this._insightStability(calculator);
+            html += this._insightTrends(calculator, stageOrder);
+            html += this._insightForecast(calculator, stageOrder);
+            html += this._insightGeneralRecommendation(calculator);
 
             html += `</div>`;
             this.container.innerHTML = html;
         }
 
-        _getBestTrack(pilotName, stages) {
-            let bestTime = Infinity;
-            let bestTrack = '';
-            for (const [track, results] of Object.entries(stages)) {
-                const r = results.find(p => p.name === pilotName);
-                if (r && r.time < bestTime) {
-                    bestTime = r.time;
-                    bestTrack = track;
-                }
-            }
-            return bestTrack || '—';
-        }
+        // ===================== ОСТАЛЬНЫЕ МЕТОДЫ (без изменений) =====================
 
         _renderStage(tabName, calculator) {
             const results = calculator.getStages()[tabName];
@@ -1367,7 +1599,7 @@
             if (penaltyCodes) {
                 const codes = penaltyCodes.split(',').map(c => parseInt(c.trim())).filter(c => !isNaN(c) && c >= 1 && c <= 6);
                 if (codes.includes(6)) return 'Сбит пилон';
-                if (codes.includes(5)) return 'Ошибка по высоте';
+                if (codes.includes(5)) return 'Опасная высота';
                 if (codes.includes(3)) return 'Крен > 10°';
                 if (codes.includes(4)) return 'Тангаж > 10°';
                 if (codes.includes(1)) return 'Превышение скорости';
@@ -1378,7 +1610,7 @@
                 if (r.includes('превышена стартовая скорость') || r.includes('превышение скорости')) return 'Превышение скорости';
                 if (r.includes('недостаток топлива') || r.includes('топливо')) return 'Недостаток топлива';
                 if (r.includes('сбит пилон') || r.includes('пилон')) return 'Сбит пилон';
-                if (r.includes('опасная высота') || r.includes('ошибка по высоте') || r.includes('ошибка высоты') || r.includes('высота')) return 'Ошибка по высоте';
+                if (r.includes('опасная высота') || r.includes('ошибка высоты') || r.includes('высота')) return 'Опасная высота';
                 if (r.includes('крен')) return 'Крен > 10°';
                 if (r.includes('тангаж')) return 'Тангаж > 10°';
                 if (r.includes('пропуск') || r.includes('таймаут') || r.includes('сход')) return 'Пропуск/сход';
@@ -1747,27 +1979,22 @@
             });
             html += `</tbody></table></div>`;
 
-            // Единый блок с селектором трасс
             html += `<div style="margin-top:20px;">`;
             html += `<div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Выберите трассу для анализа</div>`;
             html += `<div class="pilot-track-selector" id="pilotTrackSelector">`;
-            // кнопки будут добавлены позже
             html += `</div>`;
 
-            // Сравнение с рекордом
             html += `<div style="margin-top:20px;">`;
             html += `<div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Сравнение с рекордом по сегментам</div>`;
             html += `<div id="pilotSegmentChartContainer"><div class="loading">Выберите трассу</div></div>`;
             html += `</div>`;
 
-            // Динамика по попыткам
             html += `<div style="margin-top:20px;">`;
             html += `<div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Динамика по попыткам</div>`;
             html += `<div id="pilotAttemptsChartContainer" class="attempts-chart-wrapper"><div class="loading">Выберите трассу</div></div>`;
             html += `</div>`;
             html += `</div>`;
 
-            // DNF
             html += `<div style="margin-top:20px;">`;
             html += `<div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Причины DNF</div>`;
             html += `<div id="pilotDnfChartContainer" class="dnf-chart-container"><div class="loading">Загрузка...</div></div>`;
@@ -1775,7 +2002,6 @@
 
             container.innerHTML = html;
 
-            // Добавляем кнопки в селектор
             const selector = document.getElementById('pilotTrackSelector');
             if (selector && tracks.length > 0) {
                 tracks.forEach((track, idx) => {
@@ -2149,8 +2375,7 @@
 
                 this.renderer.updateHeader(Object.keys(overall).length, Object.keys(stages).length);
 
-                // Передаём calculator в renderTabs для правильного порядка этапов
-                this.renderer.renderTabs(stages, this.currentTab, this.calculator);
+                this.renderer.renderTabs(stages, this.currentTab);
                 this.renderer.renderTab(this.currentTab, this.calculator, null);
             } catch (err) {
                 console.error(err);
