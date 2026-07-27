@@ -75,6 +75,13 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+            align-items: center;
+        }
+        .main-tabs .stage-label {
+            color: #88ddff;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 0 4px 0 8px;
         }
         .analytics-tabs {
             display: flex;
@@ -896,6 +903,36 @@
         getPreviousPositions() { return this.previousPositions; }
         getColumnIndices() { return this.columnIndices; }
         getAllRows() { return this.rows; }
+
+        // Определение порядка этапов по дате
+        getStageOrder() {
+            const rows = this.rows;
+            const indices = this.columnIndices;
+            const trackIdx = indices.trackIdx;
+            const timestampIdx = indices.timestampIdx;
+            const stages = this.stages;
+            const allStageNames = Object.keys(stages);
+
+            if (timestampIdx === undefined || timestampIdx === -1) {
+                return allStageNames.sort();
+            }
+
+            const stageDates = {};
+            rows.forEach(row => {
+                const track = (row[trackIdx] || '').trim();
+                if (!track || !allStageNames.includes(track)) return;
+                const timestamp = row[timestampIdx] ? new Date(row[timestampIdx]) : null;
+                if (timestamp && !isNaN(timestamp)) {
+                    if (!stageDates[track] || timestamp < stageDates[track]) {
+                        stageDates[track] = timestamp;
+                    }
+                }
+            });
+
+            const ordered = Object.keys(stageDates).sort((a, b) => stageDates[a] - stageDates[b]);
+            const missing = allStageNames.filter(s => !ordered.includes(s));
+            return ordered.concat(missing);
+        }
     }
 
     // ================================================================
@@ -957,25 +994,40 @@
             document.getElementById('updateTime').textContent = new Date().toLocaleString();
         }
 
-        renderTabs(stages, currentTab = 'overall') {
+        renderTabs(stages, currentTab = 'overall', stageOrder = null) {
             const container = document.getElementById('tabsContainer');
             container.innerHTML = '';
 
-            // ---- Первая строка: Общий зачёт + этапы ----
+            const orderedStages = stageOrder || Object.keys(stages).sort();
+
+            // ---- Первая строка: Общий зачёт + "Этапы:" + этапы ----
             const mainTabsDiv = document.createElement('div');
             mainTabsDiv.className = 'main-tabs';
-            const mainTabIds = ['overall', ...Object.keys(stages).sort()];
-            const mainLabels = { overall: 'Общий зачёт' };
 
-            mainTabIds.forEach(tabId => {
+            // Кнопка "Общий зачёт"
+            const overallBtn = document.createElement('div');
+            overallBtn.className = 'tab';
+            if (currentTab === 'overall') overallBtn.classList.add('active');
+            overallBtn.dataset.tab = 'overall';
+            overallBtn.textContent = 'Общий зачёт';
+            mainTabsDiv.appendChild(overallBtn);
+
+            // Метка "Этапы:"
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'stage-label';
+            labelSpan.textContent = 'Этапы:';
+            mainTabsDiv.appendChild(labelSpan);
+
+            // Кнопки этапов
+            orderedStages.forEach(tabId => {
                 const btn = document.createElement('div');
-                btn.className = 'tab';
-                if (tabId !== 'overall') btn.classList.add('stage-tab');
+                btn.className = 'tab stage-tab';
                 if (tabId === currentTab) btn.classList.add('active');
                 btn.dataset.tab = tabId;
-                btn.textContent = mainLabels[tabId] || tabId;
+                btn.textContent = tabId;
                 mainTabsDiv.appendChild(btn);
             });
+
             container.appendChild(mainTabsDiv);
 
             // ---- Вторая строка: аналитика ----
@@ -1021,39 +1073,11 @@
             }
         }
 
-        _getStageOrder(calculator) {
-            const rows = calculator.getAllRows();
-            const indices = calculator.getColumnIndices();
-            const trackIdx = indices.trackIdx;
-            const timestampIdx = indices.timestampIdx;
-            const stages = calculator.getStages();
-            const allStageNames = Object.keys(stages);
-
-            if (timestampIdx === undefined || timestampIdx === -1) {
-                return allStageNames.sort();
-            }
-
-            const stageDates = {};
-            rows.forEach(row => {
-                const track = (row[trackIdx] || '').trim();
-                if (!track || !allStageNames.includes(track)) return;
-                const timestamp = row[timestampIdx] ? new Date(row[timestampIdx]) : null;
-                if (timestamp && !isNaN(timestamp)) {
-                    if (!stageDates[track] || timestamp < stageDates[track]) {
-                        stageDates[track] = timestamp;
-                    }
-                }
-            });
-
-            const ordered = Object.keys(stageDates).sort((a, b) => stageDates[a] - stageDates[b]);
-            const missing = allStageNames.filter(s => !ordered.includes(s));
-            return ordered.concat(missing);
-        }
-
+        // ---- ОБЩИЙ ЗАЧЁТ ----
         _renderOverall(calculator) {
             const overall = calculator.getOverall();
             const stages = calculator.getStages();
-            const stageOrder = this._getStageOrder(calculator);
+            const stageOrder = calculator.getStageOrder();
 
             const pilotData = [];
             for (const [name, points] of Object.entries(overall)) {
@@ -1135,9 +1159,7 @@
             });
         }
 
-        // ===================== РАСШИРЕННАЯ АНАЛИТИКА =====================
-
-        // 1. Лидер – перечисляем все этапы, где установлен рекорд
+        // ---- АНАЛИТИКА ЧЕМПИОНАТА ----
         _insightLeader(calculator, stageOrder, sorted) {
             if (sorted.length === 0) return '';
             const leader = sorted[0];
@@ -1181,7 +1203,6 @@
                 </div>`;
         }
 
-        // 2. Борьба за тройку
         _insightBattle(calculator, stageOrder, sorted) {
             if (sorted.length < 3) return '';
             const leader = sorted[0];
@@ -1196,7 +1217,6 @@
                 </div>`;
         }
 
-        // 3. DNF – только пилоты с максимальным числом DNF
         _insightDNF(calculator, sorted) {
             if (sorted.length === 0) return '';
             const maxDnf = sorted.reduce((max, [_, data]) => Math.max(max, data.dnf), 0);
@@ -1209,7 +1229,6 @@
                 </div>`;
         }
 
-        // 4. Штрафы
         _insightPenalties(calculator, sorted) {
             const penaltyPilots = sorted
                 .map(([name, data]) => {
@@ -1231,7 +1250,6 @@
                 </div>`;
         }
 
-        // 5. Пропущенные этапы
         _insightMissedStages(calculator, stageOrder, sorted) {
             const total = stageOrder.length;
             const missed = sorted
@@ -1253,7 +1271,6 @@
                 </div>`;
         }
 
-        // 6. Лидер без DNF
         _insightPerfectLeader(calculator, sorted) {
             if (sorted.length === 0) return '';
             const leader = sorted[0];
@@ -1263,41 +1280,39 @@
                 </div>`;
         }
 
-        // 7. Частота ошибок – теперь с картинками и единым стилем
         _insightErrorFrequency(calculator) {
-			const allRows = calculator.getAllRows();
-			const idx = calculator.getColumnIndices();
-			const statusIdx = idx.statusIdx;
-			const codesIdx = idx.penaltyCodesIdx;
-			const penaltyCodeCount = {1:0,2:0,3:0,4:0,5:0,6:0};
-			allRows.forEach(row => {
-				const status = (row[statusIdx] || '').trim();
-				if (status !== 'ФИНИШ' && status !== 'DNF') return;
-				const codesStr = (row[codesIdx] || '').trim();
-				if (!codesStr) return;
-				codesStr.split(',').forEach(c => {
-					const code = parseInt(c.trim());
-					if (code >= 1 && code <= 6) penaltyCodeCount[code] = (penaltyCodeCount[code] || 0) + 1;
-				});
-			});
-			const totalPenalties = Object.values(penaltyCodeCount).reduce((a,b) => a+b, 0);
-			if (totalPenalties === 0) return '';
-			const sortedCodes = Object.entries(penaltyCodeCount)
-				.filter(([_, cnt]) => cnt > 0)
-				.sort((a,b) => b[1] - a[1]);
-			const mostCommon = sortedCodes.slice(0, 3);
-			let imagesHtml = '';
-			mostCommon.forEach(([code, cnt]) => {
-				const pct = (cnt/totalPenalties*100).toFixed(0);
-				imagesHtml += `<img src="penalty_${code}.png" style="height:20px;width:20px;vertical-align:middle;margin:0 4px;" title="Код ${code} (${pct}%)" />`;
-				imagesHtml += `<span style="font-size:12px;color:#88ddff;margin-right:12px;">${pct}%</span>`;
-			});
-			return `<div class="insight-block error" style="text-align: left; padding: 6px 12px; margin: 8px 0;">
-				<strong style="color: #ff8844;">📊 Самые частые ошибки</strong> – ${imagesHtml}
-				</div>`;
-		}
+            const allRows = calculator.getAllRows();
+            const idx = calculator.getColumnIndices();
+            const statusIdx = idx.statusIdx;
+            const codesIdx = idx.penaltyCodesIdx;
+            const penaltyCodeCount = {1:0,2:0,3:0,4:0,5:0,6:0};
+            allRows.forEach(row => {
+                const status = (row[statusIdx] || '').trim();
+                if (status !== 'ФИНИШ' && status !== 'DNF') return;
+                const codesStr = (row[codesIdx] || '').trim();
+                if (!codesStr) return;
+                codesStr.split(',').forEach(c => {
+                    const code = parseInt(c.trim());
+                    if (code >= 1 && code <= 6) penaltyCodeCount[code] = (penaltyCodeCount[code] || 0) + 1;
+                });
+            });
+            const totalPenalties = Object.values(penaltyCodeCount).reduce((a,b) => a+b, 0);
+            if (totalPenalties === 0) return '';
+            const sortedCodes = Object.entries(penaltyCodeCount)
+                .filter(([_, cnt]) => cnt > 0)
+                .sort((a,b) => b[1] - a[1]);
+            const mostCommon = sortedCodes.slice(0, 3);
+            let imagesHtml = '';
+            mostCommon.forEach(([code, cnt]) => {
+                const pct = (cnt/totalPenalties*100).toFixed(0);
+                imagesHtml += `<img src="penalty_${code}.png" style="height:20px;width:20px;vertical-align:middle;margin:0 4px;" title="Код ${code} (${pct}%)" />`;
+                imagesHtml += `<span style="font-size:12px;color:#88ddff;margin-right:12px;">${pct}%</span>`;
+            });
+            return `<div class="insight-block error" style="text-align: left; padding: 6px 12px; margin: 8px 0;">
+                <strong style="color: #ff8844;">📊 Самые частые ошибки</strong> – ${imagesHtml}
+                </div>`;
+        }
 
-        // 8. Стабильность
         _insightStability(calculator) {
             const pilots = Object.keys(calculator.getOverall());
             if (pilots.length < 2) return '';
@@ -1329,7 +1344,6 @@
                 </div>`;
         }
 
-        // 9. Тренды
         _insightTrends(calculator, stageOrder) {
             const pilots = Object.keys(calculator.getOverall());
             if (pilots.length === 0) return '';
@@ -1374,7 +1388,6 @@
                 </div>`;
         }
 
-        // 10. Прогноз
         _insightForecast(calculator, stageOrder) {
             const total = Config.TOTAL_STAGES;
             const done = stageOrder.length;
@@ -1405,56 +1418,53 @@
                 </div>`;
         }
 
-        // 11. Основная рекомендация – с картинкой самого частого штрафа
         _insightGeneralRecommendation(calculator) {
-			const allRows = calculator.getAllRows();
-			const idx = calculator.getColumnIndices();
-			const statusIdx = idx.statusIdx;
-			const codesIdx = idx.penaltyCodesIdx;
-			const penaltyCodeCount = {1:0,2:0,3:0,4:0,5:0,6:0};
-			let totalDnf = 0;
-			allRows.forEach(row => {
-				const status = (row[statusIdx] || '').trim();
-				if (status === 'DNF') totalDnf++;
-				if (status !== 'ФИНИШ' && status !== 'DNF') return;
-				const codesStr = (row[codesIdx] || '').trim();
-				if (!codesStr) return;
-				codesStr.split(',').forEach(c => {
-					const code = parseInt(c.trim());
-					if (code >= 1 && code <= 6) penaltyCodeCount[code] = (penaltyCodeCount[code] || 0) + 1;
-				});
-			});
+            const allRows = calculator.getAllRows();
+            const idx = calculator.getColumnIndices();
+            const statusIdx = idx.statusIdx;
+            const codesIdx = idx.penaltyCodesIdx;
+            const penaltyCodeCount = {1:0,2:0,3:0,4:0,5:0,6:0};
+            let totalDnf = 0;
+            allRows.forEach(row => {
+                const status = (row[statusIdx] || '').trim();
+                if (status === 'DNF') totalDnf++;
+                if (status !== 'ФИНИШ' && status !== 'DNF') return;
+                const codesStr = (row[codesIdx] || '').trim();
+                if (!codesStr) return;
+                codesStr.split(',').forEach(c => {
+                    const code = parseInt(c.trim());
+                    if (code >= 1 && code <= 6) penaltyCodeCount[code] = (penaltyCodeCount[code] || 0) + 1;
+                });
+            });
 
-			const totalPenalties = Object.values(penaltyCodeCount).reduce((a,b) => a+b, 0);
-			let advice = '';
-			if (totalPenalties > 0) {
-				const sortedCodes = Object.entries(penaltyCodeCount)
-					.filter(([_, cnt]) => cnt > 0)
-					.sort((a,b) => b[1] - a[1]);
-				const most = sortedCodes[0];
-				const code = parseInt(most[0]);
-				const pct = (most[1]/totalPenalties*100).toFixed(0);
-				const desc = {1:'превышение скорости', 2:'недостаток топлива', 3:'крен', 4:'тангаж', 5:'высота', 6:'сбит пилон'};
-				const descText = desc[code];
-				const imageHtml = `<img src="penalty_${code}.png" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;" title="${descText}" />`;
-				advice = `Наиболее частые ошибки связаны с ${imageHtml} (${pct}% от всех штрафов). Рекомендуется уделить внимание отработке именно этого аспекта.`;
-			} else {
-				advice = 'Все пилоты отлично справляются со штрафами! Можно сконцентрироваться на увеличении скорости прохождения.';
-			}
-			if (totalDnf > 0) {
-				advice += ` Также отмечено ${totalDnf} случаев DNF – стоит повысить стабильность и избегать критических ошибок.`;
-			}
-			return `<div class="insight-block recommendation">
-				<strong>💡 Основная рекомендация:</strong> ${advice}
-				</div>`;
-		}
-
-        // ===================== ОСНОВНАЯ ФУНКЦИЯ АНАЛИТИКИ =====================
+            const totalPenalties = Object.values(penaltyCodeCount).reduce((a,b) => a+b, 0);
+            let advice = '';
+            if (totalPenalties > 0) {
+                const sortedCodes = Object.entries(penaltyCodeCount)
+                    .filter(([_, cnt]) => cnt > 0)
+                    .sort((a,b) => b[1] - a[1]);
+                const most = sortedCodes[0];
+                const code = parseInt(most[0]);
+                const pct = (most[1]/totalPenalties*100).toFixed(0);
+                const desc = {1:'превышение скорости', 2:'недостаток топлива', 3:'крен', 4:'тангаж', 5:'высота', 6:'сбит пилон'};
+                const descText = desc[code];
+                const imageHtml = `<img src="penalty_${code}.png" style="height:24px;width:24px;vertical-align:middle;margin-right:6px;" title="${descText}" />`;
+                advice = `Наиболее частые ошибки связаны с ${imageHtml} (${pct}% от всех штрафов). Рекомендуется уделить внимание отработке именно этого аспекта.`;
+            } else {
+                advice = 'Все пилоты отлично справляются со штрафами! Можно сконцентрироваться на увеличении скорости прохождения.';
+            }
+            if (totalDnf > 0) {
+                advice += ` Также отмечено ${totalDnf} случаев DNF – стоит повысить стабильность и избегать критических ошибок.`;
+            }
+            return `<div class="insight-block recommendation">
+                <strong>💡 Основная рекомендация:</strong> ${advice}
+                </div>`;
+        }
 
         _renderInsights(calculator) {
             const overall = calculator.getOverall();
             const stages = calculator.getStages();
-            const stageOrder = this._getStageOrder(calculator);
+            const stageOrder = calculator.getStageOrder();
 
             const pilotStats = {};
             for (const [name, points] of Object.entries(overall)) {
@@ -1503,7 +1513,6 @@
             let html = `<div class="insights-container">`;
             html += `<h2>📋 Аналитика чемпионата</h2>`;
 
-            // Последовательно добавляем все блоки (Совет дня удалён)
             html += this._insightLeader(calculator, stageOrder, sorted);
             html += this._insightBattle(calculator, stageOrder, sorted);
             html += this._insightDNF(calculator, sorted);
@@ -1520,116 +1529,18 @@
             this.container.innerHTML = html;
         }
 
-        // ===================== ОСТАЛЬНЫЕ МЕТОДЫ (без изменений) =====================
-
-        _renderStage(tabName, calculator) {
-            const results = calculator.getStages()[tabName];
-            if (!results || results.length === 0) {
-                this.container.innerHTML = `<div class="empty">Нет результатов для этапа «${tabName}»</div>`;
-                return;
-            }
-            let html = `<div class="stage-title">🏁 Этап: ${tabName}</div>`;
-            html += `<table>
-                <thead><tr>
-                    <th>#</th>
-                    <th>Пилот</th>
-                    <th>Зачётное время</th>
-                    <th>Итого</th>
-                    <th>Очки (место+бонус)</th>
-                    <th>DNF</th>
-                </tr></thead><tbody>`;
-            results.forEach(r => {
-                const cls = r.place === 1 ? 'gold' : r.place === 2 ? 'silver' : r.place === 3 ? 'bronze' : '';
-                const basePoints = r.basePoints !== undefined ? r.basePoints : r.points + (r.dnf || 0);
-                html += `<tr>
-                    <td class="pos ${cls}">${r.place}</td>
-                    <td><span class="pilot-name" data-pilot="${r.name}">${r.name}</span></td>
-                    <td><span class="time">${this._formatTime(r.time)}</span></td>
-                    <td><span class="points">${r.points}</span></td>
-                    <td>${basePoints}</td>
-                    <td>${r.dnf > 0 ? `<span class="dnf-badge">${r.dnf}</span>` : '—'}</td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            this.container.innerHTML = html;
-            this.container.querySelectorAll('.pilot-name').forEach(el => {
-                el.addEventListener('click', (e) => {
-                    const pilot = e.currentTarget.dataset.pilot;
-                    document.dispatchEvent(new CustomEvent('showPilotStats', { detail: { pilot } }));
-                });
-            });
-        }
-
-        _getTrackFileMap() {
-            return {
-                "Новороссийск": "Novorossiysk.html",
-                "Анапа": "Anapa.html",
-                "Крымск": "Krymsk.html",
-                "Майкоп": "Maykop.html",
-                "Геленджик": "Gelenjik.html",
-                "Минеральные Воды": "MinVody.html",
-                "Гудаута": "Gudauta.html",
-                "Сочи": "Sochi.html",
-                "Пашковский": "Pashkovsky.html",
-                "Novorossiysk": "Novorossiysk.html",
-                "Anapa": "Anapa.html",
-                "Krymsk": "Krymsk.html",
-                "Maykop": "Maykop.html",
-                "Gelenjik": "Gelenjik.html",
-                "MinVody": "MinVody.html",
-                "Gudauta": "Gudauta.html",
-                "Sochi": "Sochi.html",
-                "Pashkovsky": "Pashkovsky.html"
-            };
-        }
-
-        _findTrackFile(trackName) {
-            const map = this._getTrackFileMap();
-            if (map[trackName]) return map[trackName];
-            const lowerTrack = trackName.toLowerCase();
-            for (const [key, file] of Object.entries(map)) {
-                if (key.toLowerCase() === lowerTrack) {
-                    return file;
-                }
-            }
-            return null;
-        }
-
-        _normalizeDnfReason(reason, penaltyCodes) {
-            if (penaltyCodes) {
-                const codes = penaltyCodes.split(',').map(c => parseInt(c.trim())).filter(c => !isNaN(c) && c >= 1 && c <= 6);
-                if (codes.includes(6)) return 'Сбит пилон';
-                if (codes.includes(5)) return 'Опасная высота';
-                if (codes.includes(3)) return 'Крен > 10°';
-                if (codes.includes(4)) return 'Тангаж > 10°';
-                if (codes.includes(1)) return 'Превышение скорости';
-                if (codes.includes(2)) return 'Недостаток топлива';
-            }
-            if (reason) {
-                const r = reason.toLowerCase();
-                if (r.includes('превышена стартовая скорость') || r.includes('превышение скорости')) return 'Превышение скорости';
-                if (r.includes('недостаток топлива') || r.includes('топливо')) return 'Недостаток топлива';
-                if (r.includes('сбит пилон') || r.includes('пилон')) return 'Сбит пилон';
-                if (r.includes('опасная высота') || r.includes('ошибка высоты') || r.includes('высота')) return 'Опасная высота';
-                if (r.includes('крен')) return 'Крен > 10°';
-                if (r.includes('тангаж')) return 'Тангаж > 10°';
-                if (r.includes('пропуск') || r.includes('таймаут') || r.includes('сход')) return 'Пропуск/сход';
-                if (reason.length > 30) return reason.substring(0, 27) + '...';
-                return reason;
-            }
-            return 'Другое';
-        }
-
+        // ---- АНАЛИТИКА ТРАССЫ ----
         _renderAnalytics(calculator) {
-            const stageNames = Object.keys(calculator.getStages()).sort();
-            if (stageNames.length === 0) {
+            // Используем stageOrder для порядка трасс
+            const stageOrder = calculator.getStageOrder();
+            if (stageOrder.length === 0) {
                 this.container.innerHTML = '<div class="empty">Нет данных для аналитики</div>';
                 return;
             }
 
             let html = `<div class="analytics-container">`;
             html += `<div class="track-selector" id="analyticsTrackSelector">`;
-            stageNames.forEach((track, idx) => {
+            stageOrder.forEach((track, idx) => {
                 const active = idx === 0 ? 'active' : '';
                 html += `<button class="track-btn ${active}" data-track="${track}">${track}</button>`;
             });
@@ -1648,8 +1559,8 @@
                 });
             });
 
-            if (stageNames.length > 0) {
-                this._renderAnalyticsForTrack(stageNames[0], calculator);
+            if (stageOrder.length > 0) {
+                this._renderAnalyticsForTrack(stageOrder[0], calculator);
             }
         }
 
@@ -1883,6 +1794,7 @@
             container.innerHTML = html;
         }
 
+        // ---- АНАЛИТИКА ПИЛОТА ----
         _renderPilotAnalytics(calculator) {
             const pilots = Object.keys(calculator.getOverall()).sort();
             if (pilots.length === 0) {
@@ -1920,7 +1832,10 @@
                 return;
             }
 
-            const tracks = Object.keys(stats).sort();
+            // Сортируем трассы пилота по общему порядку этапов
+            const stageOrder = calculator.getStageOrder();
+            const tracks = stageOrder.filter(t => stats.hasOwnProperty(t));
+
             let totalAttempts = 0, totalDnf = 0, totalPenalty = 0;
             let bestOverall = Infinity, worstOverall = 0, sumValid = 0, countValid = 0;
             const trackData = {};
@@ -2329,6 +2244,105 @@
             }
             return result;
         }
+
+        // ---- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ----
+        _getTrackFileMap() {
+            return {
+                "Новороссийск": "Novorossiysk.html",
+                "Анапа": "Anapa.html",
+                "Крымск": "Krymsk.html",
+                "Майкоп": "Maykop.html",
+                "Геленджик": "Gelenjik.html",
+                "Минеральные Воды": "MinVody.html",
+                "Гудаута": "Gudauta.html",
+                "Сочи": "Sochi.html",
+                "Пашковский": "Pashkovsky.html",
+                "Novorossiysk": "Novorossiysk.html",
+                "Anapa": "Anapa.html",
+                "Krymsk": "Krymsk.html",
+                "Maykop": "Maykop.html",
+                "Gelenjik": "Gelenjik.html",
+                "MinVody": "MinVody.html",
+                "Gudauta": "Gudauta.html",
+                "Sochi": "Sochi.html",
+                "Pashkovsky": "Pashkovsky.html"
+            };
+        }
+
+        _findTrackFile(trackName) {
+            const map = this._getTrackFileMap();
+            if (map[trackName]) return map[trackName];
+            const lowerTrack = trackName.toLowerCase();
+            for (const [key, file] of Object.entries(map)) {
+                if (key.toLowerCase() === lowerTrack) {
+                    return file;
+                }
+            }
+            return null;
+        }
+
+        _normalizeDnfReason(reason, penaltyCodes) {
+            if (penaltyCodes) {
+                const codes = penaltyCodes.split(',').map(c => parseInt(c.trim())).filter(c => !isNaN(c) && c >= 1 && c <= 6);
+                if (codes.includes(6)) return 'Сбит пилон';
+                if (codes.includes(5)) return 'Опасная высота';
+                if (codes.includes(3)) return 'Крен > 10°';
+                if (codes.includes(4)) return 'Тангаж > 10°';
+                if (codes.includes(1)) return 'Превышение скорости';
+                if (codes.includes(2)) return 'Недостаток топлива';
+            }
+            if (reason) {
+                const r = reason.toLowerCase();
+                if (r.includes('превышена стартовая скорость') || r.includes('превышение скорости')) return 'Превышение скорости';
+                if (r.includes('недостаток топлива') || r.includes('топливо')) return 'Недостаток топлива';
+                if (r.includes('сбит пилон') || r.includes('пилон')) return 'Сбит пилон';
+                if (r.includes('опасная высота') || r.includes('ошибка высоты') || r.includes('высота')) return 'Опасная высота';
+                if (r.includes('крен')) return 'Крен > 10°';
+                if (r.includes('тангаж')) return 'Тангаж > 10°';
+                if (r.includes('пропуск') || r.includes('таймаут') || r.includes('сход')) return 'Пропуск/сход';
+                if (reason.length > 30) return reason.substring(0, 27) + '...';
+                return reason;
+            }
+            return 'Другое';
+        }
+
+        _renderStage(tabName, calculator) {
+            const results = calculator.getStages()[tabName];
+            if (!results || results.length === 0) {
+                this.container.innerHTML = `<div class="empty">Нет результатов для этапа «${tabName}»</div>`;
+                return;
+            }
+            let html = `<div class="stage-title">🏁 Этап: ${tabName}</div>`;
+            html += `<table>
+                <thead><tr>
+                    <th>#</th>
+                    <th>Пилот</th>
+                    <th>Зачётное время</th>
+                    <th>Итого</th>
+                    <th>Очки (место+бонус)</th>
+                    <th>DNF</th>
+                </tr></thead><tbody>`;
+            results.forEach(r => {
+                const cls = r.place === 1 ? 'gold' : r.place === 2 ? 'silver' : r.place === 3 ? 'bronze' : '';
+                const basePoints = r.basePoints !== undefined ? r.basePoints : r.points + (r.dnf || 0);
+                html += `<tr>
+                    <td class="pos ${cls}">${r.place}</td>
+                    <td><span class="pilot-name" data-pilot="${r.name}">${r.name}</span></td>
+                    <td><span class="time">${this._formatTime(r.time)}</span></td>
+                    <td><span class="points">${r.points}</span></td>
+                    <td>${basePoints}</td>
+                    <td>${r.dnf > 0 ? `<span class="dnf-badge">${r.dnf}</span>` : '—'}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            this.container.innerHTML = html;
+            this.container.querySelectorAll('.pilot-name').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    const pilot = e.currentTarget.dataset.pilot;
+                    document.dispatchEvent(new CustomEvent('showPilotStats', { detail: { pilot } }));
+                });
+            });
+        }
     }
 
     // ================================================================
@@ -2372,10 +2386,11 @@
                 const result = this.calculator.process();
                 const stages = result.stages;
                 const overall = result.overall;
+                const stageOrder = this.calculator.getStageOrder();
 
                 this.renderer.updateHeader(Object.keys(overall).length, Object.keys(stages).length);
 
-                this.renderer.renderTabs(stages, this.currentTab);
+                this.renderer.renderTabs(stages, this.currentTab, stageOrder);
                 this.renderer.renderTab(this.currentTab, this.calculator, null);
             } catch (err) {
                 console.error(err);
@@ -2388,10 +2403,13 @@
         switchTab(tabName) {
             if (!this.calculator) return;
             this.currentTab = tabName;
+            const stages = this.calculator.getStages();
+            const stageOrder = this.calculator.getStageOrder();
             const tabsContainer = document.getElementById('tabsContainer');
             tabsContainer.querySelectorAll('.tab').forEach(t => {
                 t.classList.toggle('active', t.dataset.tab === tabName);
             });
+            this.renderer.renderTabs(stages, this.currentTab, stageOrder);
             this.renderer.renderTab(tabName, this.calculator, null);
         }
 
@@ -2403,7 +2421,10 @@
                 return;
             }
 
-            const tracks = Object.keys(stats).sort();
+            // Сортируем трассы по общему порядку
+            const stageOrder = this.calculator.getStageOrder();
+            const tracks = stageOrder.filter(t => stats.hasOwnProperty(t));
+
             let totalAll = 0, totalDnf = 0, totalPenalty = 0;
             tracks.forEach(track => {
                 const s = stats[track];
