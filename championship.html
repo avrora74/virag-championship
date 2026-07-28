@@ -639,10 +639,10 @@
             this.rows = rows;
             this.headers = headers;
             this.columnIndices = this._findColumns(headers);
-            this.stages = {};          // результаты этапов (только Race)
-            this.streamResults = {};   // результаты стримов (Stream) по трассам
-            this.streamBonuses = {};   // бонусы стримов по пилотам
-            this.overall = {};         // общие очки = этапные + бонусы
+            this.stages = {};
+            this.streamResults = {};
+            this.streamBonuses = {};
+            this.overall = {};
             this.previousPositions = {};
             this._pilotStatsCache = new Map();
             console.log('[ViRAG] Найденные индексы колонок:', this.columnIndices);
@@ -732,18 +732,19 @@
             this.streamBonuses = streamData.bonuses;
 
             // --- Общий зачёт ---
-            this.overall = {};
+            const newOverall = {};
             for (const [track, results] of Object.entries(this.stages)) {
                 results.forEach(r => {
-                    if (!this.overall[r.name]) this.overall[r.name] = 0;
-                    this.overall[r.name] += r.points;
+                    if (!newOverall[r.name]) newOverall[r.name] = 0;
+                    newOverall[r.name] += r.points;
                 });
             }
             // Добавляем бонусы стримов
             for (const [name, bonus] of Object.entries(this.streamBonuses)) {
-                if (!this.overall[name]) this.overall[name] = 0;
-                this.overall[name] += bonus;
+                if (!newOverall[name]) newOverall[name] = 0;
+                newOverall[name] += bonus;
             }
+            this.overall = newOverall;
 
             this._updatePositions();
             return { stages: this.stages, overall: this.overall, previousPositions: this.previousPositions };
@@ -777,7 +778,7 @@
                 }
             });
 
-            const stages = {};
+            const newStages = {};
             for (const [track, pilots] of Object.entries(attempts)) {
                 const finishedPilots = [];
                 for (const [name, data] of Object.entries(pilots)) {
@@ -807,9 +808,9 @@
                         basePoints: basePoints,
                     };
                 });
-                stages[track] = results;
+                newStages[track] = results;
             }
-            return stages;
+            return newStages;
         }
 
         _calculateStreams(rows) {
@@ -1121,7 +1122,7 @@
 
             const orderedStages = stageOrder || Object.keys(stages).sort();
 
-            // ---- Первая строка: Общий зачёт + Этапы + Стримы ----
+            // ---- Первая строка: Общий зачёт + Стримы + Этапы ----
             const mainTabsDiv = document.createElement('div');
             mainTabsDiv.className = 'main-tabs';
 
@@ -1199,7 +1200,7 @@
             }
         }
 
-        // ---- ОБЩИЙ ЗАЧЁТ (с бонусами) ----
+        // ---- ОБЩИЙ ЗАЧЁТ (с бонусами стримов) ----
         _renderOverall(calculator) {
             const overall = calculator.getOverall();
             const stages = calculator.getStages();
@@ -1210,7 +1211,7 @@
             for (const [name, points] of Object.entries(overall)) {
                 let gold = 0, silver = 0, bronze = 0;
                 let totalDnf = 0;
-                let racePoints = 0; // отдельно сумма очков этапов
+                let racePoints = 0;
                 const stagePoints = {};
                 for (const track of stageOrder) {
                     const results = stages[track] || [];
@@ -1337,7 +1338,7 @@
             });
         }
 
-        // ---- АНАЛИТИКА (дополнена стримами) ----
+        // ---- АНАЛИТИКА ЧЕМПИОНАТА (с блоком стримов) ----
         _renderInsights(calculator) {
             const overall = calculator.getOverall();
             const stages = calculator.getStages();
@@ -1368,7 +1369,6 @@
                             totalPenalty += stats[track].penaltySum || 0;
                         }
                     }
-                    // количество стримовых попыток
                     if (streamResults[track]) {
                         const found = streamResults[track].find(r => r.name === name);
                         if (found) streamCount++;
@@ -1411,14 +1411,13 @@
             html += this._insightStability(calculator);
             html += this._insightTrends(calculator, stageOrder);
             html += this._insightForecast(calculator, stageOrder);
-            html += this._insightStreams(calculator, sorted);  // новый блок
+            html += this._insightStreams(calculator, sorted);
             html += this._insightGeneralRecommendation(calculator);
 
             html += `</div>`;
             this.container.innerHTML = html;
         }
 
-        // Новый инсайт о стримах
         _insightStreams(calculator, sorted) {
             const streamBonuses = calculator.getStreamBonuses();
             if (Object.keys(streamBonuses).length === 0) return '';
@@ -1441,8 +1440,7 @@
                 </div>`;
         }
 
-        // Остальные инсайты без изменений (опущены для краткости, но они есть в полной версии)
-        // Здесь я вставлю заглушки, чтобы не перегружать ответ, но в итоговом файле они будут полными.
+        // Остальные методы инсайтов (без изменений, но оставлены для полноты)
         _insightLeader(calculator, stageOrder, sorted) {
             if (sorted.length === 0) return '';
             const leader = sorted[0];
@@ -1744,7 +1742,7 @@
                 </div>`;
         }
 
-        // ---- АНАЛИТИКА ТРАССЫ (без изменений, но использует stageOrder) ----
+        // ---- АНАЛИТИКА ТРАССЫ (без изменений) ----
         _renderAnalytics(calculator) {
             const stageOrder = calculator.getStageOrder();
             if (stageOrder.length === 0) {
@@ -1786,7 +1784,7 @@
             const rows = calculator.getAllRows();
             const { trackIdx, statusIdx, timeIdx, intermediatesIdx, penaltyDetailsIdx, totalTimeIdx, typeIdx } = indices;
 
-            // Фильтруем только Race записи
+            // Фильтруем только Race записи для аналитики трассы
             const finishRows = rows.filter(row => {
                 const t = (row[trackIdx] || '').trim();
                 const status = (row[statusIdx] || '').trim();
@@ -1809,11 +1807,209 @@
                 return;
             }
 
-            // ... остальная логика без изменений (как в оригинале) ...
-            // Для краткости опущена, но в полном файле она есть.
-            // Здесь просто заглушка, чтобы не было ошибки.
-            container.innerHTML = `<div class="empty">Аналитика трассы (Race) – подробная статистика загружается...</div>`;
-            // В реальном файле здесь должен быть полный код, но для краткости я его не вставляю.
+            let allIntermediates = [];
+            let allPenaltyDetails = [];
+            let validTimes = [];
+            let totalTimes = [];
+
+            finishRows.forEach(row => {
+                const interStr = (row[intermediatesIdx] || '').trim();
+                if (interStr) {
+                    const arr = interStr.split(',').map(t => parseFloat(t.trim()));
+                    const clean = arr.filter(v => !isNaN(v) && v > 0);
+                    if (clean.length > 0) {
+                        allIntermediates.push(clean);
+                    }
+                }
+                let totalTime = 0;
+                if (totalTimeIdx !== undefined && totalTimeIdx !== -1 && row[totalTimeIdx]) {
+                    totalTime = parseFloat((row[totalTimeIdx] || '').replace(',', '.')) || 0;
+                }
+                if (totalTime <= 0) {
+                    const valid = parseFloat((row[timeIdx] || '').replace(',', '.')) || 0;
+                    totalTime = valid;
+                }
+                if (totalTime > 0) {
+                    validTimes.push(totalTime);
+                    totalTimes.push(totalTime);
+                }
+
+                const detailsStr = (row[penaltyDetailsIdx] || '').trim();
+                if (detailsStr) {
+                    try {
+                        const parsed = JSON.parse(detailsStr);
+                        if (Array.isArray(parsed)) {
+                            allPenaltyDetails.push(parsed);
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+            });
+
+            if (allIntermediates.length === 0) {
+                container.innerHTML =
+                    '<div class="empty">Нет данных о промежуточных временах для этой трассы. Добавьте колонку "Промежуточные времена" в Google Таблицу.</div>';
+                return;
+            }
+
+            let maxInter = 0;
+            allIntermediates.forEach(arr => { if (arr.length > maxInter) maxInter = arr.length; });
+            const SEG_COUNT = maxInter + 1;
+
+            const paddedIntermediates = allIntermediates.map(arr => {
+                const padded = [];
+                for (let i = 0; i < maxInter; i++) {
+                    padded.push(i < arr.length ? arr[i] : null);
+                }
+                return padded;
+            });
+
+            const segmentTimes = paddedIntermediates.map((inter, idx) => {
+                const total = totalTimes[idx] || 0;
+                const segs = [];
+                for (let i = 0; i < inter.length; i++) {
+                    segs.push(inter[i] !== null && inter[i] > 0 ? inter[i] : null);
+                }
+                segs.push(total > 0 ? total : null);
+                return segs;
+            });
+
+            const segStats = [];
+            for (let s = 0; s < SEG_COUNT; s++) {
+                let sum = 0, count = 0, best = Infinity, worst = -Infinity;
+                segmentTimes.forEach(segs => {
+                    if (segs.length > s && segs[s] !== null && segs[s] > 0) {
+                        const val = segs[s];
+                        sum += val;
+                        count++;
+                        if (val < best) best = val;
+                        if (val > worst) worst = val;
+                    }
+                });
+                segStats.push({
+                    best: count > 0 ? best : null,
+                    worst: count > 0 ? worst : null,
+                    avg: count > 0 ? sum / count : null,
+                    count: count
+                });
+            }
+
+            const penaltiesByGate = {};
+            allPenaltyDetails.forEach(details => {
+                details.forEach(item => {
+                    const gate = item.gate;
+                    const code = item.code;
+                    if (gate && code) {
+                        if (!penaltiesByGate[gate]) penaltiesByGate[gate] = [];
+                        penaltiesByGate[gate].push(code);
+                    }
+                });
+            });
+
+            const sortedTimes = [...validTimes].sort((a, b) => a - b);
+            const bestTime = sortedTimes[0] || 0;
+            const worstTime = sortedTimes[sortedTimes.length - 1] || 0;
+            const avgTime = validTimes.reduce((a, b) => a + b, 0) / validTimes.length || 0;
+            const totalPenalties = Object.values(penaltiesByGate).reduce((sum, arr) => sum + arr.length, 0);
+
+            let html = `<div class="analytics-stats">`;
+            html += `<div class="stat-card"><div class="label">Попыток</div><div class="value blue">${finishRows.length}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Лучшее</div><div class="value green">${this._formatTime(bestTime)}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Худшее</div><div class="value red">${this._formatTime(worstTime)}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Среднее</div><div class="value yellow">${this._formatTime(avgTime)}</div></div>`;
+            html += `<div class="stat-card"><div class="label">DNF</div><div class="value red">${dnfCount}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Всего штрафов</div><div class="value red">${totalPenalties}</div></div>`;
+            html += `</div>`;
+
+            html += `<div class="progressbar-wrapper">`;
+            html += `<div class="progressbar-title">Время прохождения отрезков (сек) — лучшие / средние / худшие (${SEG_COUNT} сегментов, ${SEG_COUNT+1} ворот)</div>`;
+            html += `<div class="progressbar-container">`;
+
+            html += `<div style="display:flex; margin-bottom:6px;">`;
+            const codesGate1 = penaltiesByGate[1] || [];
+            const icons1 = this._formatPenaltyIcons(codesGate1);
+            html += `<div style="flex:0 0 50px; text-align:center; min-height:28px; display:flex; flex-direction:column; align-items:center; justify-content:center;">${icons1}</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const gateNumber = i + 2;
+                const codes = penaltiesByGate[gateNumber] || [];
+                const iconsHtml = this._formatPenaltyIcons(codes);
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; min-height:28px; display:flex; flex-direction:column; align-items:center; justify-content:center;">${iconsHtml}</div>`;
+            }
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin:2px 0;">`;
+            html += `<div style="flex:0 0 50px; text-align:center; color:#88ddff;">СТАРТ</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const stat = segStats[i];
+                const val = stat.best !== null ? stat.best.toFixed(2) : '—';
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; color:#00ff88;">${val}</div>`;
+            }
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin:2px 0;">`;
+            html += `<div style="flex:0 0 50px; text-align:center; color:#88ddff;">СТАРТ</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const stat = segStats[i];
+                const val = stat.avg !== null ? stat.avg.toFixed(2) : '—';
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; color:#66ccff;">${val}</div>`;
+            }
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin:2px 0;">`;
+            html += `<div style="flex:0 0 50px; text-align:center; color:#88ddff;">СТАРТ</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const stat = segStats[i];
+                const val = stat.worst !== null ? stat.worst.toFixed(2) : '—';
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; color:#ff4466;">${val}</div>`;
+            }
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin-top:6px;">`;
+            html += `<div style="flex:0 0 50px; text-align:center; font-size:11px; color:#88ddff;">1</div>`;
+            for (let i = 0; i < SEG_COUNT; i++) {
+                const gateNumber = i + 2;
+                const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
+                html += `<div style="flex:${flex}; text-align:center; font-size:11px; color:#88ddff;">${gateNumber}</div>`;
+            }
+            html += `</div>`;
+            html += `</div></div>`;
+
+            html += `<div style="margin-top:20px; padding:10px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(102,204,255,0.1);">`;
+            html += `<div style="color:#88ddff; font-size:13px; margin-bottom:8px;">📌 Коды штрафов:</div>`;
+            const penaltyDescriptions = {
+                1: 'Превышение скорости',
+                2: 'Недостаток топлива',
+                3: 'Крен > 10°',
+                4: 'Тангаж > 10°',
+                5: 'Ошибка по высоте',
+                6: 'Сбит пилон'
+            };
+            for (let code = 1; code <= 6; code++) {
+                html += `<div style="display:inline-block; margin-right:12px; font-size:13px;">`;
+                html += `<img src="penalty_${code}.png" style="height:20px;width:20px;vertical-align:middle;" onerror="this.style.display='none'">`;
+                html += ` <span style="color:#e0e8f0;">${code} – ${penaltyDescriptions[code]}</span>`;
+                html += `</div>`;
+            }
+            html += `</div>`;
+
+            const fileName = this._findTrackFile(track);
+            if (fileName) {
+                html += `<div class="viz-container">`;
+                html += `<iframe src="${fileName}" title="Визуализация трассы «${track}»"></iframe>`;
+                html += `</div>`;
+            } else {
+                const allKeys = Object.keys(this._getTrackFileMap());
+                html += `<div style="margin-top:30px; padding:20px; text-align:center; color:#8899aa; border:1px dashed rgba(102,204,255,0.2); border-radius:8px;">
+                    🗺️ Визуализация для трассы «${track}» не найдена.<br>
+                    <span style="font-size:13px;">Доступные названия в маппинге: ${allKeys.join(', ')}</span><br>
+                    <span style="font-size:13px;">Убедитесь, что файл "${track}.html" (или его синоним) лежит в той же папке.</span>
+                </div>`;
+            }
+
+            container.innerHTML = html;
         }
 
         // ---- АНАЛИТИКА ПИЛОТА (с учётом стримов) ----
@@ -1940,11 +2136,303 @@
 
             container.innerHTML = html;
 
-            // Далее аналогично оригиналу, но с учётом стримов (опускаю для краткости)
-            // В полном файле здесь будут все методы.
+            const selector = document.getElementById('pilotTrackSelector');
+            if (selector && tracks.length > 0) {
+                tracks.forEach((track, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'track-btn' + (idx === 0 ? ' active' : '');
+                    btn.dataset.track = track;
+                    btn.textContent = track;
+                    selector.appendChild(btn);
+                });
+
+                selector.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.track-btn');
+                    if (!btn) return;
+                    selector.querySelectorAll('.track-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const track = btn.dataset.track;
+                    this._drawPilotSegmentChart(pilotName, track, stats, calculator);
+                    this._drawPilotAttemptsChart(pilotName, track, stats);
+                });
+
+                const firstTrack = tracks[0];
+                this._drawPilotSegmentChart(pilotName, firstTrack, stats, calculator);
+                this._drawPilotAttemptsChart(pilotName, firstTrack, stats);
+            }
+
+            this._drawPilotDnfChart(pilotName, stats);
         }
 
-        // Вспомогательные методы
+        _drawPilotDnfChart(pilotName, stats) {
+            const container = document.getElementById('pilotDnfChartContainer');
+            if (!container) return;
+
+            const reasons = {};
+            for (const track in stats) {
+                const trackData = stats[track];
+                trackData.attempts.forEach(att => {
+                    if (!att.isDnf) return;
+                    const normReason = this._normalizeDnfReason(att.dnfReason, att.penaltyCodes);
+                    if (!reasons[normReason]) reasons[normReason] = 0;
+                    reasons[normReason]++;
+                });
+            }
+
+            const total = Object.values(reasons).reduce((a, b) => a + b, 0);
+            if (total === 0) {
+                container.innerHTML = '<p style="color:#8899aa;">Нет DNF у этого пилота</p>';
+                return;
+            }
+
+            container.innerHTML = `<canvas id="pilotDnfCanvasModal" width="400" height="400"></canvas>`;
+            const canvas = document.getElementById('pilotDnfCanvasModal');
+            if (!canvas) return;
+
+            if (this.chartInstances.pilotDnf) {
+                this.chartInstances.pilotDnf.destroy();
+            }
+            const ctx = canvas.getContext('2d');
+            const labels = Object.keys(reasons);
+            const data = labels.map(label => reasons[label]);
+            const colors = ['#ff4466', '#ff8844', '#ffcc44', '#44ff88', '#4488ff', '#aa66ff', '#ff66aa'];
+
+            this.chartInstances.pilotDnf = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: '#0a0e1a',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#e0e8f0', font: { size: 12 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    let value = context.parsed || 0;
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    let percentage = ((value / total) * 100).toFixed(0);
+                                    return label + ': ' + value + ' (' + percentage + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        _drawPilotSegmentChart(pilotName, track, stats, calculator) {
+            const container = document.getElementById('pilotSegmentChartContainer');
+            if (!container) return;
+
+            const trackData = stats[track];
+            if (!trackData || trackData.attempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет попыток на этой трассе</div>';
+                return;
+            }
+
+            const finishAttempts = trackData.attempts.filter(a => !a.isDnf && a.validTime > 0 && a.intermediates.length > 0);
+            if (finishAttempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет финишных попыток с промежуточными временами</div>';
+                return;
+            }
+
+            let bestAttempt = null;
+            let bestTime = Infinity;
+            finishAttempts.forEach(a => {
+                if (a.validTime < bestTime) {
+                    bestTime = a.validTime;
+                    bestAttempt = a;
+                }
+            });
+            if (!bestAttempt) {
+                container.innerHTML = '<div class="empty">Нет подходящей попытки</div>';
+                return;
+            }
+
+            const intermediates = bestAttempt.intermediates;
+            const totalTime = bestAttempt.totalTime || bestAttempt.validTime;
+            const fullTimes = [0, ...intermediates, totalTime];
+            const segCount = fullTimes.length - 1;
+
+            const stageResults = calculator.getStages()[track] || [];
+            if (stageResults.length === 0) {
+                container.innerHTML = '<div class="empty">Нет рекорда трассы</div>';
+                return;
+            }
+            const recordPilot = stageResults[0].name;
+            const recordTime = stageResults[0].time;
+
+            const recordStats = calculator.getPilotStats(recordPilot);
+            if (!recordStats || !recordStats[track]) {
+                container.innerHTML = '<div class="empty">Нет данных рекордсмена</div>';
+                return;
+            }
+            const recordAttempts = recordStats[track].attempts.filter(a => !a.isDnf && a.validTime === recordTime && a.intermediates.length > 0);
+            if (recordAttempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет подходящей попытки рекордсмена</div>';
+                return;
+            }
+            const recordAttempt = recordAttempts[0];
+            const recordInter = recordAttempt.intermediates;
+            const recordTotal = recordAttempt.totalTime || recordAttempt.validTime;
+            const recordFull = [0, ...recordInter, recordTotal];
+
+            const diffs = [];
+            for (let i = 0; i < segCount; i++) {
+                const pilotSeg = fullTimes[i + 1] - fullTimes[i];
+                const recordSeg = recordFull[i + 1] - recordFull[i];
+                const diff = pilotSeg - recordSeg;
+                diffs.push(diff);
+            }
+
+            let html = `<div style="width:100%; padding:10px 0;">`;
+            html += `<div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:10px;">`;
+            html += `<span style="color:#00ff88;">▲ быстрее</span> <span style="color:#ff4466;">▼ медленнее</span>`;
+            html += `</div>`;
+            html += `<div style="display:flex; align-items:flex-end; height:150px; margin-top:10px;">`;
+            html += `<div style="flex:0 0 40px;"></div>`;
+            const maxDiff = Math.max(...diffs.map(d => Math.abs(d)), 0.1);
+            for (let i = 0; i < diffs.length; i++) {
+                const diff = diffs[i];
+                const heightPct = (Math.abs(diff) / maxDiff) * 100;
+                const color = diff > 0 ? '#ff4466' : '#00ff88';
+                const barHeight = Math.max(5, heightPct / 100 * 120);
+                html += `<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;">`;
+                html += `<div style="font-size:10px; color:#88ddff;">${diff.toFixed(2)}</div>`;
+                html += `<div style="width:80%; background:${color}; height:${barHeight}px; border-radius:4px 4px 0 0; transition:0.2s;"></div>`;
+                html += `</div>`;
+            }
+            html += `<div style="flex:0 0 40px;"></div>`;
+            html += `</div>`;
+
+            html += `<div style="display:flex; margin-top:4px;">`;
+            html += `<div style="flex:0 0 40px; text-align:center; font-size:11px; color:#88ddff;">1</div>`;
+            for (let i = 0; i < segCount; i++) {
+                html += `<div style="flex:1; text-align:center; font-size:11px; color:#88ddff;">${i+2}</div>`;
+            }
+            html += `<div style="flex:0 0 40px;"></div>`;
+            html += `</div>`;
+
+            html += `<div style="text-align:center; color:#8899aa; font-size:12px; margin-top:10px;">Разница времени на сегменте (пилот – рекорд)</div>`;
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        _drawPilotAttemptsChart(pilotName, track, stats) {
+            const container = document.getElementById('pilotAttemptsChartContainer');
+            if (!container) return;
+
+            const trackData = stats[track];
+            if (!trackData || trackData.attempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет попыток на этой трассе</div>';
+                return;
+            }
+
+            const attempts = trackData.attempts;
+            const validAttempts = attempts.filter(a => !a.isDnf && a.validTime > 0);
+            if (validAttempts.length === 0) {
+                container.innerHTML = '<div class="empty">Нет финишных попыток</div>';
+                return;
+            }
+
+            const times = attempts.map(a => a.isDnf ? null : a.validTime);
+            const validTimes = times.filter(t => t !== null);
+            const maxVal = Math.max(...validTimes) * 1.15;
+
+            let html = `<div style="width:100%;">`;
+            html += `<canvas id="pilotAttemptsCanvas" width="1000" height="300" style="width:100%; height:auto; max-width:100%; background:#0a0e1a; border-radius:8px;"></canvas>`;
+            html += `</div>`;
+            container.innerHTML = html;
+
+            const canvas = document.getElementById('pilotAttemptsCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            const padding = { top: 30, right: 30, bottom: 40, left: 70 };
+            const chartW = w - padding.left - padding.right;
+            const chartH = h - padding.top - padding.bottom;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const dataLength = times.length;
+            const xScale = (i) => padding.left + (i / (dataLength - 1 || 1)) * chartW;
+            const yScale = (val) => padding.top + chartH - ((val) / maxVal) * chartH;
+
+            ctx.strokeStyle = 'rgba(102,204,255,0.15)';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#88ddff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const steps = 5;
+            for (let i = 0; i <= steps; i++) {
+                const val = (i / steps) * maxVal;
+                const y = yScale(val);
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(w - padding.right, y);
+                ctx.stroke();
+                ctx.fillStyle = '#88ddff';
+                ctx.fillText(this._formatTime(val), padding.left - 10, y);
+            }
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#66ccff';
+            ctx.lineWidth = 2.5;
+            let started = false;
+            times.forEach((val, i) => {
+                if (val === null) { started = false; return; }
+                const x = xScale(i);
+                const y = yScale(val);
+                if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            times.forEach((val, i) => {
+                const x = xScale(i);
+                const isDnf = (val === null);
+                const y = isDnf ? padding.top + chartH + 10 : yScale(val);
+                ctx.beginPath();
+                ctx.arc(x, isDnf ? padding.top + chartH : yScale(val), 6, 0, 2 * Math.PI);
+                ctx.fillStyle = isDnf ? '#ff4466' : '#00ff88';
+                ctx.fill();
+                if (!isDnf) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(val.toFixed(2), x, y - 8);
+                } else {
+                    ctx.fillStyle = '#ff4466';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText('DNF', x, padding.top + chartH + 4);
+                }
+            });
+
+            ctx.fillStyle = '#88ddff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.font = '12px Arial';
+            for (let i = 0; i < dataLength; i++) {
+                const x = xScale(i);
+                ctx.fillText(i + 1, x, h - padding.bottom + 4);
+            }
+        }
+
         _formatTime(seconds) {
             if (!seconds || seconds <= 0) return '0:00.00';
             const mins = Math.floor(seconds / 60);
@@ -1952,18 +2440,128 @@
             return `${mins}:${secs.toFixed(2).padStart(5, '0')}`;
         }
 
-        // Остальные методы (аналитика трассы, пилота, сегменты, графики) должны быть скопированы из оригинального файла.
-        // Для краткости я их не вставляю, но они есть в полной версии.
-        // Здесь я просто помечу, что они должны быть.
-        // В реальном файле они все есть.
+        _formatPenaltyIcons(codesArray) {
+            if (!codesArray || codesArray.length === 0) return '';
+            const counts = {};
+            codesArray.forEach(code => {
+                const num = parseInt(code);
+                if (!isNaN(num) && num >= 1 && num <= 6) {
+                    counts[num] = (counts[num] || 0) + 1;
+                }
+            });
+            let result = '';
+            for (let code = 1; code <= 6; code++) {
+                if (counts[code]) {
+                    const count = counts[code];
+                    result += `<div class="penalty-item">`;
+                    result += `<img src="penalty_${code}.png" title="Штраф код ${code}" alt="${code}" style="height:20px;width:20px;" onerror="this.style.display='none'">`;
+                    if (count > 1) {
+                        result += `<span class="penalty-count">×${count}</span>`;
+                    }
+                    result += `</div>`;
+                }
+            }
+            return result;
+        }
 
-        // Заглушка для методов, которые могут быть вызваны
-        _drawPilotSegmentChart() {}
-        _drawPilotAttemptsChart() {}
-        _drawPilotDnfChart() {}
+        // ---- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ----
+        _getTrackFileMap() {
+            return {
+                "Новороссийск": "Novorossiysk.html",
+                "Анапа": "Anapa.html",
+                "Крымск": "Krymsk.html",
+                "Майкоп": "Maykop.html",
+                "Геленджик": "Gelenjik.html",
+                "Минеральные Воды": "MinVody.html",
+                "Гудаута": "Gudauta.html",
+                "Сочи": "Sochi.html",
+                "Пашковский": "Pashkovsky.html",
+                "Novorossiysk": "Novorossiysk.html",
+                "Anapa": "Anapa.html",
+                "Krymsk": "Krymsk.html",
+                "Maykop": "Maykop.html",
+                "Gelenjik": "Gelenjik.html",
+                "MinVody": "MinVody.html",
+                "Gudauta": "Gudauta.html",
+                "Sochi": "Sochi.html",
+                "Pashkovsky": "Pashkovsky.html"
+            };
+        }
 
-        // Старые методы из оригинального файла должны быть полностью перенесены.
-        // Я приведу их в финальном ответе.
+        _findTrackFile(trackName) {
+            const map = this._getTrackFileMap();
+            if (map[trackName]) return map[trackName];
+            const lowerTrack = trackName.toLowerCase();
+            for (const [key, file] of Object.entries(map)) {
+                if (key.toLowerCase() === lowerTrack) {
+                    return file;
+                }
+            }
+            return null;
+        }
+
+        _normalizeDnfReason(reason, penaltyCodes) {
+            if (penaltyCodes) {
+                const codes = penaltyCodes.split(',').map(c => parseInt(c.trim())).filter(c => !isNaN(c) && c >= 1 && c <= 6);
+                if (codes.includes(6)) return 'Сбит пилон';
+                if (codes.includes(5)) return 'Опасная высота';
+                if (codes.includes(3)) return 'Крен > 10°';
+                if (codes.includes(4)) return 'Тангаж > 10°';
+                if (codes.includes(1)) return 'Превышение скорости';
+                if (codes.includes(2)) return 'Недостаток топлива';
+            }
+            if (reason) {
+                const r = reason.toLowerCase();
+                if (r.includes('превышена стартовая скорость') || r.includes('превышение скорости')) return 'Превышение скорости';
+                if (r.includes('недостаток топлива') || r.includes('топливо')) return 'Недостаток топлива';
+                if (r.includes('сбит пилон') || r.includes('пилон')) return 'Сбит пилон';
+                if (r.includes('опасная высота') || r.includes('ошибка высоты') || r.includes('высота')) return 'Опасная высота';
+                if (r.includes('крен')) return 'Крен > 10°';
+                if (r.includes('тангаж')) return 'Тангаж > 10°';
+                if (r.includes('пропуск') || r.includes('таймаут') || r.includes('сход')) return 'Пропуск/сход';
+                if (reason.length > 30) return reason.substring(0, 27) + '...';
+                return reason;
+            }
+            return 'Другое';
+        }
+
+        _renderStage(tabName, calculator) {
+            const results = calculator.getStages()[tabName];
+            if (!results || results.length === 0) {
+                this.container.innerHTML = `<div class="empty">Нет результатов для этапа «${tabName}»</div>`;
+                return;
+            }
+            let html = `<div class="stage-title">🏁 Этап: ${tabName}</div>`;
+            html += `<table>
+                <thead><tr>
+                    <th>#</th>
+                    <th>Пилот</th>
+                    <th>Зачётное время</th>
+                    <th>Итого</th>
+                    <th>Очки (место+бонус)</th>
+                    <th>DNF</th>
+                </tr></thead><tbody>`;
+            results.forEach(r => {
+                const cls = r.place === 1 ? 'gold' : r.place === 2 ? 'silver' : r.place === 3 ? 'bronze' : '';
+                const basePoints = r.basePoints !== undefined ? r.basePoints : r.points + (r.dnf || 0);
+                html += `<tr>
+                    <td class="pos ${cls}">${r.place}</td>
+                    <td><span class="pilot-name" data-pilot="${r.name}">${r.name}</span></td>
+                    <td><span class="time">${this._formatTime(r.time)}</span></td>
+                    <td><span class="points">${r.points}</span></td>
+                    <td>${basePoints}</td>
+                    <td>${r.dnf > 0 ? `<span class="dnf-badge">${r.dnf}</span>` : '—'}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            this.container.innerHTML = html;
+            this.container.querySelectorAll('.pilot-name').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    const pilot = e.currentTarget.dataset.pilot;
+                    document.dispatchEvent(new CustomEvent('showPilotStats', { detail: { pilot } }));
+                });
+            });
+        }
     }
 
     // ================================================================
