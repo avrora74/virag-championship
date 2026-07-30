@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Трасса «Гудаута» — ViRAG (интерактив)</title>
+    <title>Трасса «Гудаута» — avrora11 (анимация)</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #0a0e1a;
             color: #e0e8f0;
@@ -14,19 +15,18 @@
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            margin: 0;
             padding: 10px;
             user-select: none;
         }
         h1 {
             color: #66ccff;
             text-shadow: 0 0 20px rgba(102,204,255,0.3);
-            margin-bottom: 5px;
+            margin-bottom: 2px;
             font-size: 24px;
         }
         .info {
             color: #88ddff;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-size: 13px;
         }
         .canvas-wrapper {
@@ -39,9 +39,7 @@
             cursor: grab;
             touch-action: none;
         }
-        .canvas-wrapper:active {
-            cursor: grabbing;
-        }
+        .canvas-wrapper:active { cursor: grabbing; }
         canvas {
             display: block;
             width: 1000px;
@@ -50,34 +48,67 @@
             height: auto;
             background: #0d1225;
         }
-        .controls-hint {
-            margin-top: 10px;
+        .controls {
+            margin-top: 12px;
             display: flex;
-            gap: 20px;
+            align-items: center;
+            gap: 16px;
             flex-wrap: wrap;
-            justify-content: center;
-            font-size: 12px;
-            color: #88ddff;
-            opacity: 0.7;
-        }
-        .controls-hint span {
             background: rgba(255,255,255,0.05);
-            padding: 4px 12px;
+            padding: 8px 16px;
             border-radius: 12px;
+            border: 1px solid rgba(102,204,255,0.1);
+            width: 100%;
+            max-width: 1000px;
+            justify-content: center;
         }
-        .reset-btn {
+        .controls button {
             background: rgba(102,204,255,0.15);
             border: 1px solid #66ccff;
             color: #66ccff;
-            padding: 4px 16px;
-            border-radius: 16px;
+            padding: 6px 14px;
+            border-radius: 20px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 14px;
             transition: 0.2s;
+            min-width: 60px;
         }
-        .reset-btn:hover {
-            background: rgba(102,204,255,0.3);
+        .controls button:hover { background: rgba(102,204,255,0.3); }
+        .controls button.active { background: rgba(102,204,255,0.3); box-shadow: 0 0 20px rgba(102,204,255,0.2); }
+        .controls input[type="range"] {
+            flex: 1;
+            min-width: 120px;
+            background: transparent;
+            cursor: pointer;
+            accent-color: #66ccff;
+            height: 4px;
         }
+        .controls .time-display {
+            font-size: 14px;
+            color: #88ddff;
+            min-width: 80px;
+            text-align: center;
+        }
+        .controls .speed-label {
+            font-size: 13px;
+            color: #88ddff;
+        }
+        .controls .speed-value {
+            font-size: 14px;
+            color: #66ccff;
+            min-width: 40px;
+            text-align: center;
+        }
+        .controls .telemetry {
+            display: flex;
+            gap: 12px;
+            font-size: 13px;
+            color: #aaccee;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .controls .telemetry span { background: rgba(0,0,0,0.3); padding: 2px 10px; border-radius: 12px; }
+        .controls .telemetry .highlight { color: #66ccff; font-weight: 600; }
         .legend {
             margin-top: 10px;
             display: flex;
@@ -89,6 +120,8 @@
         .legend-item { display: flex; align-items: center; gap: 6px; }
         .legend-color { width: 20px; height: 4px; border-radius: 2px; }
         .legend-color.polygon { background: #66ccff; }
+        .legend-color.track-first { background: #ff4466; }
+        .legend-color.track-second { background: #4488ff; }
         .legend-color.pylon {
             display: inline-block;
             width: 0; height: 0;
@@ -96,13 +129,38 @@
             border-right: 8px solid transparent;
             border-bottom: 16px solid #ff4466;
         }
+        .legend-color.plane {
+            display: inline-block;
+            width: 0; height: 0;
+            border-left: 8px solid #88ddff;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
         .footer {
             margin-top: 10px;
             color: #556677;
             font-size: 12px;
         }
+        #tooltip {
+            position: absolute;
+            background: rgba(10,14,26,0.92);
+            border: 1px solid rgba(102,204,255,0.3);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            color: #e0e8f0;
+            pointer-events: none;
+            display: none;
+            backdrop-filter: blur(4px);
+            line-height: 1.5;
+            z-index: 10;
+            min-width: 120px;
+        }
+        #tooltip .highlight { color: #66ccff; font-weight: 600; }
         @media (max-width: 1024px) {
             canvas { width: 100%; height: auto; }
+            .controls { flex-direction: column; align-items: stretch; gap: 8px; }
+            .controls .telemetry { justify-content: center; }
         }
     </style>
 </head>
@@ -111,26 +169,38 @@
     <div class="info">19 ворот · 14 пилонов</div>
     <div class="canvas-wrapper" id="canvasWrapper">
         <canvas id="trackCanvas" width="1000" height="650"></canvas>
+        <div id="tooltip"></div>
     </div>
-    <div class="controls-hint">
-        <span>🖱 ЛКМ + drag = панорамирование</span>
-        <span>🔄 ПКМ + drag = вращение</span>
-        <span>🔍 Колесо = масштаб</span>
-        <span>🔄 Двойной клик = сброс</span>
-        <button class="reset-btn" id="resetViewBtn">Сбросить вид</button>
+
+    <!-- Панель управления -->
+    <div class="controls" id="controls">
+        <button id="playBtn">▶</button>
+        <button id="resetBtn">⟲</button>
+        <input type="range" id="timeSlider" min="0" max="100" value="0" step="0.1">
+        <span class="time-display" id="timeDisplay">0.0 с</span>
+        <span class="speed-label">Скорость</span>
+        <input type="range" id="speedSlider" min="0.1" max="5" value="1" step="0.1" style="width:80px;">
+        <span class="speed-value" id="speedValue">1×</span>
+        <div class="telemetry" id="telemetry">
+            <span>⏱ <span class="highlight" id="currentTime">0.0</span> с</span>
+            <span>⚡ <span class="highlight" id="currentSpeed">0</span> км/ч</span>
+            <span>🔄 <span class="highlight" id="currentRoll">0</span>°</span>
+            <span>📐 <span class="highlight" id="currentPitch">0</span>°</span>
+        </div>
     </div>
+
     <div class="legend">
         <span class="legend-item"><span class="legend-color polygon"></span> Ворота</span>
-        <span class="legend-item"><span class="legend-color pylon"></span> Пилоны (конусы)</span>
-        <span class="legend-item"><span style="color:#88ddff;">Цифры</span> — номера ворот</span>
-        <span class="legend-item"><span style="color:#ff4466;">Круг-1</span>
-        <span class="legend-item"><span style="color:#4488ff;">Круг-2</span>
+        <span class="legend-item"><span class="legend-color track-first"></span> Первый круг</span>
+        <span class="legend-item"><span class="legend-color track-second"></span> Второй круг</span>
+        <span class="legend-item"><span class="legend-color pylon"></span> Пилоны</span>
+        <span class="legend-item"><span class="legend-color plane"></span> Самолёт</span>
     </div>
-    <div class="footer">Данные из миссии ViRAG</div>
+    <div class="footer">Данные трека из Gudauta_avrora11_2026-07-29_23-26-23.csv</div>
 
     <script>
         // ============================================================
-        //  Данные трассы «Гудаута»
+        //  ДАННЫЕ ТРАССЫ (из Gudauta.html)
         // ============================================================
 
         const gates = [
@@ -268,24 +338,506 @@
         ];
 
         // ============================================================
-        //  Состояние камеры
+        //  ДАННЫЕ ТРЕКА (из CSV)
         // ============================================================
 
-        const state = {
-            rotation: 0,
-            scale: 1,
-            offsetX: 0,
-            offsetY: 0,
-            baseScale: 1,
-        };
+        const trackData = [
+            {time:0.300, x:-195825.991, y:173.167, z:515983.680, speed_ms:66.63, speed_kmh:239.88, roll:-23.20, pitch:59.56},
+            {time:0.600, x:-195808.024, y:167.914, z:515991.104, speed_ms:67.63, speed_kmh:243.45, roll:-21.72, pitch:53.07},
+            {time:0.900, x:-195790.152, y:162.323, z:515999.300, speed_ms:68.62, speed_kmh:247.04, roll:-20.67, pitch:43.68},
+            {time:1.200, x:-195772.302, y:156.337, z:516008.001, speed_ms:69.63, speed_kmh:250.68, roll:-18.96, pitch:30.77},
+            {time:1.500, x:-195754.413, y:150.002, z:516017.105, speed_ms:70.67, speed_kmh:254.41, roll:-17.72, pitch:17.79},
+            {time:1.800, x:-195736.412, y:143.433, z:516026.545, speed_ms:71.72, speed_kmh:258.21, roll:-17.07, pitch:6.71},
+            {time:2.100, x:-195718.212, y:136.741, z:516036.238, speed_ms:72.79, speed_kmh:262.05, roll:-16.46, pitch:1.17},
+            {time:2.400, x:-195699.731, y:130.052, z:516046.112, speed_ms:73.83, speed_kmh:265.78, roll:-15.80, pitch:-0.53},
+            {time:2.700, x:-195680.917, y:123.467, z:516056.107, speed_ms:74.81, speed_kmh:269.32, roll:-15.12, pitch:-2.38},
+            {time:3.000, x:-195661.742, y:117.055, z:516066.169, speed_ms:75.74, speed_kmh:272.66, roll:-14.42, pitch:-4.45},
+            {time:3.300, x:-195642.193, y:110.859, z:516076.254, speed_ms:76.61, speed_kmh:275.79, roll:-13.75, pitch:-6.83},
+            {time:3.600, x:-195622.268, y:104.902, z:516086.324, speed_ms:77.42, speed_kmh:278.72, roll:-13.04, pitch:-9.41},
+            {time:3.900, x:-195601.962, y:99.213, z:516096.324, speed_ms:78.16, speed_kmh:281.39, roll:-11.99, pitch:-12.19},
+            {time:4.200, x:-195581.248, y:93.897, z:516106.169, speed_ms:78.81, speed_kmh:283.70, roll:-9.95, pitch:-15.05},
+            {time:4.500, x:-195560.058, y:89.194, z:516115.730, speed_ms:79.35, speed_kmh:285.65, roll:-7.99, pitch:-17.94},
+            {time:4.800, x:-195538.371, y:85.223, z:516124.882, speed_ms:79.82, speed_kmh:287.34, roll:-6.88, pitch:-19.18},
+            {time:5.100, x:-195516.259, y:81.850, z:516133.599, speed_ms:80.22, speed_kmh:288.81, roll:-6.71, pitch:-17.42},
+            {time:5.400, x:-195493.836, y:78.795, z:516141.956, speed_ms:80.58, speed_kmh:290.10, roll:-6.79, pitch:-13.49},
+            {time:5.700, x:-195471.198, y:75.835, z:516150.060, speed_ms:80.91, speed_kmh:291.29, roll:-6.84, pitch:-6.24},
+            {time:6.000, x:-195448.403, y:72.846, z:516158.014, speed_ms:81.27, speed_kmh:292.56, roll:-6.66, pitch:-0.68},
+            {time:6.300, x:-195425.467, y:69.841, z:516165.892, speed_ms:81.64, speed_kmh:293.91, roll:-6.44, pitch:0.19},
+            {time:6.600, x:-195402.395, y:66.873, z:516173.731, speed_ms:82.00, speed_kmh:295.20, roll:-6.26, pitch:-0.08},
+            {time:6.900, x:-195379.193, y:63.965, z:516181.538, speed_ms:82.34, speed_kmh:296.42, roll:-6.06, pitch:0.06},
+            {time:7.200, x:-195355.873, y:61.133, z:516189.314, speed_ms:82.60, speed_kmh:297.37, roll:-5.73, pitch:0.61},
+            {time:7.500, x:-195332.479, y:58.421, z:516197.052, speed_ms:82.62, speed_kmh:297.43, roll:-4.98, pitch:1.88},
+            {time:7.800, x:-195309.067, y:55.921, z:516204.737, speed_ms:82.51, speed_kmh:297.02, roll:-4.24, pitch:3.33},
+            {time:8.100, x:-195285.652, y:53.681, z:516212.364, speed_ms:82.36, speed_kmh:296.48, roll:-3.31, pitch:4.47},
+            {time:8.400, x:-195262.249, y:51.775, z:516219.945, speed_ms:82.16, speed_kmh:295.77, roll:-1.78, pitch:5.11},
+            {time:8.700, x:-195238.879, y:50.359, z:516227.520, speed_ms:81.92, speed_kmh:294.91, roll:-0.53, pitch:4.85},
+            {time:9.000, x:-195215.565, y:49.453, z:516235.100, speed_ms:81.64, speed_kmh:293.90, roll:-0.02, pitch:3.69},
+            {time:9.300, x:-195192.325, y:48.915, z:516242.655, speed_ms:81.32, speed_kmh:292.76, roll:0.39, pitch:2.42},
+            {time:9.600, x:-195169.164, y:48.647, z:516250.148, speed_ms:81.02, speed_kmh:291.66, roll:0.93, pitch:1.21},
+            {time:9.900, x:-195146.020, y:48.626, z:516257.564, speed_ms:81.04, speed_kmh:291.74, roll:1.57, pitch:0.15},
+            {time:10.200, x:-195122.849, y:48.874, z:516264.907, speed_ms:81.02, speed_kmh:291.67, roll:2.16, pitch:-0.41},
+            {time:10.500, x:-195099.676, y:49.381, z:516272.193, speed_ms:80.97, speed_kmh:291.48, roll:2.45, pitch:-0.03},
+            {time:10.800, x:-195076.508, y:50.070, z:516279.430, speed_ms:80.91, speed_kmh:291.27, roll:2.47, pitch:0.26},
+            {time:11.100, x:-195053.347, y:50.848, z:516286.608, speed_ms:80.83, speed_kmh:291.00, roll:2.53, pitch:0.55},
+            {time:11.400, x:-195030.190, y:51.674, z:516293.715, speed_ms:80.74, speed_kmh:290.68, roll:2.62, pitch:1.42},
+            {time:11.700, x:-195007.048, y:52.535, z:516300.763, speed_ms:80.64, speed_kmh:290.31, roll:2.77, pitch:3.94},
+            {time:12.000, x:-194983.933, y:53.424, z:516307.790, speed_ms:80.53, speed_kmh:289.91, roll:2.95, pitch:7.89},
+            {time:12.300, x:-194960.863, y:54.333, z:516314.847, speed_ms:80.43, speed_kmh:289.55, roll:3.09, pitch:11.55},
+            {time:12.600, x:-194937.841, y:55.245, z:516321.974, speed_ms:80.35, speed_kmh:289.26, roll:3.09, pitch:12.54},
+            {time:12.900, x:-194914.873, y:56.147, z:516329.194, speed_ms:80.28, speed_kmh:289.00, roll:3.06, pitch:12.40},
+            {time:13.200, x:-194891.958, y:57.040, z:516336.516, speed_ms:80.21, speed_kmh:288.75, roll:2.92, pitch:11.82},
+            {time:13.500, x:-194869.095, y:57.907, z:516343.934, speed_ms:80.14, speed_kmh:288.49, roll:2.64, pitch:10.43},
+            {time:13.800, x:-194846.276, y:58.714, z:516351.426, speed_ms:80.07, speed_kmh:288.26, roll:2.41, pitch:8.51},
+            {time:14.100, x:-194823.489, y:59.458, z:516358.966, speed_ms:80.02, speed_kmh:288.06, roll:2.30, pitch:6.50},
+            {time:14.400, x:-194800.728, y:60.161, z:516366.529, speed_ms:79.96, speed_kmh:287.84, roll:2.20, pitch:3.61},
+            {time:14.700, x:-194777.981, y:60.843, z:516374.081, speed_ms:79.90, speed_kmh:287.64, roll:2.20, pitch:0.46},
+            {time:15.000, x:-194755.235, y:61.529, z:516381.588, speed_ms:79.85, speed_kmh:287.48, roll:2.09, pitch:-1.68},
+            {time:15.300, x:-194732.476, y:62.203, z:516389.020, speed_ms:79.82, speed_kmh:287.34, roll:1.93, pitch:-3.11},
+            {time:15.600, x:-194709.695, y:62.840, z:516396.355, speed_ms:79.79, speed_kmh:287.24, roll:1.78, pitch:-3.81},
+            {time:15.900, x:-194686.887, y:63.428, z:516403.579, speed_ms:79.76, speed_kmh:287.13, roll:1.70, pitch:-3.57},
+            {time:16.200, x:-194664.050, y:63.976, z:516410.688, speed_ms:79.74, speed_kmh:287.05, roll:1.71, pitch:-3.22},
+            {time:16.500, x:-194641.185, y:64.505, z:516417.685, speed_ms:79.72, speed_kmh:286.99, roll:1.67, pitch:-3.13},
+            {time:16.800, x:-194618.290, y:65.014, z:516424.575, speed_ms:79.71, speed_kmh:286.95, roll:1.47, pitch:-3.13},
+            {time:17.100, x:-194595.365, y:65.466, z:516431.361, speed_ms:79.70, speed_kmh:286.93, roll:1.05, pitch:-2.50},
+            {time:17.400, x:-194572.413, y:65.796, z:516438.057, speed_ms:79.70, speed_kmh:286.93, roll:0.67, pitch:-1.00},
+            {time:17.700, x:-194549.436, y:65.976, z:516444.680, speed_ms:79.71, speed_kmh:286.95, roll:0.34, pitch:2.01},
+            {time:18.000, x:-194526.444, y:65.994, z:516451.259, speed_ms:79.72, speed_kmh:286.99, roll:0.18, pitch:6.77},
+            {time:18.300, x:-194503.450, y:65.873, z:516457.845, speed_ms:79.74, speed_kmh:287.05, roll:0.35, pitch:12.21},
+            {time:18.600, x:-194480.476, y:65.679, z:516464.511, speed_ms:79.75, speed_kmh:287.11, roll:0.88, pitch:17.91},
+            {time:18.900, x:-194457.552, y:65.505, z:516471.358, speed_ms:79.76, speed_kmh:287.13, roll:1.68, pitch:23.79},
+            {time:19.200, x:-194434.726, y:65.429, z:516478.510, speed_ms:79.73, speed_kmh:287.01, roll:2.95, pitch:30.14},
+            {time:19.500, x:-194412.074, y:65.542, z:516486.135, speed_ms:79.65, speed_kmh:286.73, roll:4.96, pitch:37.35},
+            {time:19.800, x:-194389.698, y:65.923, z:516494.442, speed_ms:79.53, speed_kmh:286.32, roll:6.78, pitch:44.74},
+            {time:20.100, x:-194367.685, y:66.499, z:516503.559, speed_ms:79.40, speed_kmh:285.84, roll:8.15, pitch:52.19},
+            {time:20.400, x:-194346.102, y:67.108, z:516513.550, speed_ms:79.25, speed_kmh:285.31, roll:9.72, pitch:59.73},
+            {time:20.700, x:-194325.068, y:67.630, z:516524.539, speed_ms:79.08, speed_kmh:284.70, roll:12.92, pitch:67.33},
+            {time:21.000, x:-194304.785, y:67.993, z:516536.768, speed_ms:78.93, speed_kmh:284.16, roll:17.15, pitch:74.55},
+            {time:21.300, x:-194285.411, y:68.057, z:516550.333, speed_ms:78.86, speed_kmh:283.88, roll:17.96, pitch:79.46},
+            {time:21.600, x:-194266.999, y:67.685, z:516565.165, speed_ms:78.86, speed_kmh:283.90, roll:6.15, pitch:78.39},
+            {time:21.900, x:-194249.476, y:66.855, z:516581.029, speed_ms:78.85, speed_kmh:283.87, roll:-2.06, pitch:62.70},
+            {time:22.200, x:-194232.601, y:65.674, z:516597.558, speed_ms:78.85, speed_kmh:283.86, roll:-2.27, pitch:34.78},
+            {time:22.500, x:-194216.151, y:64.439, z:516614.504, speed_ms:78.85, speed_kmh:283.86, roll:-0.20, pitch:5.50},
+            {time:22.800, x:-194199.832, y:63.637, z:516631.586, speed_ms:78.77, speed_kmh:283.57, roll:2.90, pitch:-21.91},
+            {time:23.100, x:-194183.181, y:63.509, z:516648.304, speed_ms:78.61, speed_kmh:282.99, roll:6.91, pitch:-45.66},
+            {time:23.400, x:-194165.736, y:63.925, z:516664.105, speed_ms:78.44, speed_kmh:282.39, roll:9.08, pitch:-59.82},
+            {time:23.700, x:-194147.253, y:64.577, z:516678.594, speed_ms:78.30, speed_kmh:281.88, roll:5.20, pitch:-63.49},
+            {time:24.000, x:-194127.805, y:65.204, z:516691.700, speed_ms:78.15, speed_kmh:281.34, roll:-0.38, pitch:-56.74},
+            {time:24.300, x:-194107.749, y:65.557, z:516703.800, speed_ms:78.05, speed_kmh:280.98, roll:-1.46, pitch:-42.22},
+            {time:24.600, x:-194087.356, y:65.550, z:516715.296, speed_ms:78.04, speed_kmh:280.93, roll:-0.76, pitch:-27.69},
+            {time:24.900, x:-194066.742, y:65.318, z:516726.403, speed_ms:78.08, speed_kmh:281.10, roll:-0.62, pitch:-15.57},
+            {time:25.200, x:-194045.992, y:64.949, z:516737.291, speed_ms:78.15, speed_kmh:281.35, roll:-1.02, pitch:-4.46},
+            {time:25.500, x:-194025.170, y:64.419, z:516748.082, speed_ms:78.22, speed_kmh:281.61, roll:-1.02, pitch:5.63},
+            {time:25.800, x:-194004.327, y:63.765, z:516758.861, speed_ms:78.27, speed_kmh:281.78, roll:0.11, pitch:16.19},
+            {time:26.100, x:-193983.554, y:63.178, z:516769.782, speed_ms:78.26, speed_kmh:281.74, roll:2.59, pitch:28.82},
+            {time:26.400, x:-193963.028, y:62.890, z:516781.133, speed_ms:78.17, speed_kmh:281.40, roll:6.56, pitch:41.99},
+            {time:26.700, x:-193943.046, y:63.061, z:516793.312, speed_ms:77.94, speed_kmh:280.59, roll:12.79, pitch:52.83},
+            {time:27.000, x:-193924.062, y:63.794, z:516806.807, speed_ms:77.58, speed_kmh:279.28, roll:20.45, pitch:61.52},
+            {time:27.300, x:-193906.577, y:65.015, z:516821.969, speed_ms:77.14, speed_kmh:277.72, roll:26.34, pitch:67.43},
+            {time:27.600, x:-193890.926, y:66.499, z:516838.834, speed_ms:76.76, speed_kmh:276.32, roll:26.65, pitch:70.47},
+            {time:27.900, x:-193877.183, y:67.999, z:516857.161, speed_ms:76.46, speed_kmh:275.25, roll:24.21, pitch:72.46},
+            {time:28.200, x:-193865.232, y:69.318, z:516876.633, speed_ms:76.24, speed_kmh:274.48, roll:21.08, pitch:73.16},
+            {time:28.500, x:-193854.912, y:70.349, z:516896.975, speed_ms:76.09, speed_kmh:273.93, roll:18.36, pitch:72.61},
+            {time:28.800, x:-193846.159, y:71.076, z:516918.010, speed_ms:75.99, speed_kmh:273.56, roll:16.96, pitch:72.88},
+            {time:29.100, x:-193838.945, y:71.495, z:516939.605, speed_ms:75.93, speed_kmh:273.35, roll:15.32, pitch:73.78},
+            {time:29.400, x:-193833.257, y:71.585, z:516961.649, speed_ms:75.94, speed_kmh:273.39, roll:11.11, pitch:73.90},
+            {time:29.700, x:-193829.008, y:71.309, z:516984.028, speed_ms:76.01, speed_kmh:273.63, roll:5.81, pitch:73.23},
+            {time:30.000, x:-193826.113, y:70.641, z:517006.640, speed_ms:76.12, speed_kmh:274.02, roll:1.85, pitch:72.03},
+            {time:30.300, x:-193824.612, y:69.610, z:517029.403, speed_ms:76.23, speed_kmh:274.42, roll:0.93, pitch:70.60},
+            {time:30.600, x:-193824.777, y:68.346, z:517052.230, speed_ms:76.33, speed_kmh:274.77, roll:1.61, pitch:69.16},
+            {time:30.900, x:-193826.844, y:66.995, z:517074.984, speed_ms:76.40, speed_kmh:275.04, roll:2.58, pitch:67.71},
+            {time:31.200, x:-193830.925, y:65.673, z:517097.481, speed_ms:76.43, speed_kmh:275.17, roll:3.94, pitch:66.22},
+            {time:31.500, x:-193837.123, y:64.510, z:517119.498, speed_ms:76.42, speed_kmh:275.10, roll:5.22, pitch:63.71},
+            {time:31.800, x:-193845.433, y:63.635, z:517140.815, speed_ms:76.37, speed_kmh:274.93, roll:5.89, pitch:59.90},
+            {time:32.100, x:-193855.624, y:63.160, z:517161.291, speed_ms:76.26, speed_kmh:274.52, roll:5.79, pitch:49.36},
+            {time:32.400, x:-193867.276, y:63.273, z:517180.939, speed_ms:76.12, speed_kmh:274.02, roll:5.41, pitch:31.77},
+            {time:32.700, x:-193879.819, y:64.059, z:517199.982, speed_ms:76.01, speed_kmh:273.62, roll:4.66, pitch:14.15},
+            {time:33.000, x:-193892.696, y:65.201, z:517218.752, speed_ms:75.94, speed_kmh:273.38, roll:3.57, pitch:0.67},
+            {time:33.300, x:-193905.635, y:66.303, z:517237.446, speed_ms:75.75, speed_kmh:272.69, roll:3.48, pitch:9.65},
+            {time:33.600, x:-193918.610, y:67.228, z:517256.001, speed_ms:75.39, speed_kmh:271.42, roll:11.03, pitch:40.44},
+            {time:33.900, x:-193932.136, y:68.437, z:517273.969, speed_ms:74.90, speed_kmh:269.64, roll:32.55, pitch:62.55},
+            {time:34.200, x:-193947.098, y:70.107, z:517290.458, speed_ms:74.23, speed_kmh:267.23, roll:50.31, pitch:70.13},
+            {time:34.500, x:-193963.920, y:72.009, z:517304.692, speed_ms:73.55, speed_kmh:264.78, roll:42.78, pitch:73.50},
+            {time:34.800, x:-193982.457, y:73.890, z:517316.249, speed_ms:72.96, speed_kmh:262.64, roll:34.45, pitch:77.65},
+            {time:35.100, x:-194002.363, y:75.515, z:517324.862, speed_ms:72.40, speed_kmh:260.65, roll:37.36, pitch:80.28},
+            {time:35.400, x:-194023.214, y:76.756, z:517330.334, speed_ms:71.90, speed_kmh:258.85, roll:46.75, pitch:80.41},
+            {time:35.700, x:-194044.530, y:77.604, z:517332.598, speed_ms:71.46, speed_kmh:257.26, roll:53.08, pitch:80.52},
+            {time:36.000, x:-194065.859, y:78.061, z:517331.757, speed_ms:71.17, speed_kmh:256.20, roll:48.58, pitch:81.83},
+            {time:36.300, x:-194086.870, y:78.062, z:517328.197, speed_ms:71.10, speed_kmh:255.97, roll:26.35, pitch:83.23},
+            {time:36.600, x:-194107.414, y:77.518, z:517322.493, speed_ms:71.22, speed_kmh:256.38, roll:-1.79, pitch:81.20},
+            {time:36.900, x:-194127.478, y:76.396, z:517315.167, speed_ms:71.45, speed_kmh:257.22, roll:-8.65, pitch:72.74},
+            {time:37.200, x:-194147.124, y:74.758, z:517306.646, speed_ms:71.78, speed_kmh:258.42, roll:-7.56, pitch:62.39},
+            {time:37.500, x:-194166.429, y:72.730, z:517297.203, speed_ms:72.16, speed_kmh:259.77, roll:-5.63, pitch:51.63},
+            {time:37.800, x:-194185.442, y:70.493, z:517286.974, speed_ms:72.57, speed_kmh:261.25, roll:-4.59, pitch:41.60},
+            {time:38.100, x:-194204.223, y:68.205, z:517276.080, speed_ms:72.98, speed_kmh:262.73, roll:-4.40, pitch:31.99},
+            {time:38.400, x:-194222.838, y:65.938, z:517264.665, speed_ms:73.38, speed_kmh:264.17, roll:-4.22, pitch:22.34},
+            {time:38.700, x:-194241.356, y:63.751, z:517252.859, speed_ms:73.75, speed_kmh:265.49, roll:-3.68, pitch:11.84},
+            {time:39.000, x:-194259.851, y:61.740, z:517240.795, speed_ms:74.09, speed_kmh:266.72, roll:-2.55, pitch:1.94},
+            {time:39.300, x:-194278.413, y:60.043, z:517228.596, speed_ms:74.43, speed_kmh:267.94, roll:-1.51, pitch:-2.18},
+            {time:39.600, x:-194297.099, y:58.727, z:517216.368, speed_ms:74.70, speed_kmh:268.94, roll:-0.52, pitch:-2.70},
+            {time:39.900, x:-194315.915, y:57.802, z:517204.172, speed_ms:74.91, speed_kmh:269.68, roll:0.18, pitch:-0.76},
+            {time:40.200, x:-194334.838, y:57.212, z:517192.017, speed_ms:75.08, speed_kmh:270.29, roll:0.92, pitch:1.71},
+            {time:40.500, x:-194353.834, y:56.924, z:517179.879, speed_ms:75.23, speed_kmh:270.81, roll:1.51, pitch:2.25},
+            {time:40.800, x:-194372.877, y:56.895, z:517167.732, speed_ms:75.35, speed_kmh:271.27, roll:1.51, pitch:1.73},
+            {time:41.100, x:-194391.953, y:57.005, z:517155.567, speed_ms:75.47, speed_kmh:271.69, roll:1.22, pitch:0.88},
+            {time:41.400, x:-194411.064, y:57.135, z:517143.396, speed_ms:75.58, speed_kmh:272.08, roll:1.14, pitch:0.12},
+            {time:41.700, x:-194430.220, y:57.260, z:517131.238, speed_ms:75.68, speed_kmh:272.44, roll:1.31, pitch:-0.73},
+            {time:42.000, x:-194449.408, y:57.442, z:517119.155, speed_ms:75.49, speed_kmh:271.76, roll:6.39, pitch:-8.01},
+            {time:42.300, x:-194468.666, y:58.644, z:517107.582, speed_ms:74.78, speed_kmh:269.21, roll:21.52, pitch:-30.26},
+            {time:42.600, x:-194488.263, y:62.205, z:517097.794, speed_ms:73.56, speed_kmh:264.80, roll:35.13, pitch:-37.88},
+            {time:42.900, x:-194508.000, y:68.135, z:517090.800, speed_ms:71.95, speed_kmh:259.03, roll:39.98, pitch:-40.47},
+            {time:43.200, x:-194527.337, y:76.029, z:517086.910, speed_ms:70.10, speed_kmh:252.37, roll:44.31, pitch:-45.55},
+            {time:43.500, x:-194545.766, y:85.333, z:517086.167, speed_ms:68.06, speed_kmh:245.00, roll:52.94, pitch:-49.20},
+            {time:43.800, x:-194562.853, y:95.553, z:517088.450, speed_ms:65.97, speed_kmh:237.49, roll:63.10, pitch:-48.77},
+            {time:44.100, x:-194578.186, y:106.357, z:517093.447, speed_ms:63.86, speed_kmh:229.90, roll:70.28, pitch:-46.60},
+            {time:44.400, x:-194591.383, y:117.535, z:517100.737, speed_ms:61.68, speed_kmh:222.06, roll:75.26, pitch:-46.05},
+            {time:44.700, x:-194602.147, y:128.889, z:517109.853, speed_ms:59.45, speed_kmh:214.03, roll:80.06, pitch:-47.62},
+            {time:45.000, x:-194610.318, y:140.178, z:517120.336, speed_ms:57.23, speed_kmh:206.01, roll:86.47, pitch:-50.06},
+            {time:45.300, x:-194615.869, y:151.129, z:517131.773, speed_ms:55.05, speed_kmh:198.20, roll:94.15, pitch:-52.04},
+            {time:45.600, x:-194618.851, y:161.490, z:517143.789, speed_ms:52.99, speed_kmh:190.78, roll:101.65, pitch:-53.56},
+            {time:45.900, x:-194619.366, y:171.064, z:517156.028, speed_ms:51.08, speed_kmh:183.87, roll:109.51, pitch:-55.18},
+            {time:46.200, x:-194617.546, y:179.683, z:517168.160, speed_ms:49.31, speed_kmh:177.52, roll:118.81, pitch:-57.09},
+            {time:46.500, x:-194613.557, y:187.182, z:517179.895, speed_ms:47.72, speed_kmh:171.79, roll:131.05, pitch:-58.68},
+            {time:46.800, x:-194607.599, y:193.383, z:517190.999, speed_ms:46.37, speed_kmh:166.92, roll:146.67, pitch:-58.85},
+            {time:47.100, x:-194599.914, y:198.092, z:517201.299, speed_ms:45.34, speed_kmh:163.22, roll:163.81, pitch:-57.48},
+            {time:47.400, x:-194590.768, y:201.107, z:517210.671, speed_ms:44.71, speed_kmh:160.96, roll:-179.17, pitch:-54.10},
+            {time:47.700, x:-194580.450, y:202.244, z:517219.017, speed_ms:44.55, speed_kmh:160.37, roll:-163.71, pitch:-50.73},
+            {time:48.000, x:-194569.246, y:201.385, z:517226.233, speed_ms:44.91, speed_kmh:161.69, roll:-148.30, pitch:-50.56},
+            {time:48.300, x:-194557.425, y:198.543, z:517232.204, speed_ms:45.77, speed_kmh:164.77, roll:-133.63, pitch:-50.15},
+            {time:48.600, x:-194545.231, y:193.828, z:517236.839, speed_ms:47.04, speed_kmh:169.33, roll:-121.93, pitch:-49.13},
+            {time:48.900, x:-194532.871, y:187.384, z:517240.060, speed_ms:48.63, speed_kmh:175.08, roll:-111.42, pitch:-48.79},
+            {time:49.200, x:-194520.520, y:179.358, z:517241.722, speed_ms:50.47, speed_kmh:181.70, roll:-100.98, pitch:-48.77},
+            {time:49.500, x:-194508.371, y:169.906, z:517241.599, speed_ms:52.45, speed_kmh:188.81, roll:-90.94, pitch:-48.13},
+            {time:49.800, x:-194496.685, y:159.204, z:517239.426, speed_ms:54.48, speed_kmh:196.14, roll:-81.17, pitch:-46.47},
+            {time:50.100, x:-194485.771, y:147.477, z:517235.013, speed_ms:56.57, speed_kmh:203.64, roll:-72.81, pitch:-43.59},
+            {time:50.400, x:-194475.902, y:134.992, z:517228.347, speed_ms:58.69, speed_kmh:211.27, roll:-64.34, pitch:-39.19},
+            {time:50.700, x:-194467.180, y:122.063, z:517219.574, speed_ms:60.77, speed_kmh:218.76, roll:-53.44, pitch:-31.65},
+            {time:51.000, x:-194459.496, y:109.074, z:517208.867, speed_ms:62.73, speed_kmh:225.82, roll:-42.57, pitch:-21.31},
+            {time:51.300, x:-194452.592, y:96.448, z:517196.355, speed_ms:64.52, speed_kmh:232.28, roll:-33.12, pitch:-13.06},
+            {time:51.600, x:-194446.182, y:84.708, z:517182.082, speed_ms:66.05, speed_kmh:237.77, roll:-23.69, pitch:-10.69},
+            {time:51.900, x:-194440.054, y:74.534, z:517166.045, speed_ms:67.20, speed_kmh:241.92, roll:-14.48, pitch:-7.93},
+            {time:52.200, x:-194434.027, y:66.483, z:517148.458, speed_ms:68.06, speed_kmh:245.03, roll:-8.10, pitch:-4.07},
+            {time:52.500, x:-194427.981, y:60.613, z:517129.772, speed_ms:68.71, speed_kmh:247.34, roll:-3.02, pitch:-2.37},
+            {time:52.800, x:-194421.937, y:56.811, z:517110.403, speed_ms:69.04, speed_kmh:248.55, roll:2.10, pitch:-4.95},
+            {time:53.100, x:-194416.193, y:54.927, z:517090.606, speed_ms:69.05, speed_kmh:248.58, roll:6.86, pitch:-27.85},
+            {time:53.400, x:-194411.513, y:54.494, z:517070.497, speed_ms:68.81, speed_kmh:247.70, roll:21.41, pitch:-52.70},
+            {time:53.700, x:-194408.881, y:55.143, z:517050.148, speed_ms:68.33, speed_kmh:245.99, roll:34.92, pitch:-63.85},
+            {time:54.000, x:-194409.077, y:56.481, z:517029.827, speed_ms:67.79, speed_kmh:244.03, roll:28.93, pitch:-69.73},
+            {time:54.300, x:-194412.375, y:58.102, z:517009.967, speed_ms:67.22, speed_kmh:241.98, roll:12.23, pitch:-74.01},
+            {time:54.600, x:-194418.669, y:59.640, z:516991.007, speed_ms:66.71, speed_kmh:240.15, roll:1.48, pitch:-76.76},
+            {time:54.900, x:-194427.551, y:60.818, z:516973.194, speed_ms:66.46, speed_kmh:239.27, roll:4.59, pitch:-77.56},
+            {time:55.200, x:-194438.369, y:61.551, z:516956.484, speed_ms:66.45, speed_kmh:239.22, roll:7.84, pitch:-70.19},
+            {time:55.500, x:-194450.444, y:61.940, z:516940.613, speed_ms:66.57, speed_kmh:239.67, roll:4.72, pitch:-55.73},
+            {time:55.800, x:-194463.288, y:62.083, z:516925.282, speed_ms:66.77, speed_kmh:240.36, roll:1.21, pitch:-40.22},
+            {time:56.100, x:-194476.589, y:61.949, z:516910.258, speed_ms:67.00, speed_kmh:241.20, roll:-1.14, pitch:-24.75},
+            {time:56.400, x:-194490.177, y:61.459, z:516895.395, speed_ms:67.29, speed_kmh:242.23, roll:-1.94, pitch:-10.74},
+            {time:56.700, x:-194503.982, y:60.642, z:516880.617, speed_ms:67.65, speed_kmh:243.54, roll:-1.79, pitch:-2.57},
+            {time:57.000, x:-194517.965, y:59.650, z:516865.857, speed_ms:68.05, speed_kmh:244.99, roll:-1.35, pitch:-1.32},
+            {time:57.300, x:-194532.089, y:58.632, z:516851.069, speed_ms:68.43, speed_kmh:246.37, roll:-1.23, pitch:-3.11},
+            {time:57.600, x:-194546.345, y:57.630, z:516836.251, speed_ms:68.80, speed_kmh:247.68, roll:-1.23, pitch:-7.72},
+            {time:57.900, x:-194560.754, y:56.644, z:516821.428, speed_ms:69.17, speed_kmh:249.02, roll:-1.01, pitch:-10.57},
+            {time:58.200, x:-194575.353, y:55.710, z:516806.636, speed_ms:69.52, speed_kmh:250.27, roll:-0.61, pitch:-10.22},
+            {time:58.500, x:-194590.164, y:54.891, z:516791.910, speed_ms:69.83, speed_kmh:251.40, roll:-0.13, pitch:-8.94},
+            {time:58.800, x:-194605.187, y:54.231, z:516777.262, speed_ms:70.11, speed_kmh:252.40, roll:0.11, pitch:-5.45},
+            {time:59.100, x:-194620.389, y:53.696, z:516762.677, speed_ms:70.39, speed_kmh:253.39, roll:0.24, pitch:-2.98},
+            {time:59.400, x:-194635.736, y:53.243, z:516748.120, speed_ms:70.66, speed_kmh:254.36, roll:0.40, pitch:-2.61},
+            {time:59.700, x:-194651.197, y:52.861, z:516733.568, speed_ms:70.91, speed_kmh:255.27, roll:0.74, pitch:-2.21},
+            {time:60.000, x:-194666.752, y:52.576, z:516719.009, speed_ms:71.14, speed_kmh:256.11, roll:1.16, pitch:-1.75},
+            {time:60.300, x:-194682.395, y:52.419, z:516704.441, speed_ms:71.36, speed_kmh:256.90, roll:1.31, pitch:-1.35},
+            {time:60.600, x:-194698.124, y:52.359, z:516689.872, speed_ms:71.56, speed_kmh:257.63, roll:1.21, pitch:-0.98},
+            {time:60.900, x:-194713.939, y:52.337, z:516675.309, speed_ms:71.75, speed_kmh:258.32, roll:1.15, pitch:-0.47},
+            {time:61.200, x:-194729.832, y:52.322, z:516660.748, speed_ms:71.94, speed_kmh:259.00, roll:1.17, pitch:0.22},
+            {time:61.500, x:-194745.793, y:52.315, z:516646.177, speed_ms:72.13, speed_kmh:259.66, roll:1.21, pitch:0.99},
+            {time:61.800, x:-194761.810, y:52.320, z:516631.588, speed_ms:72.31, speed_kmh:260.32, roll:1.22, pitch:1.46},
+            {time:62.100, x:-194777.880, y:52.334, z:516616.973, speed_ms:72.49, speed_kmh:260.97, roll:1.14, pitch:1.79},
+            {time:62.400, x:-194793.998, y:52.338, z:516602.333, speed_ms:72.67, speed_kmh:261.61, roll:1.06, pitch:2.13},
+            {time:62.700, x:-194810.164, y:52.324, z:516587.667, speed_ms:72.84, speed_kmh:262.24, roll:1.00, pitch:2.49},
+            {time:63.000, x:-194826.376, y:52.292, z:516572.972, speed_ms:73.02, speed_kmh:262.88, roll:0.96, pitch:2.78},
+            {time:63.300, x:-194842.631, y:52.244, z:516558.244, speed_ms:73.20, speed_kmh:263.52, roll:0.92, pitch:2.67},
+            {time:63.600, x:-194858.928, y:52.186, z:516543.485, speed_ms:73.38, speed_kmh:264.15, roll:0.89, pitch:1.91},
+            {time:63.900, x:-194875.272, y:52.121, z:516528.701, speed_ms:73.54, speed_kmh:264.76, roll:0.84, pitch:0.83},
+            {time:64.200, x:-194891.669, y:52.052, z:516513.900, speed_ms:73.72, speed_kmh:265.38, roll:0.80, pitch:0.20},
+            {time:64.500, x:-194908.125, y:51.978, z:516499.089, speed_ms:73.88, speed_kmh:265.96, roll:0.77, pitch:0.56},
+            {time:64.800, x:-194924.633, y:51.894, z:516484.267, speed_ms:74.02, speed_kmh:266.46, roll:0.74, pitch:3.42},
+            {time:65.100, x:-194941.159, y:51.783, z:516469.414, speed_ms:74.10, speed_kmh:266.77, roll:0.88, pitch:11.71},
+            {time:65.400, x:-194957.624, y:51.610, z:516454.470, speed_ms:74.14, speed_kmh:266.89, roll:1.99, pitch:26.74},
+            {time:65.700, x:-194973.871, y:51.406, z:516439.290, speed_ms:74.14, speed_kmh:266.89, roll:5.21, pitch:45.38},
+            {time:66.000, x:-194989.629, y:51.242, z:516423.613, speed_ms:74.12, speed_kmh:266.84, roll:10.42, pitch:59.84},
+            {time:66.300, x:-195004.520, y:51.132, z:516407.129, speed_ms:74.08, speed_kmh:266.71, roll:13.80, pitch:65.88},
+            {time:66.600, x:-195018.086, y:51.071, z:516389.569, speed_ms:73.99, speed_kmh:266.38, roll:13.89, pitch:69.71},
+            {time:66.900, x:-195029.964, y:50.965, z:516370.865, speed_ms:73.89, speed_kmh:266.00, roll:15.32, pitch:75.48},
+            {time:67.200, x:-195039.872, y:50.661, z:516351.088, speed_ms:73.79, speed_kmh:265.66, roll:13.93, pitch:76.90},
+            {time:67.500, x:-195047.631, y:50.189, z:516330.404, speed_ms:73.65, speed_kmh:265.14, roll:4.37, pitch:60.35},
+            {time:67.800, x:-195053.713, y:49.858, z:516309.184, speed_ms:73.57, speed_kmh:264.87, roll:1.35, pitch:24.96},
+            {time:68.100, x:-195059.018, y:49.797, z:516287.754, speed_ms:73.64, speed_kmh:265.12, roll:2.10, pitch:-4.55},
+            {time:68.400, x:-195064.056, y:49.968, z:516266.268, speed_ms:73.48, speed_kmh:264.54, roll:5.00, pitch:10.24},
+            {time:68.700, x:-195068.755, y:50.619, z:516244.818, speed_ms:73.08, speed_kmh:263.08, roll:18.78, pitch:42.18},
+            {time:69.000, x:-195072.305, y:52.168, z:516223.379, speed_ms:72.37, speed_kmh:260.52, roll:38.04, pitch:53.64},
+            {time:69.300, x:-195073.537, y:54.821, z:516202.093, speed_ms:71.24, speed_kmh:256.47, roll:39.14, pitch:53.03},
+            {time:69.600, x:-195071.636, y:58.773, z:516181.434, speed_ms:69.97, speed_kmh:251.91, roll:35.71, pitch:54.15},
+            {time:69.900, x:-195066.565, y:63.929, z:516162.028, speed_ms:68.54, speed_kmh:246.73, roll:39.51, pitch:55.81},
+            {time:70.200, x:-195058.575, y:70.100, z:516144.466, speed_ms:66.96, speed_kmh:241.07, roll:49.30, pitch:54.32},
+            {time:70.500, x:-195048.134, y:77.145, z:516129.222, speed_ms:65.30, speed_kmh:235.08, roll:59.39, pitch:50.71},
+            {time:70.800, x:-195035.811, y:84.929, z:516116.639, speed_ms:63.49, speed_kmh:228.57, roll:67.79, pitch:48.68},
+            {time:71.100, x:-195022.137, y:93.208, z:516106.917, speed_ms:61.64, speed_kmh:221.91, roll:77.60, pitch:50.64},
+            {time:71.400, x:-195007.507, y:101.539, z:516100.084, speed_ms:59.89, speed_kmh:215.59, roll:94.33, pitch:54.92},
+            {time:71.700, x:-194992.193, y:109.365, z:516096.057, speed_ms:58.28, speed_kmh:209.81, roll:109.09, pitch:59.22},
+            {time:72.000, x:-194976.481, y:116.252, z:516094.810, speed_ms:56.85, speed_kmh:204.67, roll:121.81, pitch:64.26},
+            {time:72.300, x:-194960.725, y:121.901, z:516096.292, speed_ms:55.64, speed_kmh:200.32, roll:140.55, pitch:66.47},
+            {time:72.600, x:-194945.310, y:126.055, z:516100.363, speed_ms:54.69, speed_kmh:196.87, roll:156.86, pitch:67.40},
+            {time:72.900, x:-194930.629, y:128.562, z:516106.834, speed_ms:54.05, speed_kmh:194.59, roll:169.61, pitch:70.15},
+            {time:73.200, x:-194917.060, y:129.426, z:516115.479, speed_ms:53.80, speed_kmh:193.69, roll:-176.59, pitch:74.48},
+            {time:73.500, x:-194904.865, y:128.803, z:516126.022, speed_ms:54.03, speed_kmh:194.52, roll:-150.36, pitch:81.70},
+            {time:73.800, x:-194893.942, y:127.046, z:516137.975, speed_ms:54.66, speed_kmh:196.77, roll:-42.65, pitch:79.68},
+            {time:74.100, x:-194883.874, y:124.489, z:516150.821, speed_ms:55.50, speed_kmh:199.79, roll:-21.86, pitch:63.24},
+            {time:74.400, x:-194874.292, y:121.294, z:516164.234, speed_ms:56.44, speed_kmh:203.18, roll:-15.77, pitch:45.16},
+            {time:74.700, x:-194865.020, y:117.604, z:516178.096, speed_ms:57.44, speed_kmh:206.79, roll:-12.21, pitch:27.63},
+            {time:75.000, x:-194855.959, y:113.673, z:516192.401, speed_ms:58.45, speed_kmh:210.43, roll:-9.93, pitch:11.60},
+            {time:75.300, x:-194846.953, y:109.754, z:516207.105, speed_ms:59.42, speed_kmh:213.90, roll:-8.56, pitch:-3.20},
+            {time:75.600, x:-194837.794, y:105.976, z:516222.090, speed_ms:60.33, speed_kmh:217.20, roll:-8.04, pitch:-17.80},
+            {time:75.900, x:-194828.268, y:102.336, z:516237.209, speed_ms:61.23, speed_kmh:220.44, roll:-8.70, pitch:-29.99},
+            {time:76.200, x:-194818.215, y:98.743, z:516252.326, speed_ms:62.14, speed_kmh:223.72, roll:-10.31, pitch:-35.80},
+            {time:76.500, x:-194807.562, y:95.082, z:516267.350, speed_ms:63.04, speed_kmh:226.93, roll:-11.66, pitch:-34.96},
+            {time:76.800, x:-194796.298, y:91.307, z:516282.226, speed_ms:63.89, speed_kmh:230.00, roll:-11.56, pitch:-30.87},
+            {time:77.100, x:-194784.409, y:87.492, z:516296.926, speed_ms:64.71, speed_kmh:232.96, roll:-10.15, pitch:-24.63},
+            {time:77.400, x:-194771.891, y:83.778, z:516311.449, speed_ms:65.50, speed_kmh:235.81, roll:-8.21, pitch:-23.28},
+            {time:77.700, x:-194758.727, y:80.347, z:516325.772, speed_ms:66.21, speed_kmh:238.37, roll:-6.34, pitch:-26.33},
+            {time:78.000, x:-194744.897, y:77.296, z:516339.831, speed_ms:66.84, speed_kmh:240.63, roll:-4.97, pitch:-31.05},
+            {time:78.300, x:-194730.389, y:74.597, z:516353.528, speed_ms:67.41, speed_kmh:242.69, roll:-4.32, pitch:-37.40},
+            {time:78.600, x:-194715.177, y:72.191, z:516366.741, speed_ms:67.92, speed_kmh:244.50, roll:-3.11, pitch:-39.73},
+            {time:78.900, x:-194699.174, y:70.156, z:516379.270, speed_ms:68.32, speed_kmh:245.96, roll:-1.85, pitch:-40.90},
+            {time:79.200, x:-194682.350, y:68.612, z:516390.925, speed_ms:68.57, speed_kmh:246.84, roll:-0.38, pitch:-34.82},
+            {time:79.500, x:-194664.870, y:67.641, z:516401.752, speed_ms:68.70, speed_kmh:247.31, roll:1.02, pitch:-14.82},
+            {time:79.800, x:-194647.018, y:67.182, z:516412.086, speed_ms:68.87, speed_kmh:247.94, roll:2.40, pitch:1.87},
+            {time:80.100, x:-194628.981, y:67.073, z:516422.210, speed_ms:68.98, speed_kmh:248.34, roll:2.43, pitch:-2.72},
+            {time:80.400, x:-194610.832, y:67.160, z:516432.160, speed_ms:69.02, speed_kmh:248.48, roll:4.26, pitch:-25.85},
+            {time:80.700, x:-194592.492, y:67.430, z:516441.784, speed_ms:69.10, speed_kmh:248.75, roll:8.06, pitch:-44.59},
+            {time:81.000, x:-194573.850, y:67.817, z:516450.852, speed_ms:69.19, speed_kmh:249.07, roll:9.32, pitch:-52.27},
+            {time:81.300, x:-194554.771, y:68.293, z:516459.015, speed_ms:69.27, speed_kmh:249.38, roll:5.89, pitch:-54.80},
+            {time:81.600, x:-194535.209, y:68.769, z:516466.024, speed_ms:69.36, speed_kmh:249.71, roll:1.17, pitch:-56.95},
+            {time:81.900, x:-194515.239, y:69.057, z:516471.904, speed_ms:69.46, speed_kmh:250.06, roll:-1.52, pitch:-53.70},
+            {time:82.200, x:-194494.998, y:68.999, z:516476.935, speed_ms:69.60, speed_kmh:250.58, roll:-1.45, pitch:-41.80},
+            {time:82.500, x:-194474.578, y:68.600, z:516481.416, speed_ms:69.81, speed_kmh:251.30, roll:-0.80, pitch:-26.56},
+            {time:82.800, x:-194454.022, y:68.017, z:516485.539, speed_ms:70.02, speed_kmh:252.09, roll:-0.43, pitch:-10.59},
+            {time:83.100, x:-194433.367, y:67.402, z:516489.476, speed_ms:70.22, speed_kmh:252.77, roll:0.60, pitch:5.30},
+            {time:83.400, x:-194412.664, y:66.897, z:516493.423, speed_ms:70.35, speed_kmh:253.26, roll:3.21, pitch:20.67},
+            {time:83.700, x:-194391.988, y:66.682, z:516497.653, speed_ms:70.39, speed_kmh:253.40, roll:7.34, pitch:35.65},
+            {time:84.000, x:-194371.470, y:66.867, z:516502.561, speed_ms:70.33, speed_kmh:253.17, roll:12.89, pitch:50.11},
+            {time:84.300, x:-194351.310, y:67.412, z:516508.612, speed_ms:70.16, speed_kmh:252.59, roll:20.49, pitch:62.29},
+            {time:84.600, x:-194331.791, y:68.161, z:516516.295, speed_ms:69.95, speed_kmh:251.82, roll:29.92, pitch:72.13},
+            {time:84.900, x:-194313.225, y:68.862, z:516525.921, speed_ms:69.76, speed_kmh:251.14, roll:31.62, pitch:76.82},
+            {time:85.200, x:-194295.881, y:69.297, z:516537.541, speed_ms:69.66, speed_kmh:250.78, roll:24.60, pitch:79.49},
+            {time:85.500, x:-194279.875, y:69.321, z:516550.962, speed_ms:69.73, speed_kmh:251.04, roll:10.04, pitch:79.21},
+            {time:85.800, x:-194264.928, y:68.862, z:516565.620, speed_ms:69.87, speed_kmh:251.54, roll:-1.58, pitch:62.82},
+            {time:86.100, x:-194250.487, y:67.901, z:516580.822, speed_ms:70.06, speed_kmh:252.22, roll:-2.77, pitch:33.80},
+            {time:86.400, x:-194236.284, y:66.604, z:516596.299, speed_ms:70.28, speed_kmh:253.02, roll:-0.87, pitch:4.18},
+            {time:86.700, x:-194222.123, y:65.498, z:516611.916, speed_ms:70.49, speed_kmh:253.75, roll:2.33, pitch:-19.17},
+            {time:87.000, x:-194207.662, y:64.940, z:516627.348, speed_ms:70.60, speed_kmh:254.17, roll:5.51, pitch:-35.93},
+            {time:87.300, x:-194192.594, y:64.917, z:516642.232, speed_ms:70.67, speed_kmh:254.40, roll:7.16, pitch:-46.24},
+            {time:87.600, x:-194176.705, y:65.299, z:516656.259, speed_ms:70.73, speed_kmh:254.62, roll:5.26, pitch:-49.69},
+            {time:87.900, x:-194160.000, y:65.855, z:516669.333, speed_ms:70.79, speed_kmh:254.83, roll:2.46, pitch:-50.76},
+            {time:88.200, x:-194142.604, y:66.334, z:516681.517, speed_ms:70.88, speed_kmh:255.17, roll:1.42, pitch:-52.87},
+            {time:88.500, x:-194124.633, y:66.590, z:516692.914, speed_ms:71.03, speed_kmh:255.71, roll:1.22, pitch:-53.92},
+            {time:88.800, x:-194106.216, y:66.531, z:516703.687, speed_ms:71.22, speed_kmh:256.39, roll:-0.33, pitch:-49.65},
+            {time:89.100, x:-194087.493, y:66.069, z:516714.038, speed_ms:71.43, speed_kmh:257.15, roll:-2.45, pitch:-40.30},
+            {time:89.400, x:-194068.555, y:65.171, z:516724.098, speed_ms:71.66, speed_kmh:257.98, roll:-3.40, pitch:-26.61},
+            {time:89.700, x:-194049.419, y:63.960, z:516733.893, speed_ms:71.90, speed_kmh:258.84, roll:-2.25, pitch:-12.10},
+            {time:90.000, x:-194030.090, y:62.772, z:516743.458, speed_ms:72.11, speed_kmh:259.58, roll:-0.03, pitch:2.18},
+            {time:90.300, x:-194010.652, y:61.906, z:516752.956, speed_ms:72.26, speed_kmh:260.14, roll:2.24, pitch:15.11},
+            {time:90.600, x:-193991.243, y:61.478, z:516762.628, speed_ms:72.35, speed_kmh:260.46, roll:4.53, pitch:25.15},
+            {time:90.900, x:-193972.055, y:61.534, z:516772.750, speed_ms:72.32, speed_kmh:260.37, roll:7.81, pitch:36.58},
+            {time:91.200, x:-193953.352, y:62.113, z:516783.655, speed_ms:72.15, speed_kmh:259.75, roll:14.22, pitch:49.33},
+            {time:91.500, x:-193935.525, y:63.234, z:516795.759, speed_ms:71.85, speed_kmh:258.65, roll:24.05, pitch:60.53},
+            {time:91.800, x:-193918.975, y:64.747, z:516809.358, speed_ms:71.49, speed_kmh:257.37, roll:32.14, pitch:67.42},
+            {time:92.100, x:-193903.969, y:66.396, z:516824.491, speed_ms:71.19, speed_kmh:256.29, roll:31.51, pitch:70.97},
+            {time:92.400, x:-193890.575, y:67.949, z:516840.991, speed_ms:71.01, speed_kmh:255.62, roll:23.36, pitch:72.23},
+            {time:92.700, x:-193878.653, y:69.214, z:516858.565, speed_ms:70.93, speed_kmh:255.33, roll:16.68, pitch:72.57},
+            {time:93.000, x:-193868.045, y:70.086, z:516876.970, speed_ms:70.91, speed_kmh:255.29, roll:14.15, pitch:72.04},
+            {time:93.300, x:-193858.709, y:70.572, z:516896.069, speed_ms:70.95, speed_kmh:255.41, roll:13.43, pitch:70.75},
+            {time:93.600, x:-193850.688, y:70.746, z:516915.778, speed_ms:71.02, speed_kmh:255.65, roll:11.88, pitch:69.28},
+            {time:93.900, x:-193844.014, y:70.672, z:516936.014, speed_ms:71.12, speed_kmh:256.04, roll:8.37, pitch:67.27},
+            {time:94.200, x:-193838.618, y:70.370, z:516956.667, speed_ms:71.26, speed_kmh:256.53, roll:3.94, pitch:62.19},
+            {time:94.500, x:-193834.360, y:69.861, z:516977.629, speed_ms:71.44, speed_kmh:257.17, roll:1.45, pitch:54.61},
+            {time:94.800, x:-193831.137, y:69.210, z:516998.835, speed_ms:71.67, speed_kmh:258.03, roll:0.98, pitch:51.30},
+            {time:95.100, x:-193828.881, y:68.451, z:517020.231, speed_ms:71.87, speed_kmh:258.75, roll:2.03, pitch:54.60},
+            {time:95.400, x:-193827.635, y:67.600, z:517041.752, speed_ms:72.03, speed_kmh:259.31, roll:5.37, pitch:60.88},
+            {time:95.700, x:-193827.680, y:66.721, z:517063.345, speed_ms:72.15, speed_kmh:259.72, roll:8.45, pitch:67.00},
+            {time:96.000, x:-193829.299, y:65.810, z:517084.904, speed_ms:72.25, speed_kmh:260.08, roll:8.26, pitch:69.09},
+            {time:96.300, x:-193832.774, y:64.866, z:517106.264, speed_ms:72.32, speed_kmh:260.36, roll:5.60, pitch:68.63},
+            {time:96.600, x:-193838.289, y:63.920, z:517127.209, speed_ms:72.37, speed_kmh:260.54, roll:4.47, pitch:67.76},
+            {time:96.900, x:-193845.900, y:63.053, z:517147.492, speed_ms:72.36, speed_kmh:260.48, roll:5.50, pitch:62.73},
+            {time:97.200, x:-193855.561, y:62.463, z:517166.885, speed_ms:72.32, speed_kmh:260.35, roll:7.91, pitch:57.94},
+            {time:97.500, x:-193867.097, y:62.360, z:517185.220, speed_ms:72.22, speed_kmh:260.00, roll:9.18, pitch:51.20},
+            {time:97.800, x:-193879.965, y:62.826, z:517202.619, speed_ms:72.10, speed_kmh:259.56, roll:4.22, pitch:21.05},
+            {time:98.100, x:-193893.299, y:63.464, z:517219.655, speed_ms:72.17, speed_kmh:259.80, roll:1.16, pitch:-5.39},
+            {time:98.400, x:-193906.756, y:63.766, z:517236.587, speed_ms:72.04, speed_kmh:259.33, roll:2.00, pitch:15.03},
+            {time:98.700, x:-193920.367, y:63.889, z:517253.320, speed_ms:71.88, speed_kmh:258.76, roll:13.16, pitch:47.35},
+            {time:99.000, x:-193934.751, y:64.500, z:517269.255, speed_ms:71.48, speed_kmh:257.32, roll:30.62, pitch:58.36},
+            {time:99.300, x:-193950.583, y:65.883, z:517283.420, speed_ms:70.76, speed_kmh:254.74, roll:38.21, pitch:62.35},
+            {time:99.600, x:-193968.036, y:67.977, z:517295.015, speed_ms:69.98, speed_kmh:251.93, roll:38.08, pitch:67.10},
+            {time:99.900, x:-193986.843, y:70.436, z:517303.626, speed_ms:69.25, speed_kmh:249.31, roll:45.95, pitch:74.61},
+            {time:100.200, x:-194006.588, y:72.783, z:517309.161, speed_ms:68.69, speed_kmh:247.27, roll:59.31, pitch:78.62},
+            {time:100.500, x:-194026.836, y:74.704, z:517311.820, speed_ms:68.32, speed_kmh:245.95, roll:59.60, pitch:79.67},
+            {time:100.800, x:-194047.232, y:76.101, z:517312.045, speed_ms:68.16, speed_kmh:245.37, roll:52.53, pitch:80.96},
+            {time:101.100, x:-194067.569, y:76.921, z:517310.319, speed_ms:68.15, speed_kmh:245.33, roll:39.92, pitch:82.73},
+            {time:101.400, x:-194087.731, y:77.110, z:517306.955, speed_ms:68.26, speed_kmh:245.72, roll:18.07, pitch:83.34},
+            {time:101.700, x:-194107.627, y:76.641, z:517302.078, speed_ms:68.47, speed_kmh:246.48, roll:-0.40, pitch:82.66},
+            {time:102.000, x:-194127.161, y:75.527, z:517295.737, speed_ms:68.75, speed_kmh:247.51, roll:-8.56, pitch:79.34},
+            {time:102.300, x:-194146.270, y:73.857, z:517288.048, speed_ms:69.10, speed_kmh:248.74, roll:-7.68, pitch:68.18},
+            {time:102.600, x:-194164.978, y:71.799, z:517279.233, speed_ms:69.49, speed_kmh:250.16, roll:-6.48, pitch:51.96},
+            {time:102.900, x:-194183.379, y:69.535, z:517269.567, speed_ms:69.92, speed_kmh:251.71, roll:-5.30, pitch:33.58},
+            {time:103.200, x:-194201.592, y:67.248, z:517259.287, speed_ms:70.35, speed_kmh:253.27, roll:-4.06, pitch:16.79},
+            {time:103.500, x:-194219.745, y:65.120, z:517248.609, speed_ms:70.77, speed_kmh:254.78, roll:-2.85, pitch:3.17},
+            {time:103.800, x:-194237.967, y:63.278, z:517237.754, speed_ms:71.18, speed_kmh:256.25, roll:-1.98, pitch:-5.72},
+            {time:104.100, x:-194256.358, y:61.754, z:517226.894, speed_ms:71.57, speed_kmh:257.64, roll:-1.57, pitch:-8.02},
+            {time:104.400, x:-194274.953, y:60.496, z:517216.133, speed_ms:71.90, speed_kmh:258.85, roll:-1.14, pitch:-9.36},
+            {time:104.700, x:-194293.751, y:59.468, z:517205.515, speed_ms:72.19, speed_kmh:259.87, roll:-0.82, pitch:-7.56},
+            {time:105.000, x:-194312.728, y:58.620, z:517195.030, speed_ms:72.46, speed_kmh:260.87, roll:-0.38, pitch:-5.42},
+            {time:105.300, x:-194331.853, y:57.934, z:517184.639, speed_ms:72.71, speed_kmh:261.75, roll:0.03, pitch:-3.99},
+            {time:105.600, x:-194351.097, y:57.402, z:517174.309, speed_ms:72.93, speed_kmh:262.56, roll:0.33, pitch:-1.96},
+            {time:105.900, x:-194370.434, y:57.003, z:517164.014, speed_ms:73.14, speed_kmh:263.30, roll:0.66, pitch:-0.18},
+            {time:106.200, x:-194389.854, y:56.741, z:517153.741, speed_ms:73.33, speed_kmh:264.00, roll:1.03, pitch:0.03},
+            {time:106.500, x:-194409.345, y:56.615, z:517143.485, speed_ms:73.50, speed_kmh:264.60, roll:1.42, pitch:0.29},
+            {time:106.800, x:-194428.895, y:56.630, z:517133.240, speed_ms:73.65, speed_kmh:265.13, roll:1.79, pitch:0.66},
+            {time:107.100, x:-194448.495, y:56.787, z:517123.014, speed_ms:73.70, speed_kmh:265.34, roll:2.48, pitch:-1.74},
+            {time:107.400, x:-194468.114, y:57.192, z:517112.982, speed_ms:73.35, speed_kmh:264.04, roll:11.38, pitch:-25.54},
+            {time:107.700, x:-194487.967, y:58.874, z:517104.044, speed_ms:72.53, speed_kmh:261.10, roll:32.15, pitch:-48.41},
+            {time:108.000, x:-194508.280, y:62.161, z:517097.733, speed_ms:71.36, speed_kmh:256.91, roll:50.99, pitch:-59.41},
+            {time:108.300, x:-194528.794, y:66.430, z:517094.897, speed_ms:70.06, speed_kmh:252.20, roll:45.47, pitch:-64.79},
+            {time:108.600, x:-194548.943, y:71.253, z:517095.754, speed_ms:68.65, speed_kmh:247.13, roll:32.89, pitch:-68.99},
+            {time:108.900, x:-194568.121, y:76.310, z:517100.101, speed_ms:67.17, speed_kmh:241.83, roll:32.43, pitch:-70.17},
+            {time:109.200, x:-194585.824, y:81.451, z:517107.561, speed_ms:65.84, speed_kmh:237.02, roll:43.11, pitch:-67.46},
+            {time:109.500, x:-194601.607, y:86.732, z:517117.709, speed_ms:64.55, speed_kmh:232.37, roll:60.12, pitch:-65.85},
+            {time:109.800, x:-194615.015, y:92.121, z:517130.187, speed_ms:63.20, speed_kmh:227.51, roll:72.84, pitch:-65.86},
+            {time:110.100, x:-194625.686, y:97.455, z:517144.575, speed_ms:61.86, speed_kmh:222.70, roll:72.18, pitch:-68.39},
+            {time:110.400, x:-194633.424, y:102.585, z:517160.348, speed_ms:60.59, speed_kmh:218.14, roll:66.76, pitch:-73.02},
+            {time:110.700, x:-194638.161, y:107.360, z:517176.970, speed_ms:59.39, speed_kmh:213.82, roll:62.50, pitch:-77.16},
+            {time:111.000, x:-194639.917, y:111.635, z:517193.943, speed_ms:58.31, speed_kmh:209.92, roll:62.24, pitch:-79.11},
+            {time:111.300, x:-194638.788, y:115.337, z:517210.796, speed_ms:57.39, speed_kmh:206.60, roll:64.72, pitch:-79.13},
+            {time:111.600, x:-194634.905, y:118.463, z:517227.084, speed_ms:56.59, speed_kmh:203.72, roll:71.96, pitch:-79.22},
+            {time:111.900, x:-194628.417, y:121.006, z:517242.373, speed_ms:55.86, speed_kmh:201.08, roll:74.35, pitch:-80.20},
+            {time:112.200, x:-194619.531, y:122.944, z:517256.252, speed_ms:55.20, speed_kmh:198.70, roll:67.70, pitch:-82.58},
+            {time:112.500, x:-194608.537, y:124.238, z:517268.370, speed_ms:54.65, speed_kmh:196.75, roll:50.01, pitch:-85.98},
+            {time:112.800, x:-194595.772, y:124.812, z:517278.445, speed_ms:54.25, speed_kmh:195.29, roll:-36.33, pitch:-88.20},
+            {time:113.100, x:-194581.607, y:124.556, z:517286.253, speed_ms:54.02, speed_kmh:194.47, roll:-83.46, pitch:-84.99},
+            {time:113.400, x:-194566.433, y:123.384, z:517291.633, speed_ms:54.00, speed_kmh:194.41, roll:-81.63, pitch:-81.59},
+            {time:113.700, x:-194550.657, y:121.281, z:517294.479, speed_ms:54.19, speed_kmh:195.07, roll:-73.61, pitch:-78.55},
+            {time:114.000, x:-194534.685, y:118.300, z:517294.732, speed_ms:54.54, speed_kmh:196.33, roll:-64.01, pitch:-75.57},
+            {time:114.300, x:-194518.922, y:114.553, z:517292.373, speed_ms:55.00, speed_kmh:198.00, roll:-54.88, pitch:-72.48},
+            {time:114.600, x:-194503.770, y:110.186, z:517287.426, speed_ms:55.55, speed_kmh:199.98, roll:-48.03, pitch:-69.70},
+            {time:114.900, x:-194489.627, y:105.350, z:517279.975, speed_ms:56.15, speed_kmh:202.15, roll:-43.85, pitch:-67.84},
+            {time:115.200, x:-194476.878, y:100.168, z:517270.169, speed_ms:56.84, speed_kmh:204.63, roll:-40.91, pitch:-66.29},
+            {time:115.500, x:-194465.832, y:94.736, z:517258.256, speed_ms:57.65, speed_kmh:207.56, roll:-38.37, pitch:-64.47},
+            {time:115.800, x:-194456.658, y:89.142, z:517244.576, speed_ms:58.55, speed_kmh:210.80, roll:-32.74, pitch:-60.27},
+            {time:116.100, x:-194449.374, y:83.542, z:517229.477, speed_ms:59.48, speed_kmh:214.13, roll:-25.04, pitch:-52.36},
+            {time:116.400, x:-194443.842, y:78.176, z:517213.250, speed_ms:60.39, speed_kmh:217.40, roll:-18.01, pitch:-38.66},
+            {time:116.700, x:-194439.585, y:73.176, z:517196.225, speed_ms:61.29, speed_kmh:220.65, roll:-13.01, pitch:-20.75},
+            {time:117.000, x:-194436.053, y:68.540, z:517178.646, speed_ms:62.19, speed_kmh:223.89, roll:-9.21, pitch:-5.11},
+            {time:117.300, x:-194432.839, y:64.357, z:517160.615, speed_ms:63.08, speed_kmh:227.07, roll:-6.19, pitch:0.30},
+            {time:117.600, x:-194429.670, y:60.797, z:517142.184, speed_ms:63.86, speed_kmh:229.89, roll:-3.86, pitch:1.39},
+            {time:117.900, x:-194426.420, y:57.949, z:517123.424, speed_ms:64.48, speed_kmh:232.12, roll:-1.75, pitch:-0.62},
+            {time:118.200, x:-194423.177, y:55.816, z:517104.424, speed_ms:64.83, speed_kmh:233.40, roll:1.71, pitch:-18.42},
+            {time:118.500, x:-194420.387, y:54.464, z:517085.213, speed_ms:65.01, speed_kmh:234.03, roll:9.35, pitch:-40.98},
+            {time:118.800, x:-194418.863, y:54.029, z:517065.816, speed_ms:64.93, speed_kmh:233.74, roll:18.69, pitch:-53.42},
+            {time:119.100, x:-194419.469, y:54.504, z:517046.443, speed_ms:64.62, speed_kmh:232.62, roll:22.51, pitch:-60.75},
+            {time:119.400, x:-194422.729, y:55.680, z:517027.490, speed_ms:64.16, speed_kmh:230.98, roll:20.33, pitch:-65.92},
+            {time:119.700, x:-194428.753, y:57.248, z:517009.408, speed_ms:63.67, speed_kmh:229.21, roll:17.54, pitch:-70.81},
+            {time:120.000, x:-194437.351, y:58.878, z:516992.531, speed_ms:63.34, speed_kmh:228.01, roll:15.71, pitch:-73.29},
+            {time:120.300, x:-194447.970, y:60.317, z:516976.881, speed_ms:63.24, speed_kmh:227.66, roll:10.32, pitch:-67.53},
+            {time:120.600, x:-194459.844, y:61.448, z:516962.116, speed_ms:63.32, speed_kmh:227.95, roll:5.20, pitch:-55.28},
+            {time:120.900, x:-194472.349, y:62.163, z:516947.798, speed_ms:63.51, speed_kmh:228.64, roll:2.67, pitch:-42.02},
+            {time:121.200, x:-194485.224, y:62.445, z:516933.703, speed_ms:63.77, speed_kmh:229.58, roll:1.31, pitch:-31.42},
+            {time:121.500, x:-194498.383, y:62.380, z:516919.756, speed_ms:64.06, speed_kmh:230.63, roll:0.09, pitch:-19.59},
+            {time:121.800, x:-194511.773, y:62.032, z:516905.904, speed_ms:64.39, speed_kmh:231.81, roll:-0.72, pitch:-7.14},
+            {time:122.100, x:-194525.342, y:61.433, z:516892.087, speed_ms:64.76, speed_kmh:233.14, roll:-0.94, pitch:3.21},
+            {time:122.400, x:-194539.041, y:60.630, z:516878.246, speed_ms:65.18, speed_kmh:234.64, roll:-0.77, pitch:7.99},
+            {time:122.700, x:-194552.823, y:59.728, z:516864.313, speed_ms:65.60, speed_kmh:236.17, roll:-0.47, pitch:7.21},
+            {time:123.000, x:-194566.645, y:58.841, z:516850.242, speed_ms:66.02, speed_kmh:237.68, roll:-0.30, pitch:5.61},
+            {time:123.300, x:-194580.495, y:58.015, z:516836.020, speed_ms:66.43, speed_kmh:239.13, roll:-0.21, pitch:4.06},
+            {time:123.600, x:-194594.376, y:57.251, z:516821.659, speed_ms:66.82, speed_kmh:240.54, roll:-0.11, pitch:2.79},
+            {time:123.900, x:-194608.293, y:56.541, z:516807.179, speed_ms:67.14, speed_kmh:241.71, roll:0.16, pitch:6.33},
+            {time:124.200, x:-194622.219, y:55.880, z:516792.577, speed_ms:67.45, speed_kmh:242.82, roll:0.83, pitch:14.81},
+            {time:124.500, x:-194636.104, y:55.293, z:516777.805, speed_ms:67.77, speed_kmh:243.97, roll:1.57, pitch:18.74},
+            {time:124.800, x:-194649.892, y:54.821, z:516762.810, speed_ms:68.07, speed_kmh:245.06, roll:1.84, pitch:18.92},
+            {time:125.100, x:-194663.542, y:54.484, z:516747.569, speed_ms:68.34, speed_kmh:246.01, roll:1.57, pitch:15.96},
+            {time:125.400, x:-194677.063, y:54.241, z:516732.114, speed_ms:68.57, speed_kmh:246.84, roll:1.10, pitch:8.02},
+            {time:125.700, x:-194690.519, y:54.034, z:516716.508, speed_ms:68.81, speed_kmh:247.73, roll:0.98, pitch:0.23},
+            {time:126.000, x:-194703.990, y:53.843, z:516700.812, speed_ms:69.08, speed_kmh:248.70, roll:1.01, pitch:-2.57},
+            {time:126.300, x:-194717.527, y:53.669, z:516685.071, speed_ms:69.32, speed_kmh:249.56, roll:0.85, pitch:-0.30},
+            {time:126.600, x:-194731.145, y:53.476, z:516669.306, speed_ms:69.56, speed_kmh:250.43, roll:0.77, pitch:3.62},
+            {time:126.900, x:-194744.841, y:53.248, z:516653.510, speed_ms:69.82, speed_kmh:251.34, roll:0.90, pitch:3.74},
+            {time:127.200, x:-194758.598, y:53.025, z:516637.668, speed_ms:70.07, speed_kmh:252.24, roll:1.01, pitch:2.74},
+            {time:127.500, x:-194772.399, y:52.840, z:516621.764, speed_ms:70.31, speed_kmh:253.13, roll:1.08, pitch:2.04},
+            {time:127.800, x:-194786.231, y:52.695, z:516605.790, speed_ms:70.55, speed_kmh:253.98, roll:1.04, pitch:2.44},
+            {time:128.100, x:-194800.089, y:52.569, z:516589.748, speed_ms:70.78, speed_kmh:254.79, roll:0.97, pitch:3.60},
+            {time:128.400, x:-194813.976, y:52.436, z:516573.642, speed_ms:70.99, speed_kmh:255.58, roll:0.97, pitch:4.78},
+            {time:128.700, x:-194827.891, y:52.293, z:516557.475, speed_ms:71.21, speed_kmh:256.36, roll:0.99, pitch:6.02},
+            {time:129.000, x:-194841.827, y:52.144, z:516541.240, speed_ms:71.43, speed_kmh:257.15, roll:1.00, pitch:6.47},
+            {time:129.300, x:-194855.770, y:52.000, z:516524.923, speed_ms:71.65, speed_kmh:257.94, roll:1.01, pitch:6.46},
+            {time:129.600, x:-194869.708, y:51.866, z:516508.519, speed_ms:71.86, speed_kmh:258.70, roll:0.99, pitch:5.73},
+            {time:129.900, x:-194883.644, y:51.743, z:516492.029, speed_ms:72.07, speed_kmh:259.45, roll:0.87, pitch:4.79},
+            {time:130.200, x:-194897.586, y:51.612, z:516475.463, speed_ms:72.28, speed_kmh:260.19, roll:0.77, pitch:4.66},
+            {time:130.500, x:-194911.543, y:51.460, z:516458.829, speed_ms:72.48, speed_kmh:260.92, roll:0.71, pitch:4.95},
+            {time:130.800, x:-194925.518, y:51.287, z:516442.133, speed_ms:72.68, speed_kmh:261.64, roll:0.72, pitch:4.87},
+            {time:131.100, x:-194939.515, y:51.107, z:516425.377, speed_ms:72.87, speed_kmh:262.35, roll:0.72, pitch:3.57},
+            {time:131.400, x:-194953.539, y:50.934, z:516408.568, speed_ms:73.07, speed_kmh:263.04, roll:0.64, pitch:2.14},
+            {time:131.700, x:-194967.601, y:50.760, z:516391.716, speed_ms:73.26, speed_kmh:263.73, roll:0.58, pitch:0.98},
+            {time:132.000, x:-194981.712, y:50.584, z:516374.829, speed_ms:73.45, speed_kmh:264.41, roll:0.65, pitch:0.35},
+            {time:132.300, x:-194995.879, y:50.423, z:516357.919, speed_ms:73.63, speed_kmh:265.06, roll:0.73, pitch:0.58},
+            {time:132.600, x:-195010.107, y:50.286, z:516340.989, speed_ms:73.80, speed_kmh:265.68, roll:0.72, pitch:0.92},
+            {time:132.900, x:-195024.397, y:50.161, z:516324.044, speed_ms:73.97, speed_kmh:266.30, roll:0.67, pitch:1.26},
+            {time:133.200, x:-195038.744, y:50.034, z:516307.080, speed_ms:74.14, speed_kmh:266.90, roll:0.64, pitch:1.63},
+            {time:133.500, x:-195053.141, y:49.902, z:516290.094, speed_ms:74.30, speed_kmh:267.49, roll:0.71, pitch:2.01},
+            {time:133.800, x:-195067.582, y:49.783, z:516273.081, speed_ms:74.46, speed_kmh:268.05, roll:0.86, pitch:1.98},
+            {time:134.100, x:-195082.065, y:49.705, z:516256.051, speed_ms:74.58, speed_kmh:268.50, roll:1.35, pitch:-0.19},
+            {time:134.400, x:-195096.604, y:49.768, z:516239.048, speed_ms:74.57, speed_kmh:268.46, roll:3.70, pitch:-7.34},
+            {time:134.700, x:-195111.306, y:50.348, z:516222.259, speed_ms:74.33, speed_kmh:267.59, roll:9.53, pitch:-26.05},
+            {time:135.000, x:-195126.552, y:51.943, z:516206.179, speed_ms:73.93, speed_kmh:266.15, roll:18.58, pitch:-43.78},
+            {time:135.300, x:-195142.762, y:54.625, z:516191.434, speed_ms:73.42, speed_kmh:264.31, roll:23.52, pitch:-49.72},
+            {time:135.600, x:-195160.042, y:58.210, z:516178.468, speed_ms:72.77, speed_kmh:261.99, roll:24.04, pitch:-53.59},
+            {time:135.900, x:-195178.300, y:62.455, z:516167.561, speed_ms:72.02, speed_kmh:259.28, roll:25.74, pitch:-57.78},
+            {time:136.200, x:-195197.366, y:67.129, z:516158.906, speed_ms:71.23, speed_kmh:256.42, roll:30.61, pitch:-60.48},
+            {time:136.500, x:-195217.003, y:72.077, z:516152.582, speed_ms:70.43, speed_kmh:253.56, roll:36.73, pitch:-61.70},
+            {time:136.800, x:-195236.953, y:77.201, z:516148.579, speed_ms:69.66, speed_kmh:250.78, roll:41.14, pitch:-62.80},
+            {time:137.100, x:-195256.975, y:82.392, z:516146.819, speed_ms:68.92, speed_kmh:248.13, roll:42.96, pitch:-64.70},
+            {time:137.400, x:-195276.881, y:87.493, z:516147.147, speed_ms:68.25, speed_kmh:245.70, roll:42.36, pitch:-66.99},
+            {time:137.700, x:-195296.536, y:92.339, z:516149.352, speed_ms:67.66, speed_kmh:243.56, roll:40.55, pitch:-68.94},
+            {time:138.000, x:-195315.854, y:96.805, z:516153.223, speed_ms:67.15, speed_kmh:241.74, roll:37.04, pitch:-69.52},
+            {time:138.300, x:-195334.786, y:100.828, z:516158.531, speed_ms:66.75, speed_kmh:240.29, roll:31.81, pitch:-68.55},
+            {time:138.600, x:-195353.328, y:104.384, z:516165.028, speed_ms:66.44, speed_kmh:239.18, roll:25.63, pitch:-66.09},
+            {time:138.900, x:-195371.497, y:107.481, z:516172.501, speed_ms:66.21, speed_kmh:238.36, roll:18.57, pitch:-61.33},
+            {time:139.200, x:-195389.347, y:110.127, z:516180.743, speed_ms:66.07, speed_kmh:237.86, roll:12.14, pitch:-54.32},
+            {time:139.500, x:-195406.965, y:112.294, z:516189.540, speed_ms:66.01, speed_kmh:237.64, roll:7.60, pitch:-46.41},
+            {time:139.800, x:-195424.430, y:113.950, z:516198.731, speed_ms:66.03, speed_kmh:237.69, roll:4.68, pitch:-37.74},
+            {time:140.100, x:-195441.786, y:115.111, z:516208.229, speed_ms:66.10, speed_kmh:237.98, roll:2.78, pitch:-27.58},
+            {time:140.400, x:-195459.064, y:115.832, z:516217.982, speed_ms:66.25, speed_kmh:238.51, roll:1.53, pitch:-17.17},
+            {time:140.700, x:-195476.298, y:116.178, z:516227.944, speed_ms:66.47, speed_kmh:239.29, roll:0.72, pitch:-9.15},
+            {time:141.000, x:-195493.521, y:116.208, z:516238.077, speed_ms:66.75, speed_kmh:240.29, roll:0.15, pitch:-4.45},
+            {time:141.300, x:-195510.764, y:115.976, z:516248.351, speed_ms:67.06, speed_kmh:241.43, roll:-0.19, pitch:-3.09},
+            {time:141.600, x:-195528.047, y:115.547, z:516258.741, speed_ms:67.40, speed_kmh:242.64, roll:-0.48, pitch:-1.98},
+            {time:141.900, x:-195545.387, y:114.967, z:516269.231, speed_ms:67.75, speed_kmh:243.92, roll:-0.83, pitch:-0.84},
+            {time:142.200, x:-195562.799, y:114.249, z:516279.803, speed_ms:68.12, speed_kmh:245.22, roll:-1.12, pitch:0.34},
+            {time:142.500, x:-195580.289, y:113.414, z:516290.448, speed_ms:68.49, speed_kmh:246.55, roll:-1.19, pitch:1.50},
+            {time:142.800, x:-195597.863, y:112.505, z:516301.159, speed_ms:68.85, speed_kmh:247.86, roll:-0.94, pitch:2.62},
+            {time:143.100, x:-195615.528, y:111.601, z:516311.926, speed_ms:69.20, speed_kmh:249.12, roll:-0.45, pitch:3.73},
+            {time:143.400, x:-195633.294, y:110.781, z:516322.731, speed_ms:69.53, speed_kmh:250.32, roll:-0.03, pitch:4.75},
+            {time:143.700, x:-195651.167, y:110.080, z:516333.558, speed_ms:69.85, speed_kmh:251.45, roll:0.22, pitch:4.92},
+            {time:144.000, x:-195669.144, y:109.492, z:516344.397, speed_ms:70.14, speed_kmh:252.52, roll:0.43, pitch:4.32},
+            {time:144.300, x:-195687.219, y:109.010, z:516355.243, speed_ms:70.42, speed_kmh:253.51, roll:0.67, pitch:4.00}
+        ];
+
+        // ============================================================
+        //  КАМЕРА, ПРОЕКЦИЯ, УПРАВЛЕНИЕ
+        // ============================================================
 
         const canvas = document.getElementById('trackCanvas');
         const ctx = canvas.getContext('2d');
         const W = canvas.width, H = canvas.height;
 
+        // Собираем все точки для границ
         let allPoints = [];
         gates.forEach(g => g.vertices.forEach(v => allPoints.push({x: v.x, z: v.y})));
         pylons.forEach(p => allPoints.push({x: p.x, z: p.y}));
+        trackData.forEach(t => allPoints.push({x: t.x, z: t.z}));
 
         const minX = Math.min(...allPoints.map(p => p.x));
         const maxX = Math.max(...allPoints.map(p => p.x));
@@ -302,105 +854,196 @@
         const sinA = 0.6;
         const approxWidth = (rangeX + rangeZ) * cosA;
         const approxHeight = (rangeX + rangeZ) * sinA;
-        state.baseScale = Math.min(drawW / approxWidth, drawH / approxHeight);
+        let baseScale = Math.min(drawW / approxWidth, drawH / approxHeight);
 
         const centerX = (minX + maxX) / 2;
         const centerZ = (minZ + maxZ) / 2;
 
+        const state = {
+            rotation: 0,
+            scale: 1,
+            offsetX: 0,
+            offsetY: 0,
+        };
+
         function isoProject(x, z, height = 0) {
             let dx = x - centerX;
             let dz = z - centerZ;
-
             const rot = state.rotation;
             const cosR = Math.cos(rot);
             const sinR = Math.sin(rot);
             const rx = dx * cosR - dz * sinR;
             const rz = dx * sinR + dz * cosR;
-
-            const screenX = (rx - rz) * cosA * state.baseScale * state.scale + W/2 + state.offsetX;
-            const screenY = (rx + rz) * sinA * state.baseScale * state.scale - height * state.baseScale * state.scale + H/2 + state.offsetY;
-
+            const screenX = (rx - rz) * cosA * baseScale * state.scale + W/2 + state.offsetX;
+            const screenY = (rx + rz) * sinA * baseScale * state.scale - height * baseScale * state.scale + H/2 + state.offsetY;
             return { x: screenX, y: screenY };
         }
 
         // ============================================================
-        //  Управление мышью
+        //  УПРАВЛЕНИЕ КАМЕРОЙ
         // ============================================================
 
-        let isPanning = false;
-        let isRotating = false;
+        let isPanning = false, isRotating = false;
         let prevMouseX = 0, prevMouseY = 0;
-
         const wrapper = document.getElementById('canvasWrapper');
 
         wrapper.addEventListener('mousedown', (e) => {
-            if (e.button === 0) {
-                isPanning = true;
-                prevMouseX = e.clientX;
-                prevMouseY = e.clientY;
-                wrapper.style.cursor = 'grabbing';
-            } else if (e.button === 2) {
-                isRotating = true;
-                prevMouseX = e.clientX;
-                prevMouseY = e.clientY;
-                wrapper.style.cursor = 'grabbing';
-            }
+            if (e.button === 0) { isPanning = true; prevMouseX = e.clientX; prevMouseY = e.clientY; wrapper.style.cursor = 'grabbing'; }
+            else if (e.button === 2) { isRotating = true; prevMouseX = e.clientX; prevMouseY = e.clientY; wrapper.style.cursor = 'grabbing'; }
         });
-
         window.addEventListener('mousemove', (e) => {
             if (isPanning) {
-                const dx = e.clientX - prevMouseX;
-                const dy = e.clientY - prevMouseY;
-                state.offsetX += dx;
-                state.offsetY += dy;
-                prevMouseX = e.clientX;
-                prevMouseY = e.clientY;
+                const dx = e.clientX - prevMouseX, dy = e.clientY - prevMouseY;
+                state.offsetX += dx; state.offsetY += dy;
+                prevMouseX = e.clientX; prevMouseY = e.clientY;
                 render();
             } else if (isRotating) {
-                const dx = e.clientX - prevMouseX;
-                state.rotation += dx * 0.01;
-                prevMouseX = e.clientX;
-                prevMouseY = e.clientY;
+                state.rotation += (e.clientX - prevMouseX) * 0.01;
+                prevMouseX = e.clientX; prevMouseY = e.clientY;
                 render();
             }
         });
-
-        window.addEventListener('mouseup', () => {
-            if (isPanning || isRotating) {
-                isPanning = false;
-                isRotating = false;
-                wrapper.style.cursor = 'grab';
-            }
-        });
-
+        window.addEventListener('mouseup', () => { isPanning = false; isRotating = false; wrapper.style.cursor = 'grab'; });
         wrapper.addEventListener('wheel', (e) => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
             state.scale = Math.min(Math.max(state.scale * delta, 0.2), 5);
             render();
         }, { passive: false });
-
-        wrapper.addEventListener('dblclick', resetView);
-        document.getElementById('resetViewBtn').addEventListener('click', resetView);
+        wrapper.addEventListener('dblclick', () => resetView());
+        document.getElementById('resetViewBtn')?.addEventListener('click', resetView);
+        wrapper.addEventListener('contextmenu', (e) => e.preventDefault());
 
         function resetView() {
-            state.rotation = 0;
-            state.scale = 1;
-            state.offsetX = 0;
-            state.offsetY = 0;
+            state.rotation = 0; state.scale = 1; state.offsetX = 0; state.offsetY = 0;
             render();
         }
 
-        wrapper.addEventListener('contextmenu', (e) => e.preventDefault());
-
         // ============================================================
-        //  Рендеринг
+        //  ВСПОМОГАТЕЛЬНЫЕ 3D-ФУНКЦИИ
         // ============================================================
 
+        function normalize(v) {
+            const len = Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+            if (len === 0) return {x:0, y:0, z:0};
+            return {x: v.x/len, y: v.y/len, z: v.z/len};
+        }
+
+        function cross(a, b) {
+            return {x: a.y*b.z - a.z*b.y, y: a.z*b.x - a.x*b.z, z: a.x*b.y - a.y*b.x};
+        }
+
+        function dot(a, b) {
+            return a.x*b.x + a.y*b.y + a.z*b.z;
+        }
+
+        function vecAdd(a, b) {
+            return {x: a.x+b.x, y: a.y+b.y, z: a.z+b.z};
+        }
+
+        function vecMul(v, s) {
+            return {x: v.x*s, y: v.y*s, z: v.z*s};
+        }
+
+        function vecSub(a, b) {
+            return {x: a.x-b.x, y: a.y-b.y, z: a.z-b.z};
+        }
+
+        function getUpVector(point, nextPoint, rollDeg, pitchDeg) {
+            const f = normalize(vecSub(nextPoint, point));
+            const wup = {x:0, y:1, z:0};
+            let right = normalize(cross(f, wup));
+            if (Math.abs(dot(f, wup)) > 0.99) {
+                right = {x:1, y:0, z:0};
+            }
+            let up = cross(right, f);
+            const rollRad = rollDeg * Math.PI / 180;
+            const pitchRad = pitchDeg * Math.PI / 180;
+            const cosR = Math.cos(rollRad);
+            const sinR = Math.sin(rollRad);
+            const u1 = vecAdd(
+                vecMul(up, cosR),
+                vecAdd(
+                    vecMul(cross(f, up), sinR),
+                    vecMul(f, dot(f, up) * (1 - cosR))
+                )
+            );
+            const cosP = Math.cos(pitchRad);
+            const sinP = Math.sin(pitchRad);
+            const u2 = vecAdd(
+                vecMul(u1, cosP),
+                vecAdd(
+                    vecMul(cross(right, u1), sinP),
+                    vecMul(right, dot(right, u1) * (1 - cosP))
+                )
+            );
+            return normalize(u2);
+        }
+
+        // ============================================================
+        //  АНИМАЦИЯ И УПРАВЛЕНИЕ
+        // ============================================================
+
+        let currentTime = 0;
+        let isPlaying = false;
+        let speedFactor = 1.0;
+        let animationId = null;
+        let lastTimestamp = 0;
+        let totalDuration = trackData[trackData.length-1].time;
+
+        const playBtn = document.getElementById('playBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const timeSlider = document.getElementById('timeSlider');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const currentTimeSpan = document.getElementById('currentTime');
+        const currentSpeedSpan = document.getElementById('currentSpeed');
+        const currentRollSpan = document.getElementById('currentRoll');
+        const currentPitchSpan = document.getElementById('currentPitch');
+
+        // Инициализация слайдеров
+        timeSlider.max = totalDuration;
+        timeSlider.value = 0;
+
+        // Функция интерполяции
+        function lerp(a, b, t) { return a + (b - a) * t; }
+
+        function getInterpolatedData(time) {
+            if (time <= trackData[0].time) return trackData[0];
+            if (time >= trackData[trackData.length-1].time) return trackData[trackData.length-1];
+            for (let i = 0; i < trackData.length - 1; i++) {
+                if (time >= trackData[i].time && time < trackData[i+1].time) {
+                    const t = (time - trackData[i].time) / (trackData[i+1].time - trackData[i].time);
+                    return {
+                        time: time,
+                        x: lerp(trackData[i].x, trackData[i+1].x, t),
+                        y: lerp(trackData[i].y, trackData[i+1].y, t),
+                        z: lerp(trackData[i].z, trackData[i+1].z, t),
+                        speed_ms: lerp(trackData[i].speed_ms, trackData[i+1].speed_ms, t),
+                        speed_kmh: lerp(trackData[i].speed_kmh, trackData[i+1].speed_kmh, t),
+                        roll: lerp(trackData[i].roll, trackData[i+1].roll, t),
+                        pitch: lerp(trackData[i].pitch, trackData[i+1].pitch, t),
+                    };
+                }
+            }
+            return trackData[0];
+        }
+
+        // Обновление UI информации
+        function updateTelemetry(data) {
+            if (!data) return;
+            currentTimeSpan.textContent = data.time.toFixed(1);
+            currentSpeedSpan.textContent = Math.round(data.speed_kmh);
+            currentRollSpan.textContent = data.roll.toFixed(1);
+            currentPitchSpan.textContent = data.pitch.toFixed(1);
+        }
+
+        // Рендеринг сцены с самолётом
         function render() {
             ctx.clearRect(0, 0, W, H);
 
-            // Сетка
+            // ---- Сетка ----
             ctx.strokeStyle = 'rgba(102,204,255,0.05)';
             ctx.lineWidth = 0.5;
             for (let i = 0; i < 10; i++) {
@@ -409,26 +1052,18 @@
                 const z = minZ + t * rangeZ;
                 const p1 = isoProject(x, minZ);
                 const p2 = isoProject(x, maxZ);
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
                 const p3 = isoProject(minX, z);
                 const p4 = isoProject(maxX, z);
-                ctx.beginPath();
-                ctx.moveTo(p3.x, p3.y);
-                ctx.lineTo(p4.x, p4.y);
-                ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.stroke();
             }
 
-            // Ворота
+            // ---- Ворота ----
             gates.forEach(g => {
                 const pts = g.vertices.map(v => isoProject(v.x, v.y, 0));
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) {
-                    ctx.lineTo(pts[i].x, pts[i].y);
-                }
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                 ctx.closePath();
                 ctx.strokeStyle = '#66ccff';
                 ctx.lineWidth = 2;
@@ -437,43 +1072,34 @@
                 ctx.fill();
             });
 
-            // Пилоны – конусы
-            const coneHeight = 25;
-            const coneRadius = 4.5;
-
+            // ---- Пилоны ----
+            const coneHeight = 25, coneRadius = 4.5;
             pylons.forEach(p => {
-                const baseCenter = isoProject(p.x, p.y, 0);
+                const base = isoProject(p.x, p.y, 0);
                 const tip = isoProject(p.x, p.y, coneHeight);
-
-                const r = coneRadius * state.baseScale * state.scale;
-                const rx = r;
-                const ry = r * 0.5;
-
+                const r = coneRadius * baseScale * state.scale;
+                const rx = r, ry = r * 0.5;
                 ctx.beginPath();
-                ctx.ellipse(baseCenter.x, baseCenter.y, rx, ry, 0, 0, Math.PI * 2);
+                ctx.ellipse(base.x, base.y, rx, ry, 0, 0, Math.PI * 2);
                 ctx.fillStyle = '#661122';
                 ctx.fill();
                 ctx.strokeStyle = '#ff4466';
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
-
-                const left = { x: baseCenter.x - rx, y: baseCenter.y };
-                const right = { x: baseCenter.x + rx, y: baseCenter.y };
                 ctx.beginPath();
                 ctx.moveTo(tip.x, tip.y);
-                ctx.lineTo(left.x, left.y);
-                ctx.lineTo(right.x, right.y);
+                ctx.lineTo(base.x - rx, base.y);
+                ctx.lineTo(base.x + rx, base.y);
                 ctx.closePath();
                 ctx.fillStyle = 'rgba(255,68,102,0.25)';
                 ctx.fill();
                 ctx.strokeStyle = '#ff4466';
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
-
                 const angleStep = Math.PI / 6;
                 for (let ang = 0; ang < Math.PI * 2; ang += angleStep) {
-                    const ex = baseCenter.x + rx * Math.cos(ang);
-                    const ey = baseCenter.y + ry * Math.sin(ang);
+                    const ex = base.x + rx * Math.cos(ang);
+                    const ey = base.y + ry * Math.sin(ang);
                     ctx.beginPath();
                     ctx.moveTo(tip.x, tip.y);
                     ctx.lineTo(ex, ey);
@@ -481,19 +1107,110 @@
                     ctx.lineWidth = 1;
                     ctx.stroke();
                 }
-
-                ctx.beginPath();
-                ctx.arc(tip.x, tip.y, 3, 0, 2 * Math.PI);
-                ctx.fillStyle = '#ff4466';
-                ctx.fill();
             });
 
-            // Подписи ворот
+            // ---- Лента траектории (высота *0.5) ----
+            if (trackData.length > 1) {
+                const totalPoints = trackData.length;
+                const halfTime = trackData[totalPoints-1].time / 2;
+                const ribbonWidth = 6.0;
+                const points3d = trackData.map(p => ({
+                    x: p.x,
+                    y: p.y * 0.5,
+                    z: p.z,
+                    time: p.time,
+                    roll: p.roll,
+                    pitch: p.pitch
+                }));
+
+                ctx.shadowColor = 'rgba(255,255,255,0.3)';
+                ctx.shadowBlur = 8;
+
+                for (let i = 0; i < points3d.length - 1; i++) {
+                    const p0 = points3d[i];
+                    const p1 = points3d[i+1];
+                    const a = {x: p0.x, y: p0.y, z: p0.z};
+                    const b = {x: p1.x, y: p1.y, z: p1.z};
+                    const avgRoll = (p0.roll + p1.roll) / 2;
+                    const avgPitch = (p0.pitch + p1.pitch) / 2;
+                    const upVec = getUpVector(a, b, avgRoll, avgPitch);
+                    const offset = vecMul(upVec, ribbonWidth/2);
+                    const a_top = vecAdd(a, offset);
+                    const a_bot = vecSub(a, offset);
+                    const b_top = vecAdd(b, offset);
+                    const b_bot = vecSub(b, offset);
+
+                    const pa_top = isoProject(a_top.x, a_top.z, a_top.y);
+                    const pa_bot = isoProject(a_bot.x, a_bot.z, a_bot.y);
+                    const pb_top = isoProject(b_top.x, b_top.z, b_top.y);
+                    const pb_bot = isoProject(b_bot.x, b_bot.z, b_bot.y);
+
+                    const t = (p0.time + p1.time) / 2;
+                    const isFirstHalf = t <= halfTime;
+                    const r = isFirstHalf ? 255 : 68;
+                    const g = isFirstHalf ? 68 : 136;
+                    const b_val = isFirstHalf ? 68 : 255;
+                    const alpha = 0.5;
+
+                    ctx.beginPath();
+                    ctx.moveTo(pa_top.x, pa_top.y);
+                    ctx.lineTo(pb_top.x, pb_top.y);
+                    ctx.lineTo(pb_bot.x, pb_bot.y);
+                    ctx.lineTo(pa_bot.x, pa_bot.y);
+                    ctx.closePath();
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b_val}, ${alpha})`;
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(${r}, ${g}, ${b_val}, 0.3)`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+                ctx.shadowBlur = 0;
+
+                // ---- Стрелки ----
+                const arrowStep = 20;
+                const arrowLen = 12.0;
+                const arrowWidth = 4.0;
+                for (let i = 0; i < points3d.length - 1; i++) {
+                    if (i % arrowStep !== 0) continue;
+                    const p0 = points3d[i];
+                    const p1 = points3d[Math.min(i+1, points3d.length-1)];
+                    const mid = { x: (p0.x+p1.x)/2, y: (p0.y+p1.y)/2, z: (p0.z+p1.z)/2 };
+                    const dir = normalize(vecSub(p1, p0));
+                    const upVec = getUpVector(
+                        {x: p0.x, y: p0.y, z: p0.z},
+                        {x: p1.x, y: p1.y, z: p1.z},
+                        (p0.roll+p1.roll)/2,
+                        (p0.pitch+p1.pitch)/2
+                    );
+                    const offsetUp = vecMul(upVec, ribbonWidth/2 + 0.5);
+                    const origin = vecAdd(mid, offsetUp);
+                    const tip = vecAdd(origin, vecMul(dir, arrowLen));
+                    const rightDir = normalize(cross(dir, upVec));
+                    const left = vecAdd(origin, vecMul(rightDir, -arrowWidth/2));
+                    const right = vecAdd(origin, vecMul(rightDir, arrowWidth/2));
+
+                    const pTip = isoProject(tip.x, tip.z, tip.y);
+                    const pLeft = isoProject(left.x, left.z, left.y);
+                    const pRight = isoProject(right.x, right.z, right.y);
+
+                    ctx.beginPath();
+                    ctx.moveTo(pTip.x, pTip.y);
+                    ctx.lineTo(pLeft.x, pLeft.y);
+                    ctx.lineTo(pRight.x, pRight.y);
+                    ctx.closePath();
+                    ctx.fillStyle = '#ffff88';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffaa00';
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                }
+            }
+
+            // ---- Подписи ворот (по аналогии с Gudauta.html) ----
             const gateCenters = gates.map(g => {
-                let cx = 0, cz = 0;
+                let cx=0, cz=0;
                 g.vertices.forEach(v => { cx += v.x; cz += v.y; });
-                cx /= g.vertices.length;
-                cz /= g.vertices.length;
+                cx /= g.vertices.length; cz /= g.vertices.length;
                 return { id: g.id, x: cx, z: cz };
             });
 
@@ -508,12 +1225,10 @@
                 const midZ = (small.z + big.z) / 2;
                 const pos = isoProject(midX, midZ, 0);
 
-                // Смещение для пар 7 и 8
                 let dx = 0;
                 if (i === 7) dx = -30;
                 if (i === 8) dx = 30;
 
-                // Верхняя подпись – малый номер (красный)
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'bottom';
                 let label = (i === 1) ? 'СТАРТ' : i.toString();
@@ -521,7 +1236,6 @@
                 ctx.font = (i === 1) ? 'bold 16px Arial' : 'bold 14px Arial';
                 ctx.fillText(label, pos.x + dx, pos.y - labelOffset);
 
-                // Нижняя подпись – большой номер
                 const bigId = i + 9;
                 ctx.textBaseline = 'top';
                 ctx.fillStyle = (bigId === 10) ? '#ffffff' : '#4488ff';
@@ -540,16 +1254,147 @@
                 ctx.fillText('ФИНИШ', pos.x, pos.y + 45);
             }
 
-            // Информация о масштабе
+            // ---- САМОЛЁТИК ----
+            if (currentTime >= 0 && currentTime <= totalDuration) {
+                const data = getInterpolatedData(currentTime);
+                const pos3d = { x: data.x, y: data.y * 0.5, z: data.z };
+                let dir = {x:1, y:0, z:0};
+                if (currentTime < totalDuration) {
+                    const nextData = getInterpolatedData(currentTime + 0.1);
+                    dir = normalize(vecSub({x: nextData.x, y: nextData.y*0.5, z: nextData.z}, pos3d));
+                }
+                const upVec = getUpVector(
+                    {x: data.x, y: data.y*0.5, z: data.z},
+                    {x: data.x + dir.x, y: data.y*0.5 + dir.y, z: data.z + dir.z},
+                    data.roll, data.pitch
+                );
+                const rightVec = normalize(cross(dir, upVec));
+                const center = isoProject(pos3d.x, pos3d.z, pos3d.y);
+                const planeScale = 2.5 * baseScale * state.scale;
+                const nose = vecAdd(pos3d, vecMul(dir, 5 * planeScale / 5));
+                const left = vecAdd(pos3d, vecMul(rightVec, -3 * planeScale / 5));
+                const right = vecAdd(pos3d, vecMul(rightVec, 3 * planeScale / 5));
+                const tail = vecAdd(pos3d, vecMul(dir, -4 * planeScale / 5));
+                const offsetUpPlane = vecMul(upVec, 0.3);
+                const pNose = isoProject(nose.x + offsetUpPlane.x, nose.z + offsetUpPlane.z, nose.y + offsetUpPlane.y);
+                const pLeft = isoProject(left.x + offsetUpPlane.x, left.z + offsetUpPlane.z, left.y + offsetUpPlane.y);
+                const pRight = isoProject(right.x + offsetUpPlane.x, right.z + offsetUpPlane.z, right.y + offsetUpPlane.y);
+                const pTail = isoProject(tail.x + offsetUpPlane.x, tail.z + offsetUpPlane.z, tail.y + offsetUpPlane.y);
+
+                ctx.beginPath();
+                ctx.moveTo(pNose.x, pNose.y);
+                ctx.lineTo(pLeft.x, pLeft.y);
+                ctx.lineTo(pTail.x, pTail.y);
+                ctx.lineTo(pRight.x, pRight.y);
+                ctx.closePath();
+                ctx.fillStyle = '#88ddff';
+                ctx.fill();
+                ctx.strokeStyle = '#66ccff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.shadowColor = 'rgba(102,204,255,0.8)';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = 'rgba(102,204,255,0.3)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(center.x, center.y, 4, 0, 2 * Math.PI);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+            }
+
+            // ---- Инфо ----
             ctx.fillStyle = '#556677';
             ctx.font = '11px Arial';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'bottom';
-            ctx.fillText(`Масштаб: ${(state.scale * state.baseScale).toFixed(3)}`, 15, H - 10);
+            ctx.fillText(`Масштаб: ${(state.scale * baseScale).toFixed(3)}`, 15, H - 10);
+
+            if (currentTime >= 0 && currentTime <= totalDuration) {
+                const data = getInterpolatedData(currentTime);
+                updateTelemetry(data);
+            }
         }
 
+        // ============================================================
+        //  УПРАВЛЕНИЕ ВОСПРОИЗВЕДЕНИЕМ
+        // ============================================================
+
+        function updateUI() {
+            timeSlider.value = currentTime;
+            timeDisplay.textContent = currentTime.toFixed(1) + ' с';
+            if (currentTime >= totalDuration) {
+                isPlaying = false;
+                playBtn.textContent = '▶';
+            }
+        }
+
+        function animationLoop(timestamp) {
+            if (isPlaying) {
+                if (!lastTimestamp) lastTimestamp = timestamp;
+                const delta = (timestamp - lastTimestamp) / 1000 * speedFactor;
+                lastTimestamp = timestamp;
+                currentTime += delta;
+                if (currentTime > totalDuration) {
+                    currentTime = totalDuration;
+                    isPlaying = false;
+                    playBtn.textContent = '▶';
+                }
+                render();
+                updateUI();
+            } else {
+                lastTimestamp = 0;
+            }
+            animationId = requestAnimationFrame(animationLoop);
+        }
+
+        // Обработчики кнопок
+        playBtn.addEventListener('click', () => {
+            if (currentTime >= totalDuration) {
+                currentTime = 0;
+                render();
+                updateUI();
+            }
+            isPlaying = !isPlaying;
+            playBtn.textContent = isPlaying ? '⏸' : '▶';
+            if (isPlaying) {
+                lastTimestamp = 0;
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            currentTime = 0;
+            isPlaying = false;
+            playBtn.textContent = '▶';
+            render();
+            updateUI();
+        });
+
+        timeSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            currentTime = Math.min(val, totalDuration);
+            if (isPlaying) {
+                isPlaying = false;
+                playBtn.textContent = '▶';
+            }
+            render();
+            updateUI();
+        });
+
+        speedSlider.addEventListener('input', (e) => {
+            speedFactor = parseFloat(e.target.value);
+            speedValue.textContent = speedFactor.toFixed(1) + '×';
+        });
+
+        // Запуск анимации
+        animationLoop(0);
+
+        // Первый рендер
         resetView();
-        console.log('Gudauta interactive ready');
+
+        // Сброс камеры при загрузке
+        console.log('Gudauta track with aircraft animation ready');
     </script>
 </body>
 </html>
