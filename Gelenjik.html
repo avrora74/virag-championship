@@ -1,1381 +1,1628 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Трасса «Геленджик» — трек avrora11 (анимация)</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ТРАССА — Геленджик</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0a0e1a;
-            color: #e0e8f0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 10px;
-            user-select: none;
-        }
-        h1 {
-            color: #66ccff;
-            text-shadow: 0 0 20px rgba(102,204,255,0.3);
-            margin-bottom: 2px;
-            font-size: 24px;
-        }
-        .info {
-            color: #88ddff;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-        .canvas-wrapper {
-            position: relative;
-            border: 1px solid rgba(102,204,255,0.2);
-            border-radius: 12px;
-            background: #0d1225;
-            box-shadow: 0 0 40px rgba(102,204,255,0.05);
             overflow: hidden;
-            cursor: grab;
-            touch-action: none;
+            background-color: #b0d0e8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #1a1a2e;
         }
-        .canvas-wrapper:active { cursor: grabbing; }
-        canvas {
-            display: block;
-            width: 1000px;
-            height: 650px;
-            max-width: 100%;
-            height: auto;
-            background: #0d1225;
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.70);
+            padding: 8px 24px;
+            border-radius: 30px;
+            pointer-events: none;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid rgba(255,255,255,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: #1a2a3a;
+            text-shadow: 0 1px 4px rgba(255,255,255,0.5);
         }
-        .controls {
-            margin-top: 12px;
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.5);
+            transform-origin: bottom center;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(8px);
+            padding: 20px 40px;
+            border-radius: 50px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 24px;
+            z-index: 20;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
             flex-wrap: wrap;
-            background: rgba(255,255,255,0.05);
-            padding: 8px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(102,204,255,0.1);
-            width: 100%;
-            max-width: 1000px;
             justify-content: center;
+            pointer-events: auto;
+            width: auto;
+            max-width: 90vw;
         }
-        .controls button {
-            background: rgba(102,204,255,0.15);
-            border: 1px solid #66ccff;
-            color: #66ccff;
+        #controls button {
+            background: #2a6f8a;
+            border: none;
+            color: white;
+            font-size: 22px;
+            padding: 10px 30px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            min-width: 200px;
+        }
+        #controls button:hover { background: #3a8aaa; }
+        #controls button:active { transform: scale(0.97); }
+        #controls label {
+            color: rgba(255,255,255,0.85);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #controls input[type="range"] {
+            width: 340px;
+            height: 5px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            cursor: pointer;
+        }
+        #controls input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #88ccff;
+            border: 2px solid white;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(136,204,255,0.5);
+        }
+        #controls input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #88ccff;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+        #progress-label, #speed-label, #scale-label {
+            color: white;
+            font-size: 18px;
+            min-width: 90px;
+            text-align: center;
+        }
+        #controls .group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        #telemetry {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px 28px;
+            color: white;
+            font-size: 17px;
+            background: rgba(0,0,0,0.35);
+            padding: 8px 24px;
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.12);
+            backdrop-filter: blur(2px);
+            justify-content: center;
+            margin-top: 4px;
+            width: 100%;
+            max-width: 800px;
+        }
+        #telemetry span {
+            white-space: nowrap;
+        }
+        #telemetry .val {
+            font-weight: 600;
+            color: #88ccff;
+        }
+        @media (max-width: 700px) {
+            #controls {
+                flex-direction: column;
+                gap: 14px;
+                padding: 20px 16px;
+                border-radius: 30px;
+                bottom: 10px;
+                width: 95%;
+                max-width: 500px;
+                transform: translateX(-50%) scale(0.5);
+            }
+            #controls .group { width: 100%; justify-content: center; }
+            #controls input[type="range"] { width: 100%; }
+            #telemetry { font-size: 14px; gap: 10px 16px; }
+        }
+        #controls-note {
+            position: absolute;
+            bottom: 100px;
+            right: 30px;
+            background: rgba(255,255,255,0.5);
             padding: 6px 14px;
             border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: 0.2s;
-            min-width: 60px;
-        }
-        .controls button:hover { background: rgba(102,204,255,0.3); }
-        .controls button.active { background: rgba(102,204,255,0.3); box-shadow: 0 0 20px rgba(102,204,255,0.2); }
-        .controls input[type="range"] {
-            flex: 1;
-            min-width: 120px;
-            background: transparent;
-            cursor: pointer;
-            accent-color: #66ccff;
-            height: 4px;
-        }
-        .controls .time-display {
-            font-size: 14px;
-            color: #88ddff;
-            min-width: 80px;
-            text-align: center;
-        }
-        .controls .speed-label {
-            font-size: 13px;
-            color: #88ddff;
-        }
-        .controls .speed-value {
-            font-size: 14px;
-            color: #66ccff;
-            min-width: 40px;
-            text-align: center;
-        }
-        .controls .telemetry {
-            display: flex;
-            gap: 12px;
-            font-size: 13px;
-            color: #aaccee;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .controls .telemetry span { background: rgba(0,0,0,0.3); padding: 2px 10px; border-radius: 12px; }
-        .controls .telemetry .highlight { color: #66ccff; font-weight: 600; }
-        .legend {
-            margin-top: 10px;
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-            font-size: 13px;
-        }
-        .legend-item { display: flex; align-items: center; gap: 6px; }
-        .legend-color { width: 20px; height: 4px; border-radius: 2px; }
-        .legend-color.polygon { background: #66ccff; }
-        .legend-color.track-first { background: #ff4466; }
-        .legend-color.track-second { background: #4488ff; }
-        .legend-color.pylon {
-            display: inline-block;
-            width: 0; height: 0;
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-bottom: 16px solid #ff4466;
-        }
-        .legend-color.plane {
-            display: inline-block;
-            width: 0; height: 0;
-            border-left: 8px solid #88ddff;
-            border-top: 5px solid transparent;
-            border-bottom: 5px solid transparent;
-        }
-        .footer {
-            margin-top: 10px;
-            color: #556677;
             font-size: 12px;
-        }
-        #tooltip {
-            position: absolute;
-            background: rgba(10,14,26,0.92);
-            border: 1px solid rgba(102,204,255,0.3);
-            border-radius: 8px;
-            padding: 6px 12px;
-            font-size: 12px;
-            color: #e0e8f0;
-            pointer-events: none;
-            display: none;
-            backdrop-filter: blur(4px);
-            line-height: 1.5;
+            opacity: 0.5;
             z-index: 10;
-            min-width: 120px;
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #1a2a3a;
+            backdrop-filter: blur(2px);
         }
-        #tooltip .highlight { color: #66ccff; font-weight: 600; }
-        @media (max-width: 1024px) {
-            canvas { width: 100%; height: auto; }
-            .controls { flex-direction: column; align-items: stretch; gap: 8px; }
-            .controls .telemetry { justify-content: center; }
+        @media (max-width: 640px) {
+            #info { font-size: 16px; padding: 6px 16px; top: 12px; }
+            #controls-note { display: none; }
         }
     </style>
 </head>
 <body>
-    <h1>✈️ Трасса «Геленджик»</h1>
-    <div class="info">13 ворот · 12 пилонов</div>
-    <div class="canvas-wrapper" id="canvasWrapper">
-        <canvas id="trackCanvas" width="1000" height="650"></canvas>
-        <div id="tooltip"></div>
-    </div>
+    <div id="info">ТРАССА — Геленджик | Ворот: 13 | Пилонов: 12</div>
+    <div id="controls-note">🖱 Мышь: вращение · колёсико: масштаб</div>
 
-    <!-- Панель управления -->
-    <div class="controls" id="controls">
-        <button id="playBtn">▶</button>
-        <button id="resetBtn">⟲</button>
-        <input type="range" id="timeSlider" min="0" max="100" value="0" step="0.1">
-        <span class="time-display" id="timeDisplay">0.0 с</span>
-        <span class="speed-label">Скорость</span>
-        <input type="range" id="speedSlider" min="0.1" max="5" value="1" step="0.1" style="width:80px;">
-        <span class="speed-value" id="speedValue">1×</span>
-        <div class="telemetry" id="telemetry">
-            <span>⏱ <span class="highlight" id="currentTime">0.0</span> с</span>
-            <span>⚡ <span class="highlight" id="currentSpeed">0</span> км/ч</span>
-            <span>🔄 <span class="highlight" id="currentRoll">0</span>°</span>
-            <span>📐 <span class="highlight" id="currentPitch">0</span>°</span>
+    <div id="controls">
+        <button id="playBtn">▶ Старт</button>
+        <div class="group">
+            <label>Прогресс</label>
+            <input type="range" id="progressSlider" min="0" max="100" value="0" />
+            <span id="progress-label">0%</span>
+        </div>
+        <div class="group">
+            <label>Скорость</label>
+            <input type="range" id="speedSlider" min="0.25" max="3" step="0.05" value="1.0" />
+            <span id="speed-label">1.00×</span>
+        </div>
+        <div class="group">
+            <label>Масштаб</label>
+            <input type="range" id="scaleSlider" min="1" max="4" step="1" value="2" />
+            <span id="scale-label">2</span>
+        </div>
+        <div id="telemetry">
+            <span>Время: <span class="val" id="t-time">0.00</span> с</span>
+            <span>Скорость: <span class="val" id="t-speed">0</span> км/ч</span>
+            <span>Высота: <span class="val" id="t-height">0</span> м</span>
+            <span>Крен: <span class="val" id="t-roll">0.0</span>°</span>
+            <span>Тангаж: <span class="val" id="t-pitch">0.0</span>°</span>
         </div>
     </div>
 
-    <div class="legend">
-        <span class="legend-item"><span class="legend-color polygon"></span> Ворота</span>
-        <span class="legend-item"><span class="legend-color track-first"></span> Первый круг</span>
-        <span class="legend-item"><span class="legend-color track-second"></span> Второй круг</span>
-        <span class="legend-item"><span class="legend-color pylon"></span> Пилоны</span>
-        <span class="legend-item"><span class="legend-color plane"></span> Самолёт</span>
-    </div>
-    <div class="footer">Данные трека из Gelenjik_avrora11_2026-07-29_20-49-54.csv</div>
-
-    <script>
-        // ============================================================
-        //  ДАННЫЕ ТРАССЫ «ГЕЛЕНДЖИК» (из миссии)
-        // ============================================================
-
-        const gates = [
-            { id: 1, vertices: [
-                {x: -49147.249579348, y: 299257.46217034},
-                {x: -49168.648928679, y: 299291.48164876},
-                {x: -49162.722955018, y: 299294.71898622},
-                {x: -49141.378475814, y: 299260.97385843}
-            ]},
-            { id: 2, vertices: [
-                {x: -48675.561706993, y: 299606.61949111},
-                {x: -48662.001683327, y: 299644.31433302},
-                {x: -48655.47465701, y: 299641.93626917},
-                {x: -48668.933486469, y: 299604.39321857}
-            ]},
-            { id: 3, vertices: [
-                {x: -48788.18335898, y: 299964.81126378},
-                {x: -48786.641070438, y: 299971.64139875},
-                {x: -48747.20254914, y: 299962.82832136},
-                {x: -48748.799919416, y: 299956.05326812}
-            ]},
-            { id: 4, vertices: [
-                {x: -48771.191085304, y: 300104.59211532},
-                {x: -48770.503222008, y: 300111.70003604},
-                {x: -48730.607150853, y: 300106.88499297},
-                {x: -48731.295014149, y: 300099.77707225}
-            ]},
-            { id: 5, vertices: [
-                {x: -48934.111446619, y: 299227.58823234},
-                {x: -48969.176852258, y: 299246.54093919},
-                {x: -48965.64133202, y: 299252.68463009},
-                {x: -48930.344088988, y: 299233.84784194}
-            ]},
-            { id: 6, vertices: [
-                {x: -49568.069658272, y: 299199.67920153},
-                {x: -49563.346820542, y: 299238.91508421},
-                {x: -49556.323113149, y: 299238.18849379},
-                {x: -49561.106500081, y: 299198.71041431}
-            ]},
-            { id: 7, vertices: [
-                {x: -49147.249579348, y: 299257.46217034},
-                {x: -49168.703798805, y: 299291.53651889},
-                {x: -49162.722955018, y: 299294.71898622},
-                {x: -49141.378475814, y: 299260.97385843}
-            ]},
-            { id: 8, vertices: [
-                {x: -48675.51110989, y: 299606.5182969},
-                {x: -48662.001683327, y: 299644.31433302},
-                {x: -48655.525254113, y: 299641.88567206},
-                {x: -48668.93348647, y: 299604.34262146}
-            ]},
-            { id: 9, vertices: [
-                {x: -48788.18335898, y: 299964.81126378},
-                {x: -48786.641070438, y: 299971.64139875},
-                {x: -48747.20254914, y: 299962.93848483},
-                {x: -48748.799919416, y: 299955.99818639}
-            ]},
-            { id: 10, vertices: [
-                {x: -48771.191085304, y: 300104.59211532},
-                {x: -48770.388578126, y: 300111.6427141},
-                {x: -48730.549828911, y: 300106.94231491},
-                {x: -48731.295014149, y: 300099.83439419}
-            ]},
-            { id: 11, vertices: [
-                {x: -48933.995527922, y: 299227.58823234},
-                {x: -48969.176852258, y: 299246.54093919},
-                {x: -48965.583372672, y: 299252.74258944},
-                {x: -48930.402048336, y: 299233.73192324}
-            ]},
-            { id: 12, vertices: [
-                {x: -49568.009109071, y: 299199.67920153},
-                {x: -49563.286271341, y: 299238.85453501},
-                {x: -49556.323113149, y: 299238.12794459},
-                {x: -49561.106500081, y: 299198.77096351}
-            ]},
-            { id: 13, vertices: [
-                {x: -49147.194709222, y: 299257.46217034},
-                {x: -49168.648928679, y: 299291.37190851},
-                {x: -49162.668084892, y: 299294.71898622},
-                {x: -49141.488216067, y: 299261.02872856}
-            ]}
-        ];
-
-        const pylons = [
-            { id: 1, x: -49165.009890404, y: 299285.41643278 },
-            { id: 2, x: -49151.095604689, y: 299263.27357564 },
-            { id: 3, x: -48664.382197651, y: 299637.76349033 },
-            { id: 4, x: -48673.095733799, y: 299613.14739316 },
-            { id: 5, x: -48781.205464909, y: 299963.37544638 },
-            { id: 6, x: -48755.58567102, y: 299957.57692928 },
-            { id: 7, x: -48764.247166113, y: 300103.91458235 },
-            { id: 8, x: -48738.163084019, y: 300100.70704966 },
-            { id: 9, x: -48959.633334024, y: 299249.32263935 },
-            { id: 10, x: -48936.63986038, y: 299236.93349053 },
-            { id: 11, x: -49557.21723876, y: 299231.33698185 },
-            { id: 12, x: -49560.264319968, y: 299205.65005539 }
-        ];
-
-        // ============================================================
-        //  ДАННЫЕ ТРЕКА (парсинг из CSV)
-        // ============================================================
-
-        const trackData = [
-            {time:0.300, x:-49779.151, y:130.484, z:298774.092, speed_ms:62.96, speed_kmh:226.66, roll:-6.57, pitch:4.76},
-            {time:0.600, x:-49763.857, y:127.466, z:298784.971, speed_ms:63.76, speed_kmh:229.54, roll:-6.38, pitch:4.44},
-            {time:0.900, x:-49748.386, y:124.508, z:298796.031, speed_ms:64.53, speed_kmh:232.32, roll:-6.31, pitch:4.11},
-            {time:1.200, x:-49732.745, y:121.595, z:298807.263, speed_ms:65.29, speed_kmh:235.03, roll:-6.47, pitch:4.01},
-            {time:1.500, x:-49716.944, y:118.684, z:298818.660, speed_ms:66.02, speed_kmh:237.68, roll:-6.79, pitch:4.61},
-            {time:1.800, x:-49700.994, y:115.725, z:298830.218, speed_ms:66.75, speed_kmh:240.29, roll:-7.03, pitch:5.34},
-            {time:2.100, x:-49684.905, y:112.697, z:298841.937, speed_ms:67.47, speed_kmh:242.88, roll:-7.18, pitch:6.09},
-            {time:2.400, x:-49668.681, y:109.604, z:298853.823, speed_ms:68.17, speed_kmh:245.42, roll:-7.33, pitch:7.17},
-            {time:2.700, x:-49652.338, y:106.439, z:298865.884, speed_ms:68.86, speed_kmh:247.91, roll:-7.73, pitch:10.21},
-            {time:3.000, x:-49635.889, y:103.166, z:298878.133, speed_ms:69.57, speed_kmh:250.45, roll:-8.18, pitch:11.89},
-            {time:3.300, x:-49619.350, y:99.755, z:298890.580, speed_ms:70.28, speed_kmh:252.99, roll:-8.45, pitch:12.68},
-            {time:3.600, x:-49602.732, y:96.222, z:298903.244, speed_ms:70.98, speed_kmh:255.53, roll:-8.57, pitch:13.40},
-            {time:3.900, x:-49586.048, y:92.602, z:298916.145, speed_ms:71.67, speed_kmh:258.02, roll:-8.49, pitch:14.11},
-            {time:4.200, x:-49569.310, y:88.951, z:298929.306, speed_ms:72.35, speed_kmh:260.45, roll:-7.97, pitch:14.55},
-            {time:4.500, x:-49552.532, y:85.369, z:298942.758, speed_ms:72.99, speed_kmh:262.77, roll:-7.29, pitch:14.78},
-            {time:4.800, x:-49535.722, y:81.932, z:298956.514, speed_ms:73.61, speed_kmh:264.99, roll:-7.22, pitch:13.79},
-            {time:5.100, x:-49518.880, y:78.587, z:298970.543, speed_ms:74.20, speed_kmh:267.13, roll:-7.33, pitch:12.53},
-            {time:5.400, x:-49501.999, y:75.273, z:298984.810, speed_ms:74.78, speed_kmh:269.21, roll:-7.30, pitch:11.23},
-            {time:5.700, x:-49485.073, y:71.982, z:298999.291, speed_ms:75.32, speed_kmh:271.16, roll:-7.30, pitch:8.15},
-            {time:6.000, x:-49468.077, y:68.703, z:299013.940, speed_ms:75.85, speed_kmh:273.06, roll:-7.39, pitch:2.72},
-            {time:6.300, x:-49450.972, y:65.423, z:299028.712, speed_ms:76.39, speed_kmh:275.01, roll:-7.35, pitch:0.80},
-            {time:6.600, x:-49433.731, y:62.155, z:299043.575, speed_ms:76.91, speed_kmh:276.88, roll:-7.18, pitch:0.29},
-            {time:6.900, x:-49416.340, y:58.926, z:299058.509, speed_ms:77.41, speed_kmh:278.69, roll:-6.91, pitch:0.58},
-            {time:7.200, x:-49398.795, y:55.769, z:299073.506, speed_ms:77.89, speed_kmh:280.40, roll:-6.61, pitch:0.94},
-            {time:7.500, x:-49381.098, y:52.708, z:299088.563, speed_ms:78.35, speed_kmh:282.04, roll:-6.31, pitch:1.31},
-            {time:7.800, x:-49363.262, y:49.756, z:299103.683, speed_ms:78.77, speed_kmh:283.58, roll:-5.97, pitch:1.71},
-            {time:8.100, x:-49345.298, y:46.928, z:299118.870, speed_ms:79.18, speed_kmh:285.04, roll:-5.52, pitch:1.99},
-            {time:8.400, x:-49327.211, y:44.256, z:299134.123, speed_ms:79.55, speed_kmh:286.40, roll:-5.17, pitch:1.07},
-            {time:8.700, x:-49309.000, y:41.733, z:299149.426, speed_ms:79.91, speed_kmh:287.67, roll:-5.09, pitch:0.06},
-            {time:9.000, x:-49290.668, y:39.307, z:299164.762, speed_ms:80.24, speed_kmh:288.87, roll:-5.05, pitch:0.75},
-            {time:9.300, x:-49272.222, y:36.932, z:299180.122, speed_ms:80.56, speed_kmh:290.02, roll:-4.95, pitch:1.64},
-            {time:9.600, x:-49253.670, y:34.599, z:299195.509, speed_ms:80.87, speed_kmh:291.12, roll:-4.80, pitch:2.51},
-            {time:9.900, x:-49235.022, y:32.313, z:299210.927, speed_ms:81.16, speed_kmh:292.18, roll:-4.56, pitch:3.22},
-            {time:10.200, x:-49216.286, y:30.111, z:299226.384, speed_ms:81.43, speed_kmh:293.16, roll:-3.87, pitch:2.97},
-            {time:10.500, x:-49197.467, y:28.099, z:299241.887, speed_ms:81.68, speed_kmh:294.03, roll:-3.20, pitch:2.20},
-            {time:10.800, x:-49178.566, y:26.337, z:299257.430, speed_ms:81.88, speed_kmh:294.77, roll:-2.62, pitch:1.33},
-            {time:11.100, x:-49159.586, y:24.835, z:299272.991, speed_ms:82.05, speed_kmh:295.39, roll:-2.04, pitch:0.46},
-            {time:11.400, x:-49140.528, y:23.591, z:299288.550, speed_ms:82.17, speed_kmh:295.83, roll:-1.36, pitch:0.37},
-            {time:11.700, x:-49121.423, y:22.640, z:299304.102, speed_ms:82.20, speed_kmh:295.90, roll:0.18, pitch:5.95},
-            {time:12.000, x:-49102.343, y:22.116, z:299319.703, speed_ms:82.17, speed_kmh:295.82, roll:1.59, pitch:13.09},
-            {time:12.300, x:-49083.370, y:22.036, z:299335.432, speed_ms:82.14, speed_kmh:295.71, roll:2.42, pitch:16.60},
-            {time:12.600, x:-49064.556, y:22.304, z:299351.332, speed_ms:82.09, speed_kmh:295.54, roll:2.61, pitch:17.56},
-            {time:12.900, x:-49045.918, y:22.788, z:299367.410, speed_ms:82.04, speed_kmh:295.33, roll:2.39, pitch:16.67},
-            {time:13.200, x:-49027.442, y:23.356, z:299383.642, speed_ms:81.96, speed_kmh:295.06, roll:2.07, pitch:14.15},
-            {time:13.500, x:-49009.086, y:23.915, z:299399.972, speed_ms:81.87, speed_kmh:294.74, roll:1.75, pitch:8.99},
-            {time:13.800, x:-48990.795, y:24.432, z:299416.336, speed_ms:81.79, speed_kmh:294.44, roll:1.49, pitch:2.98},
-            {time:14.100, x:-48972.510, y:24.907, z:299432.675, speed_ms:81.72, speed_kmh:294.20, roll:1.36, pitch:-1.79},
-            {time:14.400, x:-48954.184, y:25.356, z:299448.943, speed_ms:81.67, speed_kmh:294.01, roll:1.27, pitch:-5.07},
-            {time:14.700, x:-48935.785, y:25.784, z:299465.107, speed_ms:81.63, speed_kmh:293.86, roll:1.15, pitch:-7.53},
-            {time:15.000, x:-48917.285, y:26.181, z:299481.135, speed_ms:81.58, speed_kmh:293.67, roll:0.99, pitch:-10.49},
-            {time:15.300, x:-48898.654, y:26.536, z:299496.983, speed_ms:81.51, speed_kmh:293.44, roll:0.93, pitch:-15.83},
-            {time:15.600, x:-48879.849, y:26.852, z:299512.593, speed_ms:81.44, speed_kmh:293.17, roll:0.90, pitch:-22.80},
-            {time:15.900, x:-48860.815, y:27.118, z:299527.878, speed_ms:81.33, speed_kmh:292.78, roll:1.13, pitch:-33.31},
-            {time:16.200, x:-48841.458, y:27.348, z:299542.689, speed_ms:81.21, speed_kmh:292.37, roll:2.24, pitch:-44.06},
-            {time:16.500, x:-48821.613, y:27.623, z:299556.775, speed_ms:81.10, speed_kmh:291.97, roll:3.33, pitch:-51.33},
-            {time:16.800, x:-48801.136, y:27.994, z:299569.858, speed_ms:80.99, speed_kmh:291.58, roll:3.49, pitch:-54.34},
-            {time:17.100, x:-48779.986, y:28.437, z:299581.765, speed_ms:80.89, speed_kmh:291.22, roll:2.08, pitch:-56.69},
-            {time:17.400, x:-48758.268, y:28.780, z:299592.519, speed_ms:80.76, speed_kmh:290.73, roll:2.18, pitch:-61.65},
-            {time:17.700, x:-48735.995, y:28.974, z:299601.989, speed_ms:80.67, speed_kmh:290.43, roll:1.70, pitch:-64.06},
-            {time:18.000, x:-48713.277, y:29.000, z:299610.241, speed_ms:80.46, speed_kmh:289.66, roll:-0.88, pitch:-43.43},
-            {time:18.300, x:-48690.391, y:28.754, z:299617.837, speed_ms:80.32, speed_kmh:289.17, roll:-1.37, pitch:-4.09},
-            {time:18.600, x:-48667.450, y:28.245, z:299625.149, speed_ms:80.20, speed_kmh:288.73, roll:2.91, pitch:2.77},
-            {time:18.900, x:-48644.617, y:28.664, z:299632.293, speed_ms:79.56, speed_kmh:286.41, roll:16.50, pitch:-5.99},
-            {time:19.200, x:-48622.294, y:32.298, z:299638.941, speed_ms:78.02, speed_kmh:280.87, roll:29.61, pitch:-3.26},
-            {time:19.500, x:-48601.381, y:39.842, z:299644.906, speed_ms:75.88, speed_kmh:273.18, roll:39.99, pitch:-1.80},
-            {time:19.800, x:-48582.647, y:50.779, z:299650.201, speed_ms:73.41, speed_kmh:264.27, roll:49.67, pitch:-1.13},
-            {time:20.100, x:-48566.586, y:64.371, z:299654.869, speed_ms:70.68, speed_kmh:254.46, roll:59.48, pitch:1.60},
-            {time:20.400, x:-48553.544, y:79.888, z:299659.068, speed_ms:67.73, speed_kmh:243.82, roll:69.83, pitch:5.44},
-            {time:20.700, x:-48543.749, y:96.603, z:299663.094, speed_ms:64.61, speed_kmh:232.61, roll:80.92, pitch:8.64},
-            {time:21.000, x:-48537.217, y:113.774, z:299667.273, speed_ms:61.42, speed_kmh:221.12, roll:91.25, pitch:9.74},
-            {time:21.300, x:-48533.830, y:130.766, z:299671.687, speed_ms:58.22, speed_kmh:209.58, roll:100.47, pitch:11.89},
-            {time:21.600, x:-48533.394, y:147.079, z:299676.192, speed_ms:55.10, speed_kmh:198.35, roll:109.47, pitch:15.30},
-            {time:21.900, x:-48535.658, y:162.322, z:299680.572, speed_ms:52.17, speed_kmh:187.80, roll:118.17, pitch:17.54},
-            {time:22.200, x:-48540.291, y:176.205, z:299684.690, speed_ms:49.59, speed_kmh:178.51, roll:125.34, pitch:16.80},
-            {time:22.500, x:-48546.812, y:188.567, z:299688.530, speed_ms:47.37, speed_kmh:170.55, roll:131.99, pitch:14.52},
-            {time:22.800, x:-48554.754, y:199.376, z:299692.125, speed_ms:45.50, speed_kmh:163.79, roll:138.53, pitch:13.02},
-            {time:23.100, x:-48563.782, y:208.653, z:299695.501, speed_ms:43.95, speed_kmh:158.23, roll:144.68, pitch:12.95},
-            {time:23.400, x:-48573.643, y:216.445, z:299698.690, speed_ms:42.74, speed_kmh:153.86, roll:151.20, pitch:13.34},
-            {time:23.700, x:-48584.161, y:222.780, z:299701.741, speed_ms:41.86, speed_kmh:150.69, roll:158.50, pitch:11.97},
-            {time:24.000, x:-48595.214, y:227.652, z:299704.711, speed_ms:41.33, speed_kmh:148.78, roll:166.25, pitch:8.96},
-            {time:24.300, x:-48606.710, y:231.012, z:299707.651, speed_ms:41.17, speed_kmh:148.19, roll:174.03, pitch:6.47},
-            {time:24.600, x:-48618.560, y:232.799, z:299710.592, speed_ms:41.38, speed_kmh:148.96, roll:-178.33, pitch:5.17},
-            {time:24.900, x:-48630.667, y:232.959, z:299713.541, speed_ms:41.97, speed_kmh:151.08, roll:-170.91, pitch:3.52},
-            {time:25.200, x:-48642.925, y:231.460, z:299716.491, speed_ms:42.93, speed_kmh:154.55, roll:-163.70, pitch:1.58},
-            {time:25.500, x:-48655.224, y:228.280, z:299719.433, speed_ms:44.24, speed_kmh:159.25, roll:-156.76, pitch:-1.09},
-            {time:25.800, x:-48667.448, y:223.420, z:299722.379, speed_ms:45.84, speed_kmh:165.03, roll:-149.92, pitch:-7.33},
-            {time:26.100, x:-48679.478, y:216.904, z:299725.379, speed_ms:47.72, speed_kmh:171.80, roll:-142.18, pitch:-14.82},
-            {time:26.400, x:-48691.179, y:208.748, z:299728.528, speed_ms:49.83, speed_kmh:179.40, roll:-132.96, pitch:-21.99},
-            {time:26.700, x:-48702.389, y:198.971, z:299731.978, speed_ms:52.13, speed_kmh:187.68, roll:-122.12, pitch:-28.10},
-            {time:27.000, x:-48712.943, y:187.637, z:299735.928, speed_ms:54.58, speed_kmh:196.48, roll:-109.57, pitch:-32.38},
-            {time:27.300, x:-48722.708, y:174.879, z:299740.611, speed_ms:57.12, speed_kmh:205.63, roll:-95.81, pitch:-34.03},
-            {time:27.600, x:-48731.605, y:160.906, z:299746.269, speed_ms:59.70, speed_kmh:214.92, roll:-82.22, pitch:-32.71},
-            {time:27.900, x:-48739.617, y:145.980, z:299753.137, speed_ms:62.27, speed_kmh:224.15, roll:-70.60, pitch:-29.40},
-            {time:28.200, x:-48746.756, y:130.422, z:299761.460, speed_ms:64.76, speed_kmh:233.12, roll:-60.35, pitch:-25.26},
-            {time:28.500, x:-48753.013, y:114.603, z:299771.513, speed_ms:67.11, speed_kmh:241.61, roll:-52.84, pitch:-24.02},
-            {time:28.800, x:-48758.296, y:98.953, z:299783.537, speed_ms:69.25, speed_kmh:249.31, roll:-45.23, pitch:-22.71},
-            {time:29.100, x:-48762.512, y:83.926, z:299797.640, speed_ms:71.15, speed_kmh:256.15, roll:-37.66, pitch:-20.03},
-            {time:29.400, x:-48765.638, y:69.976, z:299813.782, speed_ms:72.76, speed_kmh:261.95, roll:-30.29, pitch:-15.60},
-            {time:29.700, x:-48767.778, y:57.515, z:299831.788, speed_ms:74.08, speed_kmh:266.70, roll:-23.15, pitch:-8.82},
-            {time:30.000, x:-48769.153, y:46.862, z:299851.399, speed_ms:75.14, speed_kmh:270.52, roll:-16.60, pitch:-7.67},
-            {time:30.300, x:-48769.881, y:38.282, z:299872.333, speed_ms:75.92, speed_kmh:273.32, roll:-10.25, pitch:-9.50},
-            {time:30.600, x:-48769.982, y:31.934, z:299894.264, speed_ms:76.44, speed_kmh:275.18, roll:-4.73, pitch:-11.71},
-            {time:30.900, x:-48769.432, y:27.767, z:299916.835, speed_ms:76.74, speed_kmh:276.27, roll:-0.54, pitch:-12.61},
-            {time:31.200, x:-48768.295, y:25.518, z:299939.726, speed_ms:76.86, speed_kmh:276.69, roll:1.50, pitch:-3.20},
-            {time:31.500, x:-48766.816, y:24.625, z:299962.738, speed_ms:76.98, speed_kmh:277.15, roll:1.15, pitch:-1.26},
-            {time:31.800, x:-48765.099, y:24.316, z:299985.783, speed_ms:77.07, speed_kmh:277.46, roll:0.38, pitch:-5.27},
-            {time:32.100, x:-48763.201, y:24.170, z:300008.835, speed_ms:77.15, speed_kmh:277.75, roll:1.92, pitch:-7.35},
-            {time:32.400, x:-48761.173, y:24.352, z:300031.896, speed_ms:77.20, speed_kmh:277.91, roll:2.87, pitch:-5.94},
-            {time:32.700, x:-48759.039, y:24.886, z:300054.952, speed_ms:77.20, speed_kmh:277.91, roll:2.69, pitch:-2.14},
-            {time:33.000, x:-48756.803, y:25.586, z:300077.986, speed_ms:77.17, speed_kmh:277.79, roll:3.49, pitch:-0.43},
-            {time:33.300, x:-48754.440, y:26.524, z:300100.969, speed_ms:76.97, speed_kmh:277.09, roll:6.37, pitch:-4.33},
-            {time:33.600, x:-48751.777, y:28.265, z:300123.698, speed_ms:76.24, speed_kmh:274.46, roll:19.37, pitch:-23.24},
-            {time:33.900, x:-48747.863, y:32.260, z:300145.609, speed_ms:74.90, speed_kmh:269.65, roll:36.50, pitch:-36.08},
-            {time:34.200, x:-48741.705, y:38.791, z:300165.845, speed_ms:73.12, speed_kmh:263.24, roll:44.68, pitch:-39.66},
-            {time:34.500, x:-48733.191, y:47.396, z:300183.690, speed_ms:71.09, speed_kmh:255.92, roll:49.86, pitch:-46.03},
-            {time:34.800, x:-48722.546, y:57.403, z:300198.660, speed_ms:68.84, speed_kmh:247.83, roll:60.24, pitch:-52.42},
-            {time:35.100, x:-48710.058, y:68.119, z:300210.447, speed_ms:66.58, speed_kmh:239.67, roll:74.01, pitch:-54.22},
-            {time:35.400, x:-48696.169, y:78.999, z:300218.920, speed_ms:64.38, speed_kmh:231.76, roll:85.01, pitch:-53.55},
-            {time:35.700, x:-48681.417, y:89.676, z:300224.033, speed_ms:62.20, speed_kmh:223.93, roll:92.75, pitch:-54.45},
-            {time:36.000, x:-48666.365, y:99.879, z:300225.812, speed_ms:60.08, speed_kmh:216.31, roll:98.38, pitch:-57.86},
-            {time:36.300, x:-48651.546, y:109.376, z:300224.425, speed_ms:58.10, speed_kmh:209.15, roll:103.74, pitch:-62.31},
-            {time:36.600, x:-48637.415, y:117.979, z:300220.143, speed_ms:56.30, speed_kmh:202.67, roll:111.39, pitch:-65.80},
-            {time:36.900, x:-48624.328, y:125.523, z:300213.292, speed_ms:54.73, speed_kmh:197.04, roll:122.31, pitch:-67.33},
-            {time:37.200, x:-48612.579, y:131.864, z:300204.199, speed_ms:53.41, speed_kmh:192.29, roll:132.97, pitch:-68.30},
-            {time:37.500, x:-48602.438, y:136.899, z:300193.192, speed_ms:52.33, speed_kmh:188.37, roll:143.84, pitch:-70.23},
-            {time:37.800, x:-48594.150, y:140.558, z:300180.618, speed_ms:51.47, speed_kmh:185.29, roll:158.27, pitch:-73.07},
-            {time:38.100, x:-48587.907, y:142.799, z:300166.852, speed_ms:50.87, speed_kmh:183.15, roll:179.68, pitch:-75.26},
-            {time:38.400, x:-48583.837, y:143.589, z:300152.280, speed_ms:50.58, speed_kmh:182.10, roll:-154.66, pitch:-75.64},
-            {time:38.700, x:-48582.002, y:142.932, z:300137.269, speed_ms:50.71, speed_kmh:182.56, roll:-124.84, pitch:-76.26},
-            {time:39.000, x:-48582.270, y:140.989, z:300122.134, speed_ms:51.27, speed_kmh:184.57, roll:-75.61, pitch:-74.96},
-            {time:39.300, x:-48584.192, y:138.066, z:300107.035, speed_ms:52.15, speed_kmh:187.75, roll:-39.40, pitch:-64.46},
-            {time:39.600, x:-48587.238, y:134.415, z:300091.964, speed_ms:53.24, speed_kmh:191.67, roll:-24.60, pitch:-51.00},
-            {time:39.900, x:-48591.097, y:130.242, z:300076.852, speed_ms:54.42, speed_kmh:195.92, roll:-16.92, pitch:-37.47},
-            {time:40.200, x:-48595.623, y:125.796, z:300061.615, speed_ms:55.62, speed_kmh:200.23, roll:-12.93, pitch:-22.96},
-            {time:40.500, x:-48600.664, y:121.308, z:300046.164, speed_ms:56.78, speed_kmh:204.42, roll:-11.21, pitch:-8.46},
-            {time:40.800, x:-48606.038, y:116.899, z:300030.425, speed_ms:57.92, speed_kmh:208.50, roll:-10.40, pitch:2.72},
-            {time:41.100, x:-48611.607, y:112.600, z:300014.356, speed_ms:59.02, speed_kmh:212.46, roll:-9.68, pitch:5.08},
-            {time:41.400, x:-48617.303, y:108.444, z:299997.944, speed_ms:60.06, speed_kmh:216.21, roll:-8.94, pitch:3.98},
-            {time:41.700, x:-48623.091, y:104.480, z:299981.185, speed_ms:61.05, speed_kmh:219.79, roll:-8.25, pitch:2.56},
-            {time:42.000, x:-48628.947, y:100.733, z:299964.086, speed_ms:62.00, speed_kmh:223.19, roll:-7.77, pitch:1.55},
-            {time:42.300, x:-48634.856, y:97.183, z:299946.666, speed_ms:62.89, speed_kmh:226.41, roll:-7.40, pitch:1.86},
-            {time:42.600, x:-48640.821, y:93.797, z:299928.951, speed_ms:63.74, speed_kmh:229.46, roll:-7.01, pitch:2.38},
-            {time:42.900, x:-48646.856, y:90.554, z:299910.969, speed_ms:64.54, speed_kmh:232.34, roll:-6.49, pitch:2.70},
-            {time:43.200, x:-48652.974, y:87.464, z:299892.738, speed_ms:65.30, speed_kmh:235.06, roll:-5.90, pitch:2.89},
-            {time:43.500, x:-48659.171, y:84.552, z:299874.271, speed_ms:66.01, speed_kmh:237.63, roll:-5.29, pitch:2.99},
-            {time:43.800, x:-48665.429, y:81.837, z:299855.573, speed_ms:66.68, speed_kmh:240.04, roll:-4.74, pitch:2.93},
-            {time:44.100, x:-48671.729, y:79.324, z:299836.652, speed_ms:67.31, speed_kmh:242.33, roll:-4.31, pitch:2.62},
-            {time:44.400, x:-48678.065, y:76.997, z:299817.525, speed_ms:67.90, speed_kmh:244.46, roll:-3.93, pitch:1.98},
-            {time:44.700, x:-48684.447, y:74.837, z:299798.211, speed_ms:68.46, speed_kmh:246.45, roll:-3.51, pitch:1.28},
-            {time:45.000, x:-48690.890, y:72.840, z:299778.729, speed_ms:68.98, speed_kmh:248.35, roll:-3.27, pitch:0.54},
-            {time:45.300, x:-48697.411, y:70.974, z:299759.093, speed_ms:69.49, speed_kmh:250.17, roll:-3.58, pitch:-0.21},
-            {time:45.600, x:-48704.017, y:69.130, z:299739.324, speed_ms:69.99, speed_kmh:251.98, roll:-4.12, pitch:-0.98},
-            {time:45.900, x:-48710.710, y:67.211, z:299719.432, speed_ms:70.49, speed_kmh:253.78, roll:-4.43, pitch:-1.29},
-            {time:46.200, x:-48717.492, y:65.197, z:299699.421, speed_ms:71.00, speed_kmh:255.59, roll:-4.65, pitch:-1.34},
-            {time:46.500, x:-48724.367, y:63.095, z:299679.290, speed_ms:71.50, speed_kmh:257.39, roll:-4.74, pitch:-1.62},
-            {time:46.800, x:-48731.346, y:60.936, z:299659.044, speed_ms:71.99, speed_kmh:259.17, roll:-4.67, pitch:-2.30},
-            {time:47.100, x:-48738.443, y:58.763, z:299638.684, speed_ms:72.47, speed_kmh:260.91, roll:-4.62, pitch:-3.09},
-            {time:47.400, x:-48745.670, y:56.598, z:299618.215, speed_ms:72.95, speed_kmh:262.62, roll:-4.59, pitch:-3.71},
-            {time:47.700, x:-48753.035, y:54.447, z:299597.644, speed_ms:73.41, speed_kmh:264.28, roll:-4.57, pitch:-4.09},
-            {time:48.000, x:-48760.543, y:52.311, z:299576.977, speed_ms:73.86, speed_kmh:265.90, roll:-4.53, pitch:-4.44},
-            {time:48.300, x:-48768.201, y:50.193, z:299556.221, speed_ms:74.30, speed_kmh:267.47, roll:-4.49, pitch:-4.80},
-            {time:48.600, x:-48776.017, y:48.096, z:299535.383, speed_ms:74.72, speed_kmh:269.01, roll:-4.43, pitch:-5.05},
-            {time:48.900, x:-48783.994, y:46.024, z:299514.469, speed_ms:75.13, speed_kmh:270.48, roll:-4.36, pitch:-5.12},
-            {time:49.200, x:-48792.137, y:43.980, z:299493.486, speed_ms:75.53, speed_kmh:271.91, roll:-4.24, pitch:-5.17},
-            {time:49.500, x:-48800.446, y:41.977, z:299472.438, speed_ms:75.91, speed_kmh:273.28, roll:-4.02, pitch:-5.22},
-            {time:49.800, x:-48808.924, y:40.042, z:299451.331, speed_ms:76.27, speed_kmh:274.58, roll:-3.79, pitch:-5.49},
-            {time:50.100, x:-48817.588, y:38.187, z:299430.186, speed_ms:76.55, speed_kmh:275.59, roll:-3.45, pitch:-10.52},
-            {time:50.400, x:-48826.514, y:36.452, z:299409.066, speed_ms:76.76, speed_kmh:276.34, roll:-2.73, pitch:-23.70},
-            {time:50.700, x:-48835.897, y:34.909, z:299388.067, speed_ms:76.94, speed_kmh:277.00, roll:-2.05, pitch:-37.40},
-            {time:51.000, x:-48845.970, y:33.539, z:299367.323, speed_ms:77.10, speed_kmh:277.58, roll:-1.56, pitch:-47.00},
-            {time:51.300, x:-48856.996, y:32.323, z:299347.018, speed_ms:77.23, speed_kmh:278.02, roll:-1.35, pitch:-53.56},
-            {time:51.600, x:-48869.245, y:31.281, z:299327.375, speed_ms:77.34, speed_kmh:278.44, roll:-2.08, pitch:-55.62},
-            {time:51.900, x:-48882.781, y:30.361, z:299308.549, speed_ms:77.44, speed_kmh:278.80, roll:-2.61, pitch:-56.64},
-            {time:52.200, x:-48897.545, y:29.502, z:299290.630, speed_ms:77.52, speed_kmh:279.07, roll:-2.30, pitch:-55.98},
-            {time:52.500, x:-48913.362, y:28.710, z:299273.609, speed_ms:77.51, speed_kmh:279.02, roll:-2.02, pitch:-40.30},
-            {time:52.800, x:-48929.820, y:27.954, z:299257.203, speed_ms:77.51, speed_kmh:279.04, roll:-1.56, pitch:-13.38},
-            {time:53.100, x:-48946.587, y:27.212, z:299241.090, speed_ms:77.61, speed_kmh:279.40, roll:0.23, pitch:0.04},
-            {time:53.400, x:-48953.533, y:26.762, z:299225.174, speed_ms:77.44, speed_kmh:278.77, roll:3.84, pitch:-18.39},
-            {time:53.700, x:-48980.841, y:27.085, z:299209.798, speed_ms:77.07, speed_kmh:277.44, roll:15.08, pitch:-46.25},
-            {time:54.000, x:-48999.095, y:28.546, z:299195.882, speed_ms:76.51, speed_kmh:275.42, roll:26.52, pitch:-56.20},
-            {time:54.300, x:-49018.611, y:31.130, z:299184.409, speed_ms:75.71, speed_kmh:272.56, roll:26.58, pitch:-60.55},
-            {time:54.600, x:-49039.222, y:34.565, z:299176.020, speed_ms:74.75, speed_kmh:269.11, roll:27.08, pitch:-67.80},
-            {time:54.900, x:-49060.541, y:38.369, z:299171.043, speed_ms:73.77, speed_kmh:265.55, roll:37.68, pitch:-74.26},
-            {time:55.200, x:-49082.124, y:42.074, z:299169.494, speed_ms:72.93, speed_kmh:262.56, roll:65.05, pitch:-78.58},
-            {time:55.500, x:-49103.579, y:45.280, z:299171.033, speed_ms:72.34, speed_kmh:260.42, roll:99.48, pitch:-80.39},
-            {time:55.800, x:-49124.672, y:47.714, z:299175.145, speed_ms:72.04, speed_kmh:259.35, roll:117.13, pitch:-83.32},
-            {time:56.100, x:-49145.372, y:49.272, z:299181.077, speed_ms:71.93, speed_kmh:258.95, roll:15.92, pitch:-84.85},
-            {time:56.400, x:-49165.859, y:49.957, z:299187.807, speed_ms:71.91, speed_kmh:258.87, roll:-4.52, pitch:-65.53},
-            {time:56.700, x:-49186.310, y:49.736, z:299194.707, speed_ms:72.01, speed_kmh:259.25, roll:-4.04, pitch:-43.35},
-            {time:57.000, x:-49206.746, y:48.770, z:299201.745, speed_ms:72.24, speed_kmh:260.08, roll:-3.72, pitch:-20.76},
-            {time:57.300, x:-49227.186, y:47.341, z:299208.946, speed_ms:72.54, speed_kmh:261.14, roll:-4.34, pitch:0.86},
-            {time:57.600, x:-49247.673, y:45.542, z:299216.226, speed_ms:72.88, speed_kmh:262.38, roll:-5.10, pitch:18.75},
-            {time:57.900, x:-49268.232, y:43.330, z:299223.505, speed_ms:73.25, speed_kmh:263.71, roll:-5.98, pitch:34.68},
-            {time:58.200, x:-49288.907, y:40.713, z:299230.661, speed_ms:73.66, speed_kmh:265.19, roll:-6.55, pitch:47.41},
-            {time:58.500, x:-49309.836, y:37.874, z:299237.357, speed_ms:74.11, speed_kmh:266.79, roll:-5.88, pitch:53.31},
-            {time:58.800, x:-49331.179, y:35.048, z:299243.123, speed_ms:74.54, speed_kmh:268.35, roll:-5.22, pitch:53.76},
-            {time:59.100, x:-49352.951, y:32.339, z:299247.708, speed_ms:74.94, speed_kmh:269.79, roll:-5.18, pitch:53.61},
-            {time:59.400, x:-49375.074, y:29.736, z:299251.061, speed_ms:75.30, speed_kmh:271.08, roll:-4.79, pitch:55.96},
-            {time:59.700, x:-49397.465, y:27.237, z:299253.092, speed_ms:75.60, speed_kmh:272.16, roll:-2.72, pitch:57.91},
-            {time:60.000, x:-49420.042, y:24.945, z:299253.547, speed_ms:75.83, speed_kmh:272.99, roll:-0.46, pitch:58.91},
-            {time:60.300, x:-49442.672, y:22.968, z:299252.226, speed_ms:75.99, speed_kmh:273.56, roll:1.21, pitch:56.74},
-            {time:60.600, x:-49465.188, y:21.413, z:299249.058, speed_ms:76.08, speed_kmh:273.88, roll:2.62, pitch:53.13},
-            {time:60.900, x:-49487.420, y:20.399, z:299244.076, speed_ms:76.08, speed_kmh:273.88, roll:4.88, pitch:48.98},
-            {time:61.200, x:-49509.215, y:20.119, z:299237.450, speed_ms:75.89, speed_kmh:273.21, roll:5.71, pitch:29.90},
-            {time:61.500, x:-49530.615, y:20.747, z:299229.805, speed_ms:75.71, speed_kmh:272.56, roll:6.02, pitch:1.52},
-            {time:61.800, x:-49551.834, y:22.141, z:299221.882, speed_ms:75.55, speed_kmh:271.97, roll:6.94, pitch:-3.68},
-            {time:62.100, x:-49572.877, y:23.996, z:299213.903, speed_ms:75.03, speed_kmh:270.10, roll:12.52, pitch:25.47},
-            {time:62.400, x:-49593.442, y:26.460, z:299205.458, speed_ms:74.26, speed_kmh:267.35, roll:34.96, pitch:50.08},
-            {time:62.700, x:-49612.793, y:29.981, z:299195.490, speed_ms:73.05, speed_kmh:262.98, roll:47.98, pitch:53.51},
-            {time:63.000, x:-49629.963, y:34.696, z:299183.216, speed_ms:71.56, speed_kmh:257.63, roll:45.24, pitch:54.76},
-            {time:63.300, x:-49644.243, y:40.546, z:299168.732, speed_ms:69.99, speed_kmh:251.97, roll:44.68, pitch:57.52},
-            {time:63.600, x:-49655.225, y:47.292, z:299152.572, speed_ms:68.29, speed_kmh:245.83, roll:52.47, pitch:58.19},
-            {time:63.900, x:-49662.693, y:54.720, z:299135.394, speed_ms:66.51, speed_kmh:239.45, roll:61.43, pitch:54.75},
-            {time:64.200, x:-49666.656, y:62.738, z:299117.948, speed_ms:64.64, speed_kmh:232.70, roll:65.87, pitch:50.07},
-            {time:64.500, x:-49667.303, y:71.336, z:299100.982, speed_ms:62.68, speed_kmh:225.63, roll:67.93, pitch:47.45},
-            {time:64.800, x:-49664.954, y:80.429, z:299085.106, speed_ms:60.69, speed_kmh:218.50, roll:74.16, pitch:48.49},
-            {time:65.100, x:-49659.916, y:89.696, z:299070.689, speed_ms:58.80, speed_kmh:211.67, roll:88.27, pitch:51.12},
-            {time:65.400, x:-49652.472, y:98.656, z:299057.875, speed_ms:57.04, speed_kmh:205.34, roll:99.86, pitch:53.23},
-            {time:65.700, x:-49642.933, y:106.925, z:299046.763, speed_ms:55.46, speed_kmh:199.66, roll:109.71, pitch:56.52},
-            {time:66.000, x:-49631.621, y:114.221, z:299037.435, speed_ms:54.11, speed_kmh:194.79, roll:122.48, pitch:59.88},
-            {time:66.300, x:-49618.841, y:120.296, z:299029.957, speed_ms:53.00, speed_kmh:190.79, roll:137.45, pitch:62.23},
-            {time:66.600, x:-49604.899, y:124.936, z:299024.392, speed_ms:52.17, speed_kmh:187.80, roll:152.13, pitch:63.88},
-            {time:66.900, x:-49590.125, y:127.996, z:299020.785, speed_ms:51.66, speed_kmh:185.99, roll:166.14, pitch:65.36},
-            {time:67.200, x:-49574.862, y:129.408, z:299019.147, speed_ms:51.50, speed_kmh:185.40, roll:-179.58, pitch:66.74},
-            {time:67.500, x:-49559.448, y:129.161, z:299019.471, speed_ms:51.68, speed_kmh:186.03, roll:-163.95, pitch:68.73},
-            {time:67.800, x:-49544.196, y:127.312, z:299021.734, speed_ms:52.19, speed_kmh:187.90, roll:-144.76, pitch:71.11},
-            {time:68.100, x:-49529.364, y:124.011, z:299025.855, speed_ms:53.03, speed_kmh:190.91, roll:-115.16, pitch:73.58},
-            {time:68.400, x:-49515.082, y:119.530, z:299031.658, speed_ms:54.15, speed_kmh:194.94, roll:-67.62, pitch:70.71},
-            {time:68.700, x:-49501.257, y:114.203, z:299038.781, speed_ms:55.47, speed_kmh:199.71, roll:-38.26, pitch:56.25},
-            {time:69.000, x:-49487.650, y:108.231, z:299046.745, speed_ms:56.91, speed_kmh:204.89, roll:-27.49, pitch:38.17},
-            {time:69.300, x:-49474.081, y:101.719, z:299055.275, speed_ms:58.42, speed_kmh:210.31, roll:-23.01, pitch:24.73},
-            {time:69.600, x:-49460.423, y:94.877, z:299064.313, speed_ms:59.91, speed_kmh:215.68, roll:-19.96, pitch:15.45},
-            {time:69.900, x:-49446.553, y:87.998, z:299073.856, speed_ms:61.35, speed_kmh:220.86, roll:-17.45, pitch:8.86},
-            {time:70.200, x:-49432.368, y:81.335, z:299083.887, speed_ms:62.70, speed_kmh:225.74, roll:-15.50, pitch:6.32},
-            {time:70.500, x:-49417.820, y:75.034, z:299094.355, speed_ms:63.95, speed_kmh:230.22, roll:-13.82, pitch:4.65},
-            {time:70.800, x:-49402.902, y:69.161, z:299105.199, speed_ms:65.09, speed_kmh:234.32, roll:-12.27, pitch:2.68},
-            {time:71.100, x:-49387.614, y:63.750, z:299116.354, speed_ms:66.13, speed_kmh:238.08, roll:-10.98, pitch:0.59},
-            {time:71.400, x:-49371.968, y:58.792, z:299127.752, speed_ms:67.09, speed_kmh:241.51, roll:-9.82, pitch:-1.51},
-            {time:71.700, x:-49355.974, y:54.267, z:299139.332, speed_ms:67.97, speed_kmh:244.68, roll:-8.79, pitch:-2.88},
-            {time:72.000, x:-49339.648, y:50.143, z:299151.047, speed_ms:68.78, speed_kmh:247.61, roll:-7.98, pitch:-3.21},
-            {time:72.300, x:-49323.013, y:46.370, z:299162.858, speed_ms:69.53, speed_kmh:250.30, roll:-7.21, pitch:-3.44},
-            {time:72.600, x:-49306.089, y:42.919, z:299174.734, speed_ms:70.21, speed_kmh:252.77, roll:-6.43, pitch:-3.56},
-            {time:72.900, x:-49288.893, y:39.771, z:299186.654, speed_ms:70.85, speed_kmh:255.04, roll:-5.84, pitch:-3.61},
-            {time:73.200, x:-49271.448, y:36.890, z:299198.606, speed_ms:71.43, speed_kmh:257.15, roll:-5.23, pitch:-3.63},
-            {time:73.500, x:-49253.774, y:34.259, z:299210.581, speed_ms:71.97, speed_kmh:259.08, roll:-4.61, pitch:-3.63},
-            {time:73.800, x:-49235.886, y:31.870, z:299222.569, speed_ms:72.47, speed_kmh:260.88, roll:-4.08, pitch:-3.64},
-            {time:74.100, x:-49217.799, y:29.705, z:299234.561, speed_ms:72.93, speed_kmh:262.53, roll:-3.71, pitch:-3.66},
-            {time:74.400, x:-49199.524, y:27.728, z:299246.545, speed_ms:73.35, speed_kmh:264.07, roll:-3.35, pitch:-3.71},
-            {time:74.700, x:-49181.073, y:25.918, z:299258.511, speed_ms:73.75, speed_kmh:265.49, roll:-2.93, pitch:-3.76},
-            {time:75.000, x:-49162.455, y:24.275, z:299270.452, speed_ms:74.11, speed_kmh:266.81, roll:-2.50, pitch:-3.80},
-            {time:75.300, x:-49143.679, y:22.805, z:299282.361, speed_ms:74.44, speed_kmh:267.97, roll:-2.02, pitch:-3.48},
-            {time:75.600, x:-49124.787, y:21.508, z:299294.257, speed_ms:74.63, speed_kmh:268.67, roll:-1.17, pitch:6.00},
-            {time:75.900, x:-49105.884, y:20.413, z:299306.235, speed_ms:74.76, speed_kmh:269.15, roll:0.99, pitch:22.14},
-            {time:76.200, x:-49087.115, y:19.636, z:299318.513, speed_ms:74.88, speed_kmh:269.57, roll:3.50, pitch:33.85},
-            {time:76.500, x:-49068.644, y:19.217, z:299331.306, speed_ms:74.97, speed_kmh:269.89, roll:4.76, pitch:39.82},
-            {time:76.800, x:-49050.602, y:19.095, z:299344.745, speed_ms:75.05, speed_kmh:270.19, roll:4.69, pitch:42.63},
-            {time:77.100, x:-49033.075, y:19.170, z:299358.892, speed_ms:75.14, speed_kmh:270.50, roll:4.15, pitch:43.90},
-            {time:77.400, x:-49016.085, y:19.336, z:299373.719, speed_ms:75.22, speed_kmh:270.78, roll:3.42, pitch:42.61},
-            {time:77.700, x:-48999.557, y:19.483, z:299389.088, speed_ms:75.25, speed_kmh:270.89, roll:2.14, pitch:33.05},
-            {time:78.000, x:-48983.337, y:19.541, z:299404.796, speed_ms:75.29, speed_kmh:271.04, roll:1.24, pitch:18.19},
-            {time:78.300, x:-48967.287, y:19.541, z:299420.704, speed_ms:75.37, speed_kmh:271.32, roll:0.95, pitch:6.48},
-            {time:78.600, x:-48951.291, y:19.536, z:299436.703, speed_ms:75.46, speed_kmh:271.65, roll:0.90, pitch:-2.09},
-            {time:78.900, x:-48935.256, y:19.550, z:299452.702, speed_ms:75.55, speed_kmh:272.00, roll:0.94, pitch:-8.81},
-            {time:79.200, x:-48919.099, y:19.591, z:299468.618, speed_ms:75.65, speed_kmh:272.34, roll:0.91, pitch:-14.01},
-            {time:79.500, x:-48902.752, y:19.657, z:299484.379, speed_ms:75.74, speed_kmh:272.68, roll:1.02, pitch:-17.77},
-            {time:79.800, x:-48886.162, y:19.759, z:299499.925, speed_ms:75.83, speed_kmh:272.99, roll:1.15, pitch:-21.08},
-            {time:80.100, x:-48869.292, y:19.897, z:299515.195, speed_ms:75.88, speed_kmh:273.16, roll:1.48, pitch:-26.86},
-            {time:80.400, x:-48852.092, y:20.078, z:299530.107, speed_ms:75.91, speed_kmh:273.26, roll:2.13, pitch:-33.72},
-            {time:80.700, x:-48834.488, y:20.331, z:299544.544, speed_ms:75.92, speed_kmh:273.30, roll:2.77, pitch:-40.27},
-            {time:81.000, x:-48816.376, y:20.671, z:299558.332, speed_ms:75.90, speed_kmh:273.25, roll:3.16, pitch:-46.87},
-            {time:81.300, x:-48797.669, y:21.087, z:299571.292, speed_ms:75.90, speed_kmh:273.23, roll:3.75, pitch:-49.69},
-            {time:81.600, x:-48778.328, y:21.589, z:299583.264, speed_ms:75.85, speed_kmh:273.07, roll:4.81, pitch:-51.86},
-            {time:81.900, x:-48758.343, y:22.227, z:299594.087, speed_ms:75.80, speed_kmh:272.88, roll:5.71, pitch:-53.74},
-            {time:82.200, x:-48737.755, y:22.983, z:299603.655, speed_ms:75.72, speed_kmh:272.60, roll:6.26, pitch:-55.86},
-            {time:82.500, x:-48716.644, y:23.823, z:299611.935, speed_ms:75.59, speed_kmh:272.11, roll:4.36, pitch:-49.81},
-            {time:82.800, x:-48695.229, y:24.656, z:299619.246, speed_ms:75.39, speed_kmh:271.41, roll:2.21, pitch:-22.24},
-            {time:83.100, x:-48673.694, y:25.425, z:299626.043, speed_ms:75.26, speed_kmh:270.95, roll:5.15, pitch:-2.88},
-            {time:83.400, x:-48652.227, y:26.795, z:299632.560, speed_ms:74.75, speed_kmh:269.11, roll:16.73, pitch:2.23},
-            {time:83.700, x:-48631.317, y:30.534, z:299638.956, speed_ms:73.48, speed_kmh:264.52, roll:29.73, pitch:3.41},
-            {time:84.000, x:-48611.771, y:37.561, z:299645.237, speed_ms:71.58, speed_kmh:257.70, roll:40.31, pitch:4.52},
-            {time:84.300, x:-48594.270, y:47.602, z:299651.329, speed_ms:69.32, speed_kmh:249.54, roll:49.99, pitch:5.65},
-            {time:84.600, x:-48579.272, y:60.061, z:299657.163, speed_ms:66.76, speed_kmh:240.33, roll:59.60, pitch:6.59},
-            {time:84.900, x:-48567.069, y:74.296, z:299662.694, speed_ms:63.94, speed_kmh:230.20, roll:69.36, pitch:7.94},
-            {time:85.200, x:-48557.814, y:89.645, z:299667.961, speed_ms:60.99, speed_kmh:219.56, roll:79.21, pitch:9.45},
-            {time:85.500, x:-48551.506, y:105.475, z:299673.036, speed_ms:57.94, speed_kmh:208.60, roll:88.32, pitch:10.71},
-            {time:85.800, x:-48548.044, y:121.255, z:299677.877, speed_ms:54.89, speed_kmh:197.62, roll:97.35, pitch:12.78},
-            {time:86.100, x:-48547.253, y:136.533, z:299682.419, speed_ms:51.90, speed_kmh:186.84, roll:106.83, pitch:14.22},
-            {time:86.400, x:-48548.898, y:150.909, z:299686.679, speed_ms:49.07, speed_kmh:176.63, roll:116.50, pitch:12.97},
-            {time:86.700, x:-48552.659, y:164.066, z:299690.754, speed_ms:46.50, speed_kmh:167.39, roll:125.07, pitch:11.41},
-            {time:87.000, x:-48558.182, y:175.801, z:299694.708, speed_ms:44.24, speed_kmh:159.27, roll:132.53, pitch:11.40},
-            {time:87.300, x:-48565.116, y:186.022, z:299698.560, speed_ms:42.34, speed_kmh:152.41, roll:140.09, pitch:12.66},
-            {time:87.600, x:-48573.180, y:194.689, z:299702.322, speed_ms:40.80, speed_kmh:146.88, roll:147.78, pitch:14.06},
-            {time:87.900, x:-48582.151, y:201.792, z:299706.008, speed_ms:39.65, speed_kmh:142.74, roll:155.58, pitch:15.07},
-            {time:88.200, x:-48591.847, y:207.326, z:299709.629, speed_ms:38.90, speed_kmh:140.04, roll:163.36, pitch:15.60},
-            {time:88.500, x:-48602.123, y:211.296, z:299713.188, speed_ms:38.56, speed_kmh:138.82, roll:170.77, pitch:15.39},
-            {time:88.800, x:-48612.848, y:213.721, z:299716.685, speed_ms:38.63, speed_kmh:139.07, roll:177.88, pitch:14.34},
-            {time:89.100, x:-48623.913, y:214.625, z:299720.120, speed_ms:39.09, speed_kmh:140.72, roll:-175.32, pitch:11.55},
-            {time:89.400, x:-48635.219, y:214.027, z:299723.500, speed_ms:39.92, speed_kmh:143.69, roll:-168.80, pitch:6.59},
-            {time:89.700, x:-48646.678, y:211.940, z:299726.848, speed_ms:41.08, speed_kmh:147.91, roll:-162.70, pitch:-0.63},
-            {time:90.000, x:-48658.206, y:208.389, z:299730.209, speed_ms:42.57, speed_kmh:153.25, roll:-156.79, pitch:-9.49},
-            {time:90.300, x:-48669.730, y:203.417, z:299733.645, speed_ms:44.33, speed_kmh:159.57, roll:-150.60, pitch:-18.69},
-            {time:90.600, x:-48681.188, y:197.075, z:299737.229, speed_ms:46.31, speed_kmh:166.73, roll:-143.61, pitch:-27.17},
-            {time:90.900, x:-48692.522, y:189.409, z:299741.042, speed_ms:48.48, speed_kmh:174.53, roll:-135.49, pitch:-33.98},
-            {time:91.200, x:-48703.675, y:180.469, z:299745.170, speed_ms:50.78, speed_kmh:182.82, roll:-125.55, pitch:-39.09},
-            {time:91.500, x:-48714.581, y:170.301, z:299749.704, speed_ms:53.19, speed_kmh:191.50, roll:-114.09, pitch:-41.61},
-            {time:91.800, x:-48725.150, y:158.939, z:299754.754, speed_ms:55.67, speed_kmh:200.41, roll:-102.58, pitch:-41.47},
-            {time:92.100, x:-48735.256, y:146.439, z:299760.471, speed_ms:58.16, speed_kmh:209.37, roll:-90.23, pitch:-39.59},
-            {time:92.400, x:-48744.696, y:132.903, z:299767.123, speed_ms:60.60, speed_kmh:218.17, roll:-77.42, pitch:-36.34},
-            {time:92.700, x:-48753.161, y:118.545, z:299775.154, speed_ms:62.93, speed_kmh:226.56, roll:-66.13, pitch:-33.12},
-            {time:93.000, x:-48760.306, y:103.750, z:299785.029, speed_ms:65.08, speed_kmh:234.29, roll:-55.51, pitch:-30.09},
-            {time:93.300, x:-48765.902, y:89.036, z:299797.006, speed_ms:67.02, speed_kmh:241.29, roll:-45.18, pitch:-26.46},
-            {time:93.600, x:-48769.887, y:74.977, z:299811.139, speed_ms:68.74, speed_kmh:247.46, roll:-35.87, pitch:-22.86},
-            {time:93.900, x:-48772.312, y:62.103, z:299827.308, speed_ms:70.21, speed_kmh:252.76, roll:-27.79, pitch:-20.10},
-            {time:94.200, x:-48773.293, y:50.826, z:299845.254, speed_ms:71.44, speed_kmh:257.18, roll:-20.48, pitch:-17.34},
-            {time:94.500, x:-48773.011, y:41.422, z:299864.647, speed_ms:72.43, speed_kmh:260.74, roll:-14.47, pitch:-14.01},
-            {time:94.800, x:-48771.743, y:33.935, z:299885.115, speed_ms:73.22, speed_kmh:263.60, roll:-10.04, pitch:-7.77},
-            {time:95.100, x:-48769.865, y:28.184, z:299906.312, speed_ms:73.82, speed_kmh:265.75, roll:-5.56, pitch:-1.69},
-            {time:95.400, x:-48767.698, y:24.100, z:299928.015, speed_ms:74.21, speed_kmh:267.15, roll:-1.05, pitch:3.27},
-            {time:95.700, x:-48765.494, y:21.677, z:299950.061, speed_ms:74.45, speed_kmh:268.03, roll:2.30, pitch:4.85},
-            {time:96.000, x:-48763.383, y:20.724, z:299972.295, speed_ms:74.61, speed_kmh:268.60, roll:3.21, pitch:4.00},
-            {time:96.300, x:-48761.366, y:20.711, z:299994.603, speed_ms:74.71, speed_kmh:268.96, roll:3.23, pitch:2.54},
-            {time:96.600, x:-48759.408, y:21.158, z:300016.941, speed_ms:74.79, speed_kmh:269.25, roll:2.80, pitch:1.85},
-            {time:96.900, x:-48757.469, y:21.753, z:300039.297, speed_ms:74.85, speed_kmh:269.47, roll:2.33, pitch:2.89},
-            {time:97.200, x:-48755.502, y:22.324, z:300061.670, speed_ms:74.92, speed_kmh:269.72, roll:2.18, pitch:2.87},
-            {time:97.500, x:-48753.493, y:22.849, z:300084.061, speed_ms:74.98, speed_kmh:269.95, roll:2.22, pitch:1.71},
-            {time:97.800, x:-48751.430, y:23.369, z:300106.438, speed_ms:74.84, speed_kmh:269.41, roll:4.86, pitch:-7.07},
-            {time:98.100, x:-48749.052, y:24.484, z:300128.612, speed_ms:74.24, speed_kmh:267.27, roll:19.04, pitch:-28.41},
-            {time:98.400, x:-48745.222, y:27.684, z:300150.076, speed_ms:73.05, speed_kmh:262.98, roll:35.58, pitch:-40.14},
-            {time:98.700, x:-48738.963, y:33.172, z:300170.018, speed_ms:71.45, speed_kmh:257.20, roll:42.58, pitch:-44.47},
-            {time:99.000, x:-48730.176, y:40.486, z:300187.743, speed_ms:69.62, speed_kmh:250.62, roll:47.21, pitch:-51.19},
-            {time:99.300, x:-48719.088, y:48.986, z:300202.765, speed_ms:67.61, speed_kmh:243.41, roll:57.55, pitch:-57.51},
-            {time:99.600, x:-48706.021, y:58.039, z:300214.761, speed_ms:65.62, speed_kmh:236.25, roll:71.49, pitch:-59.53},
-            {time:99.900, x:-48691.441, y:67.173, z:300223.573, speed_ms:63.71, speed_kmh:229.35, roll:81.93, pitch:-59.24},
-            {time:100.200, x:-48675.904, y:76.105, z:300229.117, speed_ms:61.81, speed_kmh:222.53, roll:84.94, pitch:-60.12},
-            {time:100.500, x:-48660.036, y:84.721, z:300231.405, speed_ms:59.98, speed_kmh:215.92, roll:79.30, pitch:-62.38},
-            {time:100.800, x:-48644.445, y:92.997, z:300230.628, speed_ms:58.24, speed_kmh:209.66, roll:79.73, pitch:-65.03},
-            {time:101.100, x:-48629.600, y:100.830, z:300227.044, speed_ms:56.61, speed_kmh:203.78, roll:87.69, pitch:-66.55},
-            {time:101.400, x:-48615.861, y:108.065, z:300220.915, speed_ms:55.11, speed_kmh:198.39, roll:97.18, pitch:-66.89},
-            {time:101.700, x:-48603.549, y:114.566, z:300212.515, speed_ms:53.73, speed_kmh:193.44, roll:105.03, pitch:-67.80},
-            {time:102.000, x:-48592.955, y:120.223, z:300202.147, speed_ms:52.48, speed_kmh:188.93, roll:112.29, pitch:-70.41},
-            {time:102.300, x:-48584.306, y:124.937, z:300190.159, speed_ms:51.40, speed_kmh:185.04, roll:122.64, pitch:-74.26},
-            {time:102.600, x:-48577.747, y:128.601, z:300176.915, speed_ms:50.54, speed_kmh:181.96, roll:142.28, pitch:-77.62},
-            {time:102.900, x:-48573.356, y:131.094, z:300162.775, speed_ms:49.98, speed_kmh:179.91, roll:170.32, pitch:-78.72},
-            {time:103.200, x:-48571.146, y:132.313, z:300148.089, speed_ms:49.76, speed_kmh:179.13, roll:-163.40, pitch:-78.97},
-            {time:103.500, x:-48571.052, y:132.255, z:300133.179, speed_ms:49.94, speed_kmh:179.80, roll:-119.57, pitch:-82.15},
-            {time:103.800, x:-48572.767, y:131.114, z:300118.275, speed_ms:50.51, speed_kmh:181.83, roll:-42.66, pitch:-76.31},
-            {time:104.100, x:-48575.731, y:129.169, z:300103.420, speed_ms:51.33, speed_kmh:184.78, roll:-21.17, pitch:-59.47},
-            {time:104.400, x:-48579.370, y:126.519, z:300088.540, speed_ms:52.31, speed_kmh:188.32, roll:-14.69, pitch:-40.95},
-            {time:104.700, x:-48583.442, y:123.242, z:300073.567, speed_ms:53.42, speed_kmh:192.30, roll:-12.06, pitch:-28.02},
-            {time:105.000, x:-48587.905, y:119.577, z:300058.434, speed_ms:54.57, speed_kmh:196.45, roll:-10.69, pitch:-20.41},
-            {time:105.300, x:-48592.714, y:115.744, z:300043.076, speed_ms:55.71, speed_kmh:200.55, roll:-10.22, pitch:-14.24},
-            {time:105.600, x:-48597.824, y:111.847, z:300027.465, speed_ms:56.82, speed_kmh:204.55, roll:-10.32, pitch:-8.26},
-            {time:105.900, x:-48603.190, y:107.898, z:300011.595, speed_ms:57.91, speed_kmh:208.47, roll:-10.08, pitch:-4.07},
-            {time:106.200, x:-48608.789, y:103.942, z:299995.461, speed_ms:58.95, speed_kmh:212.23, roll:-9.32, pitch:-1.34},
-            {time:106.500, x:-48614.596, y:100.066, z:299979.048, speed_ms:59.96, speed_kmh:215.85, roll:-8.26, pitch:0.11},
-            {time:106.800, x:-48620.573, y:96.370, z:299962.335, speed_ms:60.91, speed_kmh:219.27, roll:-7.20, pitch:0.81},
-            {time:107.100, x:-48626.674, y:92.923, z:299945.315, speed_ms:61.80, speed_kmh:222.47, roll:-6.29, pitch:1.34},
-            {time:107.400, x:-48632.864, y:89.752, z:299927.995, speed_ms:62.63, speed_kmh:225.46, roll:-5.54, pitch:1.93},
-            {time:107.700, x:-48639.123, y:86.847, z:299910.393, speed_ms:63.40, speed_kmh:228.25, roll:-5.15, pitch:2.44},
-            {time:108.000, x:-48645.446, y:84.149, z:299892.538, speed_ms:64.13, speed_kmh:230.88, roll:-4.96, pitch:3.00},
-            {time:108.300, x:-48651.831, y:81.594, z:299874.456, speed_ms:64.83, speed_kmh:233.38, roll:-4.70, pitch:3.48},
-            {time:108.600, x:-48658.271, y:79.160, z:299856.160, speed_ms:65.49, speed_kmh:235.77, roll:-4.35, pitch:3.57},
-            {time:108.900, x:-48664.759, y:76.846, z:299837.656, speed_ms:66.13, speed_kmh:238.06, roll:-4.38, pitch:2.46},
-            {time:109.200, x:-48671.295, y:74.605, z:299818.959, speed_ms:66.75, speed_kmh:240.28, roll:-4.50, pitch:1.22},
-            {time:109.500, x:-48677.887, y:72.391, z:299800.084, speed_ms:67.35, speed_kmh:242.45, roll:-4.51, pitch:0.17},
-            {time:109.800, x:-48684.549, y:70.193, z:299781.042, speed_ms:67.93, speed_kmh:244.55, roll:-4.44, pitch:-0.87},
-            {time:110.100, x:-48691.304, y:68.023, z:299761.846, speed_ms:68.50, speed_kmh:246.59, roll:-4.24, pitch:-1.98},
-            {time:110.400, x:-48698.175, y:65.906, z:299742.508, speed_ms:69.04, speed_kmh:248.54, roll:-4.03, pitch:-3.21},
-            {time:110.700, x:-48705.183, y:63.862, z:299723.039, speed_ms:69.57, speed_kmh:250.45, roll:-3.97, pitch:-3.99},
-            {time:111.000, x:-48712.340, y:61.873, z:299703.451, speed_ms:70.08, speed_kmh:252.29, roll:-4.00, pitch:-4.40},
-            {time:111.300, x:-48719.646, y:59.913, z:299683.754, speed_ms:70.58, speed_kmh:254.08, roll:-3.98, pitch:-4.46},
-            {time:111.600, x:-48727.097, y:57.972, z:299663.952, speed_ms:71.06, speed_kmh:255.81, roll:-3.93, pitch:-4.14},
-            {time:111.900, x:-48734.691, y:56.052, z:299644.049, speed_ms:71.53, speed_kmh:257.50, roll:-3.89, pitch:-3.76},
-            {time:112.200, x:-48742.426, y:54.149, z:299624.048, speed_ms:71.99, speed_kmh:259.16, roll:-4.12, pitch:-3.40},
-            {time:112.500, x:-48750.297, y:52.216, z:299603.955, speed_ms:72.44, speed_kmh:260.80, roll:-4.33, pitch:-3.06},
-            {time:112.800, x:-48758.299, y:50.229, z:299583.772, speed_ms:72.89, speed_kmh:262.41, roll:-4.38, pitch:-2.69},
-            {time:113.100, x:-48766.428, y:48.205, z:299563.499, speed_ms:73.34, speed_kmh:264.03, roll:-4.41, pitch:-2.32},
-            {time:113.400, x:-48774.677, y:46.155, z:299543.132, speed_ms:73.78, speed_kmh:265.60, roll:-4.44, pitch:-1.93},
-            {time:113.700, x:-48783.044, y:44.091, z:299522.675, speed_ms:74.21, speed_kmh:267.15, roll:-4.35, pitch:-1.56},
-            {time:114.000, x:-48791.526, y:42.034, z:299502.125, speed_ms:74.63, speed_kmh:268.65, roll:-4.24, pitch:-1.18},
-            {time:114.300, x:-48800.121, y:40.005, z:299481.486, speed_ms:75.03, speed_kmh:270.12, roll:-4.12, pitch:-0.98},
-            {time:114.600, x:-48808.825, y:38.014, z:299460.758, speed_ms:75.43, speed_kmh:271.53, roll:-4.01, pitch:-1.09},
-            {time:114.900, x:-48817.641, y:36.067, z:299439.946, speed_ms:75.80, speed_kmh:272.88, roll:-3.83, pitch:-1.95},
-            {time:115.200, x:-48826.582, y:34.190, z:299419.076, speed_ms:76.07, speed_kmh:273.86, roll:-2.77, pitch:-6.92},
-            {time:115.500, x:-48835.751, y:32.573, z:299398.222, speed_ms:76.22, speed_kmh:274.39, roll:-0.42, pitch:-21.93},
-            {time:115.800, x:-48845.445, y:31.486, z:299377.533, speed_ms:76.31, speed_kmh:274.72, roll:1.74, pitch:-37.23},
-            {time:116.100, x:-48855.974, y:30.868, z:299357.220, speed_ms:76.34, speed_kmh:274.82, roll:2.97, pitch:-50.67},
-            {time:116.400, x:-48867.570, y:30.506, z:299337.484, speed_ms:76.37, speed_kmh:274.95, roll:2.68, pitch:-56.68},
-            {time:116.700, x:-48880.458, y:30.300, z:299318.563, speed_ms:76.37, speed_kmh:274.93, roll:1.23, pitch:-58.98},
-            {time:117.000, x:-48894.712, y:30.195, z:299300.647, speed_ms:76.35, speed_kmh:274.86, roll:-0.24, pitch:-57.60},
-            {time:117.300, x:-48910.054, y:30.097, z:299283.661, speed_ms:76.27, speed_kmh:274.56, roll:-0.98, pitch:-38.87},
-            {time:117.600, x:-48925.963, y:29.886, z:299267.227, speed_ms:76.25, speed_kmh:274.50, roll:-0.17, pitch:-12.86},
-            {time:117.900, x:-48942.152, y:29.660, z:299251.055, speed_ms:76.32, speed_kmh:274.75, roll:1.61, pitch:-1.02},
-            {time:118.200, x:-48958.484, y:29.766, z:299235.081, speed_ms:76.04, speed_kmh:273.74, roll:7.83, pitch:-16.77},
-            {time:118.500, x:-48975.185, y:31.085, z:299219.798, speed_ms:75.36, speed_kmh:271.30, roll:23.46, pitch:-41.98},
-            {time:118.800, x:-48992.903, y:34.127, z:299206.430, speed_ms:74.31, speed_kmh:267.52, roll:43.46, pitch:-56.71},
-            {time:119.100, x:-49011.894, y:38.339, z:299196.042, speed_ms:73.12, speed_kmh:263.23, roll:53.89, pitch:-66.80},
-            {time:119.400, x:-49031.963, y:42.962, z:299189.258, speed_ms:71.90, speed_kmh:258.83, roll:53.26, pitch:-75.98},
-            {time:119.700, x:-49052.616, y:47.348, z:299186.296, speed_ms:70.72, speed_kmh:254.61, roll:66.54, pitch:-83.14},
-            {time:120.000, x:-49073.329, y:51.000, z:299186.964, speed_ms:69.95, speed_kmh:251.84, roll:105.86, pitch:-84.34},
-            {time:120.300, x:-49093.807, y:53.706, z:299190.368, speed_ms:69.72, speed_kmh:251.00, roll:92.46, pitch:-83.73},
-            {time:120.600, x:-49114.103, y:55.564, z:299195.048, speed_ms:69.68, speed_kmh:250.84, roll:37.03, pitch:-80.40},
-            {time:120.900, x:-49134.373, y:56.674, z:299200.033, speed_ms:69.68, speed_kmh:250.85, roll:8.66, pitch:-69.35},
-            {time:121.200, x:-49154.692, y:56.989, z:299204.996, speed_ms:69.78, speed_kmh:251.20, roll:-1.80, pitch:-53.85},
-            {time:121.500, x:-49175.070, y:56.416, z:299209.891, speed_ms:70.00, speed_kmh:251.99, roll:-5.96, pitch:-37.02},
-            {time:121.800, x:-49195.488, y:54.957, z:299214.792, speed_ms:70.34, speed_kmh:253.21, roll:-6.97, pitch:-19.21},
-            {time:122.100, x:-49215.935, y:52.788, z:299219.809, speed_ms:70.76, speed_kmh:254.75, roll:-7.08, pitch:-1.36},
-            {time:122.400, x:-49236.440, y:50.129, z:299224.936, speed_ms:71.26, speed_kmh:256.53, roll:-6.81, pitch:15.39},
-            {time:122.700, x:-49257.077, y:47.231, z:299230.054, speed_ms:71.82, speed_kmh:258.55, roll:-5.74, pitch:22.70},
-            {time:123.000, x:-49277.943, y:44.372, z:299234.962, speed_ms:72.36, speed_kmh:260.50, roll:-4.81, pitch:24.49},
-            {time:123.300, x:-49299.075, y:41.703, z:299239.516, speed_ms:72.85, speed_kmh:262.27, roll:-4.47, pitch:26.67},
-            {time:123.600, x:-49320.463, y:39.215, z:299243.632, speed_ms:73.30, speed_kmh:263.87, roll:-4.23, pitch:31.16},
-            {time:123.900, x:-49342.086, y:36.858, z:299247.224, speed_ms:73.69, speed_kmh:265.29, roll:-3.56, pitch:37.65},
-            {time:124.200, x:-49363.932, y:34.615, z:299250.173, speed_ms:74.05, speed_kmh:266.58, roll:-2.81, pitch:44.95},
-            {time:124.500, x:-49385.980, y:32.456, z:299252.337, speed_ms:74.38, speed_kmh:267.77, roll:-2.20, pitch:51.33},
-            {time:124.800, x:-49408.199, y:30.363, z:299253.534, speed_ms:74.68, speed_kmh:268.85, roll:-1.62, pitch:55.53},
-            {time:125.100, x:-49430.542, y:28.371, z:299253.507, speed_ms:74.94, speed_kmh:269.79, roll:-0.89, pitch:57.43},
-            {time:125.400, x:-49452.902, y:26.548, z:299251.971, speed_ms:75.10, speed_kmh:270.34, roll:1.64, pitch:59.79},
-            {time:125.700, x:-49475.099, y:25.039, z:299248.530, speed_ms:75.15, speed_kmh:270.55, roll:5.20, pitch:62.10},
-            {time:126.000, x:-49496.885, y:23.928, z:299242.942, speed_ms:75.12, speed_kmh:270.45, roll:7.18, pitch:60.38},
-            {time:126.300, x:-49518.056, y:23.342, z:299235.360, speed_ms:74.96, speed_kmh:269.85, roll:4.68, pitch:38.68},
-            {time:126.600, x:-49538.698, y:23.485, z:299226.511, speed_ms:74.81, speed_kmh:269.33, roll:4.33, pitch:6.71},
-            {time:126.900, x:-49559.070, y:24.328, z:299217.202, speed_ms:74.60, speed_kmh:268.56, roll:8.87, pitch:-0.98},
-            {time:127.200, x:-49579.088, y:26.363, z:299207.751, speed_ms:73.81, speed_kmh:265.70, roll:22.34, pitch:19.87},
-            {time:127.500, x:-49598.086, y:30.567, z:299197.713, speed_ms:72.42, speed_kmh:260.71, roll:39.59, pitch:32.65},
-            {time:127.800, x:-49615.365, y:36.687, z:299186.618, speed_ms:70.72, speed_kmh:254.59, roll:50.70, pitch:38.54},
-            {time:128.100, x:-49630.362, y:44.274, z:299174.195, speed_ms:68.96, speed_kmh:248.26, roll:57.00, pitch:46.33},
-            {time:128.400, x:-49642.515, y:52.837, z:299160.304, speed_ms:67.12, speed_kmh:241.63, roll:66.54, pitch:55.52},
-            {time:128.700, x:-49651.378, y:61.752, z:299145.052, speed_ms:65.14, speed_kmh:234.51, roll:83.64, pitch:60.59},
-            {time:129.000, x:-49656.738, y:70.405, z:299128.800, speed_ms:63.21, speed_kmh:227.55, roll:97.82, pitch:60.59},
-            {time:129.300, x:-49658.641, y:78.399, z:299112.088, speed_ms:61.43, speed_kmh:221.14, roll:102.77, pitch:60.74},
-            {time:129.600, x:-49657.272, y:85.598, z:299095.517, speed_ms:59.83, speed_kmh:215.40, roll:101.45, pitch:63.54},
-            {time:129.900, x:-49652.884, y:91.988, z:299079.635, speed_ms:58.43, speed_kmh:210.36, roll:103.90, pitch:67.29},
-            {time:130.200, x:-49645.762, y:97.500, z:299064.892, speed_ms:57.20, speed_kmh:205.91, roll:110.99, pitch:70.64},
-            {time:130.500, x:-49636.204, y:102.024, z:299051.673, speed_ms:56.12, speed_kmh:202.03, roll:120.30, pitch:73.18},
-            {time:130.800, x:-49624.550, y:105.459, z:299040.315, speed_ms:55.22, speed_kmh:198.80, roll:129.44, pitch:75.47},
-            {time:131.100, x:-49611.189, y:107.749, z:299031.091, speed_ms:54.54, speed_kmh:196.34, roll:139.44, pitch:78.00},
-            {time:131.400, x:-49596.538, y:108.868, z:299024.199, speed_ms:54.10, speed_kmh:194.75, roll:154.36, pitch:80.72},
-            {time:131.700, x:-49581.024, y:108.812, z:299019.772, speed_ms:53.89, speed_kmh:194.02, roll:-178.94, pitch:82.86},
-            {time:132.000, x:-49565.069, y:107.588, z:299017.888, speed_ms:53.94, speed_kmh:194.17, roll:-140.09, pitch:83.24},
-            {time:132.300, x:-49549.088, y:105.238, z:299018.574, speed_ms:54.24, speed_kmh:195.25, roll:-95.26, pitch:81.88},
-            {time:132.600, x:-49533.444, y:101.915, z:299021.773, speed_ms:54.82, speed_kmh:197.35, roll:-52.34, pitch:76.15},
-            {time:132.900, x:-49518.357, y:97.926, z:299027.259, speed_ms:55.66, speed_kmh:200.38, roll:-30.99, pitch:64.53},
-            {time:133.200, x:-49503.820, y:93.600, z:299034.569, speed_ms:56.67, speed_kmh:204.02, roll:-21.49, pitch:50.53},
-            {time:133.500, x:-49489.669, y:89.124, z:299043.185, speed_ms:57.77, speed_kmh:207.95, roll:-16.10, pitch:35.94},
-            {time:133.800, x:-49475.705, y:84.585, z:299052.698, speed_ms:58.88, speed_kmh:211.95, roll:-12.59, pitch:24.37},
-            {time:134.100, x:-49461.764, y:80.104, z:299062.855, speed_ms:59.94, speed_kmh:215.79, roll:-10.04, pitch:14.10},
-            {time:134.400, x:-49447.706, y:75.835, z:299073.487, speed_ms:60.96, speed_kmh:219.45, roll:-8.72, pitch:5.92},
-            {time:134.700, x:-49433.428, y:71.840, z:299084.440, speed_ms:61.92, speed_kmh:222.91, roll:-8.36, pitch:-0.22},
-            {time:135.000, x:-49418.881, y:68.067, z:299095.596, speed_ms:62.84, speed_kmh:226.24, roll:-8.11, pitch:-3.34},
-            {time:135.300, x:-49404.047, y:64.462, z:299106.887, speed_ms:63.72, speed_kmh:229.41, roll:-7.78, pitch:-5.45},
-            {time:135.600, x:-49388.920, y:61.003, z:299118.267, speed_ms:64.56, speed_kmh:232.40, roll:-7.31, pitch:-7.40},
-            {time:135.900, x:-49373.486, y:57.701, z:299129.695, speed_ms:65.35, speed_kmh:235.25, roll:-6.84, pitch:-9.16},
-            {time:136.200, x:-49357.728, y:54.567, z:299141.124, speed_ms:66.10, speed_kmh:237.95, roll:-6.49, pitch:-10.78},
-            {time:136.500, x:-49341.641, y:51.587, z:299152.520, speed_ms:66.81, speed_kmh:240.53, roll:-6.59, pitch:-10.46},
-            {time:136.800, x:-49325.256, y:48.681, z:299163.879, speed_ms:67.49, speed_kmh:242.96, roll:-6.84, pitch:-7.17},
-            {time:137.100, x:-49308.619, y:45.761, z:299175.227, speed_ms:68.16, speed_kmh:245.36, roll:-6.89, pitch:-2.62},
-            {time:137.400, x:-49291.765, y:42.807, z:299186.603, speed_ms:68.82, speed_kmh:247.76, roll:-6.59, pitch:-0.18},
-            {time:137.700, x:-49274.709, y:39.873, z:299198.043, speed_ms:69.48, speed_kmh:250.12, roll:-6.23, pitch:0.36},
-            {time:138.000, x:-49257.463, y:37.010, z:299209.566, speed_ms:70.11, speed_kmh:252.38, roll:-5.93, pitch:0.44},
-            {time:138.300, x:-49240.037, y:34.239, z:299221.179, speed_ms:70.71, speed_kmh:254.55, roll:-5.59, pitch:0.52},
-            {time:138.600, x:-49222.441, y:31.581, z:299232.879, speed_ms:71.27, speed_kmh:256.58, roll:-5.04, pitch:0.74},
-            {time:138.900, x:-49204.680, y:29.082, z:299244.663, speed_ms:71.80, speed_kmh:258.47, roll:-4.30, pitch:0.90},
-            {time:139.200, x:-49186.759, y:26.802, z:299256.523, speed_ms:72.28, speed_kmh:260.21, roll:-3.49, pitch:0.88},
-            {time:139.500, x:-49168.685, y:24.789, z:299268.450, speed_ms:72.70, speed_kmh:261.73, roll:-2.57, pitch:0.52},
-            {time:139.800, x:-49150.473, y:23.093, z:299280.410, speed_ms:72.97, speed_kmh:262.69, roll:-0.61, pitch:-4.50},
-            {time:140.100, x:-49132.091, y:21.958, z:299292.218, speed_ms:72.96, speed_kmh:262.65, roll:5.56, pitch:-23.97},
-            {time:140.400, x:-49113.280, y:21.997, z:299303.271, speed_ms:72.68, speed_kmh:261.64, roll:16.23, pitch:-42.23},
-            {time:140.700, x:-49093.772, y:23.497, z:299312.586, speed_ms:72.05, speed_kmh:259.38, roll:26.66, pitch:-51.96},
-            {time:141.000, x:-49073.597, y:26.340, z:299319.209, speed_ms:71.14, speed_kmh:256.11, roll:32.47, pitch:-59.08},
-            {time:141.300, x:-49053.099, y:30.199, z:299322.515, speed_ms:70.05, speed_kmh:252.17, roll:32.99, pitch:-63.35},
-            {time:141.600, x:-49032.821, y:34.716, z:299322.342, speed_ms:68.87, speed_kmh:247.93, roll:36.81, pitch:-66.84},
-            {time:141.900, x:-49013.298, y:39.578, z:299318.815, speed_ms:67.71, speed_kmh:243.76, roll:45.21, pitch:-68.21},
-            {time:142.200, x:-48995.012, y:44.599, z:299312.193, speed_ms:66.59, speed_kmh:239.72, roll:53.24, pitch:-68.09},
-            {time:142.500, x:-48978.427, y:49.691, z:299302.763, speed_ms:65.46, speed_kmh:235.65, roll:58.14, pitch:-68.51},
-            {time:142.800, x:-48963.969, y:54.773, z:299290.853, speed_ms:64.33, speed_kmh:231.60, roll:59.80, pitch:-70.13},
-            {time:143.100, x:-48951.965, y:59.732, z:299276.880, speed_ms:63.24, speed_kmh:227.68, roll:57.60, pitch:-71.89},
-            {time:143.400, x:-48942.622, y:64.473, z:299261.317, speed_ms:62.22, speed_kmh:223.99, roll:55.19, pitch:-73.24},
-            {time:143.700, x:-48936.049, y:68.928, z:299244.642, speed_ms:61.28, speed_kmh:220.61, roll:54.52, pitch:-73.92},
-            {time:144.000, x:-48932.270, y:73.062, z:299227.320, speed_ms:60.44, speed_kmh:217.59, roll:53.83, pitch:-73.84},
-            {time:144.300, x:-48931.251, y:76.879, z:299209.792, speed_ms:59.69, speed_kmh:214.89, roll:51.65, pitch:-73.44},
-            {time:144.600, x:-48932.906, y:80.407, z:299192.463, speed_ms:59.04, speed_kmh:212.55, roll:47.37, pitch:-73.09},
-            {time:144.900, x:-48937.031, y:83.669, z:299175.672, speed_ms:58.52, speed_kmh:210.69, roll:37.24, pitch:-71.06},
-            {time:145.200, x:-48943.242, y:86.695, z:299159.617, speed_ms:58.18, speed_kmh:209.45, roll:26.14, pitch:-66.75},
-            {time:145.500, x:-48951.025, y:89.478, z:299144.288, speed_ms:58.01, speed_kmh:208.83, roll:18.36, pitch:-61.10},
-            {time:145.800, x:-48959.851, y:91.938, z:299129.501, speed_ms:57.98, speed_kmh:208.72, roll:12.95, pitch:-53.60},
-            {time:146.100, x:-48969.294, y:93.969, z:299115.025, speed_ms:58.05, speed_kmh:208.97, roll:9.63, pitch:-44.72},
-            {time:146.400, x:-48979.137, y:95.550, z:299100.720, speed_ms:58.21, speed_kmh:209.56, roll:7.48, pitch:-37.06},
-            {time:146.700, x:-48989.302, y:96.739, z:299086.529, speed_ms:58.43, speed_kmh:210.34, roll:5.38, pitch:-30.22},
-            {time:147.000, x:-48999.744, y:97.578, z:299072.425, speed_ms:58.69, speed_kmh:211.30, roll:3.39, pitch:-21.92},
-            {time:147.300, x:-49010.425, y:98.085, z:299058.377, speed_ms:59.00, speed_kmh:212.39, roll:2.06, pitch:-12.61},
-            {time:147.600, x:-49021.310, y:98.290, z:299044.355, speed_ms:59.35, speed_kmh:213.67, roll:1.61, pitch:-3.91},
-            {time:147.900, x:-49032.364, y:98.267, z:299030.321, speed_ms:59.75, speed_kmh:215.09, roll:1.78, pitch:1.10},
-            {time:148.200, x:-49043.540, y:98.125, z:299016.228, speed_ms:60.17, speed_kmh:216.60, roll:1.96, pitch:3.17},
-            {time:148.500, x:-49054.794, y:97.945, z:299002.035, speed_ms:60.59, speed_kmh:218.12, roll:1.94, pitch:3.85},
-            {time:148.800, x:-49066.093, y:97.753, z:298987.717, speed_ms:61.01, speed_kmh:219.63, roll:1.79, pitch:4.39},
-            {time:149.100, x:-49077.421, y:97.547, z:298973.261, speed_ms:61.42, speed_kmh:221.12, roll:1.68, pitch:4.41},
-            {time:149.400, x:-49088.775, y:97.326, z:298958.673, speed_ms:61.82, speed_kmh:222.57, roll:1.80, pitch:3.63},
-            {time:149.700, x:-49100.166, y:97.121, z:298943.963, speed_ms:62.21, speed_kmh:223.97, roll:2.19, pitch:2.96},
-            {time:150.000, x:-49111.602, y:96.987, z:298929.144, speed_ms:62.58, speed_kmh:225.28, roll:2.71, pitch:3.06},
-            {time:150.300, x:-49123.082, y:96.975, z:298914.227, speed_ms:62.91, speed_kmh:226.49, roll:3.20, pitch:3.35},
-            {time:150.600, x:-49134.596, y:97.109, z:298899.214, speed_ms:63.22, speed_kmh:227.59, roll:3.65, pitch:3.71},
-            {time:150.900, x:-49146.132, y:97.399, z:298884.109, speed_ms:63.50, speed_kmh:228.61, roll:3.95, pitch:3.84},
-            {time:151.200, x:-49157.683, y:97.828, z:298868.914, speed_ms:63.77, speed_kmh:229.56, roll:4.06, pitch:3.26},
-            {time:151.500, x:-49169.249, y:98.359, z:298853.640, speed_ms:64.01, speed_kmh:230.43, roll:4.14, pitch:2.34},
-            {time:151.800, x:-49180.836, y:98.970, z:298838.297, speed_ms:64.24, speed_kmh:231.25, roll:4.38, pitch:1.53},
-            {time:152.100, x:-49192.452, y:99.668, z:298822.896, speed_ms:64.45, speed_kmh:232.02, roll:4.67, pitch:1.07},
-            {time:152.400, x:-49204.102, y:100.465, z:298807.449, speed_ms:64.64, speed_kmh:232.71, roll:4.97, pitch:0.73},
-            {time:152.700, x:-49215.790, y:101.366, z:298791.968, speed_ms:64.82, speed_kmh:233.34, roll:5.26, pitch:0.39},
-            {time:153.000, x:-49227.518, y:102.376, z:298776.462, speed_ms:64.97, speed_kmh:233.89, roll:5.56, pitch:0.06},
-            {time:153.300, x:-49239.287, y:103.497, z:298760.940, speed_ms:65.11, speed_kmh:234.38, roll:5.87, pitch:-0.26},
-            {time:153.600, x:-49251.095, y:104.732, z:298745.409, speed_ms:65.22, speed_kmh:234.80, roll:6.18, pitch:-0.57},
-            {time:153.900, x:-49262.941, y:106.081, z:298729.876, speed_ms:65.32, speed_kmh:235.16, roll:6.49, pitch:-0.88},
-            {time:154.200, x:-49274.826, y:107.543, z:298714.350, speed_ms:65.40, speed_kmh:235.45, roll:6.79, pitch:-1.20},
-            {time:154.500, x:-49286.752, y:109.117, z:298698.838, speed_ms:65.46, speed_kmh:235.67, roll:6.98, pitch:-1.35},
-            {time:154.800, x:-49298.719, y:110.782, z:298683.344, speed_ms:65.52, speed_kmh:235.87, roll:6.85, pitch:-1.11},
-            {time:155.100, x:-49310.728, y:112.477, z:298667.864, speed_ms:65.57, speed_kmh:236.06, roll:6.56, pitch:-0.80},
-            {time:155.400, x:-49322.777, y:114.144, z:298652.393, speed_ms:65.63, speed_kmh:236.26, roll:6.34, pitch:-0.47}
-        ];
-
-        // ============================================================
-        //  КАМЕРА, ПРОЕКЦИЯ, УПРАВЛЕНИЕ (коэффициент высоты 0.125)
-        // ============================================================
-
-        const canvas = document.getElementById('trackCanvas');
-        const ctx = canvas.getContext('2d');
-        const W = canvas.width, H = canvas.height;
-
-        let allPoints = [];
-        gates.forEach(g => g.vertices.forEach(v => allPoints.push({x: v.x, z: v.y})));
-        pylons.forEach(p => allPoints.push({x: p.x, z: p.y}));
-        trackData.forEach(t => allPoints.push({x: t.x, z: t.z}));
-
-        const minX = Math.min(...allPoints.map(p => p.x));
-        const maxX = Math.max(...allPoints.map(p => p.x));
-        const minZ = Math.min(...allPoints.map(p => p.z));
-        const maxZ = Math.max(...allPoints.map(p => p.z));
-
-        const rangeX = maxX - minX;
-        const rangeZ = maxZ - minZ;
-
-        const margin = 100;
-        const drawW = W - 2 * margin;
-        const drawH = H - 2 * margin;
-        const cosA = 0.8;
-        const sinA = 0.6;
-        const approxWidth = (rangeX + rangeZ) * cosA;
-        const approxHeight = (rangeX + rangeZ) * sinA;
-        let baseScale = Math.min(drawW / approxWidth, drawH / approxHeight);
-
-        const centerX = (minX + maxX) / 2;
-        const centerZ = (minZ + maxZ) / 2;
-
-        const state = {
-            rotation: 0,
-            scale: 1,
-            offsetX: 0,
-            offsetY: 0,
-        };
-
-        function isoProject(x, z, height = 0) {
-            let dx = x - centerX;
-            let dz = z - centerZ;
-            const rot = state.rotation;
-            const cosR = Math.cos(rot);
-            const sinR = Math.sin(rot);
-            const rx = dx * cosR - dz * sinR;
-            const rz = dx * sinR + dz * cosR;
-            const screenX = (rx - rz) * cosA * baseScale * state.scale + W/2 + state.offsetX;
-            const screenY = (rx + rz) * sinA * baseScale * state.scale - height * baseScale * state.scale + H/2 + state.offsetY;
-            return { x: screenX, y: screenY };
-        }
-
-        // ============================================================
-        //  УПРАВЛЕНИЕ КАМЕРОЙ
-        // ============================================================
-
-        let isPanning = false, isRotating = false;
-        let prevMouseX = 0, prevMouseY = 0;
-        const wrapper = document.getElementById('canvasWrapper');
-
-        wrapper.addEventListener('mousedown', (e) => {
-            if (e.button === 0) { isPanning = true; prevMouseX = e.clientX; prevMouseY = e.clientY; wrapper.style.cursor = 'grabbing'; }
-            else if (e.button === 2) { isRotating = true; prevMouseX = e.clientX; prevMouseY = e.clientY; wrapper.style.cursor = 'grabbing'; }
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (isPanning) {
-                const dx = e.clientX - prevMouseX, dy = e.clientY - prevMouseY;
-                state.offsetX += dx; state.offsetY += dy;
-                prevMouseX = e.clientX; prevMouseY = e.clientY;
-                render();
-            } else if (isRotating) {
-                state.rotation += (e.clientX - prevMouseX) * 0.01;
-                prevMouseX = e.clientX; prevMouseY = e.clientY;
-                render();
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
             }
-        });
-        window.addEventListener('mouseup', () => { isPanning = false; isRotating = false; wrapper.style.cursor = 'grab'; });
-        wrapper.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            state.scale = Math.min(Math.max(state.scale * delta, 0.2), 5);
-            render();
-        }, { passive: false });
-        wrapper.addEventListener('dblclick', () => resetView());
-        document.getElementById('resetViewBtn')?.addEventListener('click', resetView);
-        wrapper.addEventListener('contextmenu', (e) => e.preventDefault());
+        }
+    </script>
 
-        function resetView() {
-            state.rotation = 0; state.scale = 1; state.offsetX = 0; state.offsetY = 0;
-            render();
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        // ---------- Константы ----------
+        const CENTER_X = -49000;
+        const CENTER_Y = 299500;
+        const PYLON_HEIGHT = 25;
+        const PYLON_RADIUS = 4.5;
+        const GATE_RADIUS = 60; // радиус зоны ворот для запуска/остановки времени
+
+        // ---------- Данные ворот и пилонов (из deepseek_Геленджик.html) ----------
+        const gateData = [
+            [1, [
+                    [-49147.249579348, 299257.46217034],
+                    [-49168.648928679, 299291.48164876],
+                    [-49162.722955018, 299294.71898622],
+                    [-49141.378475814, 299260.97385843]
+                ]],
+            [2, [
+                    [-48675.561706993, 299606.61949111],
+                    [-48662.001683327, 299644.31433302],
+                    [-48655.47465701, 299641.93626917],
+                    [-48668.933486469, 299604.39321857]
+                ]],
+            [3, [
+                    [-48788.18335898, 299964.81126378],
+                    [-48786.641070438, 299971.64139875],
+                    [-48747.20254914, 299962.82832136],
+                    [-48748.799919416, 299956.05326812]
+                ]],
+            [4, [
+                    [-48771.191085304, 300104.59211532],
+                    [-48770.503222008, 300111.70003604],
+                    [-48730.607150853, 300106.88499297],
+                    [-48731.295014149, 300099.77707225]
+                ]],
+            [5, [
+                    [-48934.111446619, 299227.58823234],
+                    [-48969.176852258, 299246.54093919],
+                    [-48965.64133202, 299252.68463009],
+                    [-48930.344088988, 299233.84784194]
+                ]],
+            [6, [
+                    [-49568.069658272, 299199.67920153],
+                    [-49563.346820542, 299238.91508421],
+                    [-49556.323113149, 299238.18849379],
+                    [-49561.106500081, 299198.71041431]
+                ]],
+            [7, [
+                    [-49147.249579348, 299257.46217034],
+                    [-49168.703798805, 299291.53651889],
+                    [-49162.722955018, 299294.71898622],
+                    [-49141.378475814, 299260.97385843]
+                ]],
+            [8, [
+                    [-48675.51110989, 299606.5182969],
+                    [-48662.001683327, 299644.31433302],
+                    [-48655.525254113, 299641.88567206],
+                    [-48668.93348647, 299604.34262146]
+                ]],
+            [9, [
+                    [-48788.18335898, 299964.81126378],
+                    [-48786.641070438, 299971.64139875],
+                    [-48747.20254914, 299962.93848483],
+                    [-48748.799919416, 299955.99818639]
+                ]],
+            [10, [
+                    [-48771.191085304, 300104.59211532],
+                    [-48770.388578126, 300111.6427141],
+                    [-48730.549828911, 300106.94231491],
+                    [-48731.295014149, 300099.83439419]
+                ]],
+            [11, [
+                    [-48933.995527922, 299227.58823234],
+                    [-48969.176852258, 299246.54093919],
+                    [-48965.583372672, 299252.74258944],
+                    [-48930.402048336, 299233.73192324]
+                ]],
+            [12, [
+                    [-49568.009109071, 299199.67920153],
+                    [-49563.286271341, 299238.85453501],
+                    [-49556.323113149, 299238.12794459],
+                    [-49561.106500081, 299198.77096351]
+                ]],
+            [13, [
+                    [-49147.194709222, 299257.46217034],
+                    [-49168.648928679, 299291.37190851],
+                    [-49162.668084892, 299294.71898622],
+                    [-49141.488216067, 299261.02872856]
+                ]]
+        ];
+
+        const pylonData = [
+            [1, -49165.009890404, 299285.41643278],
+            [2, -49151.095604689, 299263.27357564],
+            [3, -48664.382197651, 299637.76349033],
+            [4, -48673.095733799, 299613.14739316],
+            [5, -48781.205464909, 299963.37544638],
+            [6, -48755.58567102, 299957.57692928],
+            [7, -48764.247166113, 300103.91458235],
+            [8, -48738.163084019, 300100.70704966],
+            [9, -48959.633334024, 299249.32263935],
+            [10, -48936.63986038, 299236.93349053],
+            [11, -49557.21723876, 299231.33698185],
+            [12, -49560.264319968, 299205.65005539]
+        ];
+
+        // ---------- Преобразования координат (зеркальное отражение по X) ----------
+        function transformX(x) { return -(x - CENTER_X); }
+        function transformY(y) { return -(y - CENTER_Y); }
+
+        // ---------- Сцена, камера, рендереры ----------
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xb0d0e8);
+
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 50000);
+        camera.position.set(1500, 1200, 1800);
+        camera.lookAt(0, 100, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.localClippingEnabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 120, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 300;
+        controls.maxDistance = 5000;
+        controls.update();
+
+        // ---------- Освещение ----------
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffeedd, 1.0);
+        dirLight.position.set(400, 800, 600);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        const d = 1500;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        dirLight.shadow.camera.near = 1;
+        dirLight.shadow.camera.far = 2000;
+        scene.add(dirLight);
+
+        const fillLight = new THREE.DirectionalLight(0xccddff, 0.4);
+        fillLight.position.set(-400, 300, -600);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.2);
+        rimLight.position.set(0, -200, 800);
+        scene.add(rimLight);
+
+        // ---------- Трава и сетка ----------
+        const groundGeo = new THREE.PlaneGeometry(2800, 2800);
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0x6a9e5a,
+            roughness: 0.9,
+            metalness: 0.0,
+            side: THREE.DoubleSide,
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -1;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const gridHelper = new THREE.GridHelper(2400, 40, 0x4a7a3a, 0x3a6a2a);
+        gridHelper.position.y = -0.5;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.15;
+        scene.add(gridHelper);
+
+        // ---------- Ворота (кластеризация и метки) ----------
+        const gateCenters = gateData.map(([num, verts]) => {
+            const pts = verts.map(v => new THREE.Vector3(transformX(v[0]), 0, transformY(v[1])));
+            const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+            const cz = pts.reduce((s, p) => s + p.z, 0) / pts.length;
+            return { num, cx, cz };
+        });
+
+        const meanXtrans = gateCenters.reduce((s, g) => s + g.cx, 0) / gateCenters.length;
+        const meanYtrans = gateCenters.reduce((s, g) => s + g.cz, 0) / gateCenters.length;
+        const clusterThreshold = 50;
+        const clusters = [];
+        const used = new Set();
+        for (let i = 0; i < gateCenters.length; i++) {
+            if (used.has(i)) continue;
+            const cluster = [gateCenters[i]];
+            used.add(i);
+            for (let j = i + 1; j < gateCenters.length; j++) {
+                if (used.has(j)) continue;
+                const dx = gateCenters[i].cx - gateCenters[j].cx;
+                const dz = gateCenters[i].cz - gateCenters[j].cz;
+                const dist = Math.sqrt(dx*dx + dz*dz);
+                if (dist < clusterThreshold) {
+                    cluster.push(gateCenters[j]);
+                    used.add(j);
+                }
+            }
+            clusters.push(cluster);
         }
 
-        // ============================================================
-        //  ВСПОМОГАТЕЛЬНЫЕ 3D-ФУНКЦИИ (используем y * 0.125)
-        // ============================================================
+        const baseY = 55;
+        const offsetDist = 60;
+        const halfGates = Math.ceil(gateData.length / 2); // 7
 
+        for (const cluster of clusters) {
+            cluster.sort((a, b) => a.num - b.num);
+            let avgX = cluster.reduce((s, g) => s + g.cx, 0) / cluster.length;
+            let avgZ = cluster.reduce((s, g) => s + g.cz, 0) / cluster.length;
+            const dx = avgX - meanXtrans;
+            const dz = avgZ - meanYtrans;
+            const len = Math.sqrt(dx*dx + dz*dz);
+            if (len > 1) {
+                avgX += (dx / len) * offsetDist;
+                avgZ += (dz / len) * offsetDist;
+            } else {
+                avgX += offsetDist;
+                avgZ += 0;
+            }
+            const numbers = cluster.map(g => g.num);
+            const allRed = numbers.every(n => n <= halfGates);
+            const allBlue = numbers.every(n => n > halfGates);
+            let borderColor = 'rgba(255,255,255,0.3)';
+            if (allRed) borderColor = 'rgba(204, 51, 51, 0.4)';
+            else if (allBlue) borderColor = 'rgba(26, 107, 138, 0.4)';
+
+            const container = document.createElement('div');
+            container.style.display = 'inline-block';
+            container.style.background = 'rgba(255, 255, 255, 0.10)';
+            container.style.padding = '2px 10px';
+            container.style.borderRadius = '4px';
+            container.style.border = `1px solid ${borderColor}`;
+            container.style.backdropFilter = 'blur(1px)';
+            container.style.fontFamily = 'monospace';
+            container.style.fontSize = '14px';
+            container.style.fontWeight = 'bold';
+            container.style.textShadow = '0 0 10px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.6)';
+            container.style.color = '#1a1a2e';
+            const parts = numbers.map(n => {
+                const color = n <= halfGates ? '#cc3333' : '#1a6b8a';
+                return `<span style="color:${color}; text-shadow: 0 0 6px rgba(255,255,255,0.7);">#${n}</span>`;
+            });
+            container.innerHTML = parts.join(', ');
+            const label = new CSS2DObject(container);
+            label.position.set(avgX, baseY, avgZ);
+            scene.add(label);
+        }
+
+        // ---------- Пилоны ----------
+        function createPylon(num, x, y) {
+            const group = new THREE.Group();
+            const px = transformX(x);
+            const pz = transformY(y);
+            const coneMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.5,
+                metalness: 0.2,
+            });
+            const coneGeo = new THREE.CylinderGeometry(0, PYLON_RADIUS, PYLON_HEIGHT, 16, 1);
+            const cone = new THREE.Mesh(coneGeo, coneMat);
+            cone.position.set(px, PYLON_HEIGHT / 2, pz);
+            cone.castShadow = true;
+            cone.receiveShadow = true;
+            group.add(cone);
+
+            const topHeight = 4;
+            const topRadius = PYLON_RADIUS * (1 - (PYLON_HEIGHT - topHeight) / PYLON_HEIGHT);
+            const topMat = new THREE.MeshStandardMaterial({
+                color: 0xff0000,
+                roughness: 0.3,
+                metalness: 0.1,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.15,
+            });
+            const topGeo = new THREE.CylinderGeometry(0, topRadius, topHeight, 16);
+            const topCone = new THREE.Mesh(topGeo, topMat);
+            topCone.position.set(px, PYLON_HEIGHT - topHeight/2, pz);
+            topCone.castShadow = true;
+            topCone.receiveShadow = true;
+            group.add(topCone);
+
+            const stripHeight = 1.5;
+            const midHeight = PYLON_HEIGHT / 2;
+            const radiusAtMid = PYLON_RADIUS * (1 - midHeight / PYLON_HEIGHT);
+            const stripMat = new THREE.MeshStandardMaterial({
+                color: 0xff0000,
+                roughness: 0.3,
+                metalness: 0.1,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.15,
+            });
+            const stripGeo = new THREE.CylinderGeometry(radiusAtMid + 0.6, radiusAtMid + 0.6, stripHeight, 16);
+            const strip = new THREE.Mesh(stripGeo, stripMat);
+            strip.position.set(px, midHeight, pz);
+            strip.castShadow = true;
+            strip.receiveShadow = true;
+            group.add(strip);
+            scene.add(group);
+        }
+        for (const [num, x, y] of pylonData) {
+            createPylon(num, x, y);
+        }
+
+        // ================================================================
+        //  1. ЗАГРУЗКА ДАННЫХ ТРАЕКТОРИИ ИЗ CSV (Gelenjik_Новый позывной_...)
+        //     Используем Height_AGL как высоту (Y) без коэффициентов
+        // ================================================================
+        const csvData = `Time,X,Y,Z,Height_AGL,Speed_kmh,Roll_deg,Pitch_deg
+0.300,-49795.852,230.819,298789.250,208.809,159.79,0.158,14.085
+0.600,-49784.415,232.911,298795.812,210.901,160.37,0.404,9.479
+0.900,-49772.865,234.527,298802.442,212.517,161.28,0.428,1.858
+1.200,-49761.167,235.203,298809.166,213.193,162.77,0.327,-6.171
+1.500,-49749.347,234.586,298815.989,212.576,165.11,0.258,-13.329
+1.800,-49737.467,232.508,298822.894,210.498,168.50,0.456,-19.015
+2.100,-49725.581,228.965,298829.859,206.955,173.02,1.045,-22.948
+2.400,-49713.691,224.085,298836.877,202.075,178.53,2.422,-25.031
+2.700,-49701.738,218.109,298843.975,196.099,184.68,6.384,-25.455
+3.000,-49689.618,211.332,298851.212,189.322,191.15,11.169,-25.106
+3.300,-49677.241,204.006,298858.675,181.997,197.71,14.795,-24.672
+3.600,-49664.566,196.298,298866.447,174.288,204.19,17.562,-24.396
+3.900,-49651.585,188.311,298874.598,166.301,210.60,18.782,-24.174
+4.200,-49638.310,180.122,298883.200,158.112,216.87,19.049,-24.094
+4.500,-49624.765,171.780,298892.304,149.771,222.98,19.350,-23.910
+4.800,-49610.975,163.332,298901.947,141.322,228.92,19.378,-23.278
+5.100,-49596.950,154.848,298912.163,132.838,234.62,18.458,-22.479
+5.400,-49582.690,146.395,298922.954,124.385,240.08,16.636,-21.720
+5.700,-49568.186,138.023,298934.290,116.013,245.27,13.413,-21.035
+6.000,-49553.422,129.770,298946.127,107.760,250.21,9.872,-20.144
+6.300,-49538.371,121.706,298958.428,100.374,254.87,6.639,-18.931
+6.600,-49523.002,113.918,298971.160,94.370,259.30,4.622,-17.765
+6.900,-49507.299,106.450,298984.276,88.736,263.44,3.560,-16.795
+7.200,-49491.262,99.293,298997.718,83.456,267.33,2.781,-15.998
+7.500,-49474.902,92.419,299011.437,78.498,270.98,2.631,-15.344
+7.800,-49458.242,85.792,299025.401,73.821,274.42,2.951,-14.663
+8.100,-49441.306,79.403,299039.596,69.304,277.65,3.137,-13.779
+8.400,-49424.110,73.286,299054.020,64.099,280.67,3.135,-12.870
+8.700,-49406.667,67.474,299068.663,58.731,283.46,3.120,-12.056
+9.000,-49388.991,61.970,299083.507,53.259,286.04,3.079,-11.131
+9.300,-49371.097,56.801,299098.537,48.283,288.39,3.291,-10.151
+9.600,-49353.001,51.995,299113.743,45.020,290.52,3.401,-9.174
+9.900,-49334.720,47.571,299129.112,42.156,292.44,3.378,-8.230
+10.200,-49316.275,43.533,299144.630,40.555,294.15,3.352,-7.376
+10.500,-49297.683,39.870,299160.277,38.989,295.66,3.316,-6.489
+10.800,-49278.962,36.584,299176.037,36.584,296.90,3.276,-5.659
+11.100,-49260.169,33.666,299191.860,33.666,296.50,3.198,-4.936
+11.400,-49241.438,31.097,299207.619,31.097,294.00,3.072,-4.018
+11.700,-49222.839,28.906,299223.188,28.767,290.88,2.295,-2.797
+12.000,-49204.281,27.137,299238.604,26.895,290.23,2.275,-2.125
+12.300,-49185.607,25.719,299253.981,25.519,291.48,1.843,-1.483
+12.600,-49166.832,24.622,299269.394,24.622,292.07,1.746,-0.807
+12.900,-49148.037,23.835,299284.862,23.835,292.45,2.031,-0.203
+13.200,-49129.229,23.330,299300.366,23.330,292.69,2.061,0.380
+13.500,-49110.382,23.077,299315.857,23.077,292.85,1.871,0.524
+13.800,-49091.488,22.976,299331.304,22.976,292.84,3.509,0.535
+14.100,-49072.596,22.926,299346.736,22.926,292.62,12.617,0.756
+14.400,-49053.781,22.884,299362.238,22.884,292.48,22.256,1.080
+14.700,-49035.117,22.819,299377.909,22.819,292.45,29.072,1.180
+15.000,-49016.640,22.686,299393.807,22.686,292.56,30.808,0.938
+15.300,-48998.367,22.447,299409.957,22.447,292.76,30.503,0.274
+15.600,-48980.292,22.044,299426.354,22.044,293.02,29.760,-0.334
+15.900,-48962.412,21.457,299442.991,21.457,293.31,28.487,-0.672
+16.200,-48944.718,20.727,299459.842,20.727,293.35,19.801,-0.838
+16.500,-48927.168,19.963,299476.841,19.963,293.35,3.796,-0.928
+16.800,-48909.647,19.283,299493.876,19.283,293.45,-8.409,-0.349
+17.100,-48892.022,18.820,299510.824,18.820,293.53,-13.332,0.708
+17.400,-48874.182,18.691,299527.528,18.691,293.05,-24.551,1.866
+17.700,-48855.961,18.967,299543.719,18.907,292.26,-42.435,3.864
+18.000,-48837.062,19.712,299558.982,18.206,291.37,-54.417,5.167
+18.300,-48817.291,20.820,299572.921,18.280,290.25,-60.294,5.330
+18.600,-48796.553,22.204,299585.143,18.368,289.00,-64.384,4.610
+18.900,-48774.899,23.729,299595.403,18.729,287.79,-66.199,4.002
+19.200,-48752.509,25.249,299603.690,20.249,286.80,-66.527,3.570
+19.500,-48729.638,26.623,299610.345,21.623,285.87,-55.367,2.393
+19.800,-48706.594,27.671,299616.131,22.671,284.95,-28.103,1.310
+20.100,-48683.507,28.331,299621.551,23.331,284.56,-3.090,1.416
+20.400,-48660.428,28.889,299626.764,23.889,283.65,-0.977,8.123
+20.700,-48637.600,30.875,299631.805,25.875,280.40,-1.804,22.129
+21.000,-48615.685,36.241,299636.514,31.241,274.23,-2.718,34.013
+21.300,-48595.520,45.201,299640.709,40.168,266.33,-4.081,44.045
+21.600,-48577.718,57.191,299644.264,52.068,257.25,-5.617,53.791
+21.900,-48562.701,71.520,299647.143,66.321,247.07,-2.866,63.504
+22.200,-48550.734,87.466,299649.565,82.207,236.31,1.086,73.040
+22.500,-48541.898,104.329,299651.779,99.025,225.07,9.684,82.420
+22.800,-48536.170,121.501,299653.837,116.168,213.59,123.532,86.074
+23.100,-48533.437,138.432,299655.753,133.084,202.06,158.598,77.003
+23.400,-48533.505,154.637,299657.551,149.289,190.79,167.485,67.729
+23.700,-48536.098,169.725,299659.253,164.389,180.34,172.279,60.011
+24.000,-48540.825,183.439,299660.863,178.126,171.14,174.207,53.817
+24.300,-48547.212,195.675,299662.375,190.394,163.15,174.677,47.659
+24.600,-48554.869,206.420,299663.805,201.176,156.30,176.247,41.597
+24.900,-48563.501,215.704,299665.199,210.502,150.65,178.341,35.616
+25.200,-48572.894,223.566,299666.606,218.411,146.15,179.027,29.356
+25.500,-48582.906,230.024,299668.064,224.918,142.81,179.883,22.709
+25.800,-48593.434,235.069,299669.600,230.015,140.72,-178.032,15.998
+26.100,-48604.392,238.692,299671.236,233.692,139.94,-176.211,9.327
+26.400,-48615.696,240.890,299672.985,235.890,140.47,-174.758,2.673
+26.700,-48627.267,241.659,299674.850,236.659,142.28,-172.924,-4.062
+27.000,-48639.029,240.988,299676.839,235.988,145.29,-168.716,-10.866
+27.300,-48650.901,238.855,299678.972,233.855,149.48,-162.172,-17.661
+27.600,-48662.792,235.236,299681.293,230.236,154.76,-154.406,-24.337
+27.900,-48674.595,230.104,299683.873,225.104,161.02,-145.650,-30.720
+28.200,-48686.191,223.454,299686.809,218.454,168.12,-134.902,-36.451
+28.500,-48697.465,215.327,299690.224,210.327,175.93,-120.469,-41.115
+28.800,-48708.339,205.829,299694.252,200.829,184.29,-103.762,-44.639
+29.100,-48718.774,195.114,299699.041,190.114,193.01,-86.344,-46.792
+29.400,-48728.769,183.361,299704.732,178.361,201.99,-72.065,-47.529
+29.700,-48738.332,170.752,299711.461,165.788,211.01,-63.158,-47.045
+30.000,-48747.441,157.465,299719.362,153.312,219.90,-56.445,-45.783
+30.300,-48756.041,143.670,299728.557,140.323,228.61,-52.374,-44.481
+30.600,-48764.051,129.510,299739.106,126.139,237.00,-49.760,-43.064
+30.900,-48771.315,115.148,299751.075,111.617,244.77,-44.935,-40.174
+31.200,-48777.493,100.940,299764.722,98.298,251.48,-38.755,-35.086
+31.500,-48782.117,87.466,299780.355,87.466,257.04,-33.356,-29.482
+31.800,-48784.901,75.230,299797.921,75.230,261.89,-30.537,-25.072
+32.100,-48785.929,64.366,299817.010,64.366,266.29,-25.210,-21.628
+32.400,-48785.584,54.793,299837.189,54.793,270.19,-17.430,-17.576
+32.700,-48784.199,46.578,299858.235,46.578,273.41,-14.783,-12.641
+33.000,-48781.923,39.943,299880.003,39.943,275.83,-12.368,-8.316
+33.300,-48778.962,34.919,299902.302,34.919,277.62,-3.868,-5.483
+33.600,-48775.632,31.220,299924.965,31.220,279.29,-0.427,-4.838
+33.900,-48772.124,28.314,299947.846,28.314,280.66,0.855,-3.878
+34.200,-48768.541,25.988,299970.877,25.988,281.61,2.855,-1.194
+34.500,-48764.983,24.491,299994.042,24.491,282.19,4.776,1.601
+34.800,-48761.505,23.956,300017.304,23.956,282.50,4.394,2.473
+35.100,-48758.074,24.091,300040.596,24.091,282.57,3.113,2.849
+35.400,-48754.650,24.637,300063.882,24.637,282.47,1.842,3.531
+35.700,-48751.223,25.530,300087.142,25.530,282.22,0.625,4.462
+36.000,-48747.745,26.779,300110.313,26.779,280.79,-12.652,7.962
+36.300,-48743.750,28.917,300133.108,28.917,277.84,-42.032,18.854
+36.600,-48737.806,32.994,300154.843,32.994,273.13,-55.068,25.886
+36.900,-48729.036,38.999,300174.605,38.999,267.07,-60.345,25.317
+37.200,-48717.531,46.479,300191.674,46.479,260.27,-67.934,22.826
+37.500,-48703.674,54.791,300205.580,52.563,253.15,-76.011,23.317
+37.800,-48687.972,63.383,300216.057,59.639,246.34,-82.106,25.960
+38.100,-48671.044,71.914,300222.988,66.914,239.78,-86.230,27.255
+38.400,-48653.537,80.172,300226.316,75.172,233.33,-89.352,25.436
+38.700,-48636.074,87.942,300226.101,82.942,227.18,-92.417,21.444
+39.000,-48619.201,94.975,300222.537,89.975,221.53,-95.795,17.002
+39.300,-48603.384,101.022,300215.910,96.022,216.62,-99.011,13.030
+39.600,-48589.015,105.879,300206.570,100.879,212.59,-101.306,9.338
+39.900,-48576.445,109.425,300194.903,104.425,209.42,-100.174,5.424
+40.200,-48565.997,111.669,300181.316,106.669,207.13,-96.325,1.259
+40.500,-48557.936,112.705,300166.234,107.705,205.65,-94.480,-2.594
+40.800,-48552.451,112.592,300150.097,107.592,204.96,-92.849,-5.674
+41.100,-48549.650,111.386,300133.342,106.386,205.22,-89.742,-8.085
+41.400,-48549.478,109.232,300116.366,104.232,206.55,-81.033,-9.932
+41.700,-48551.530,106.406,300099.431,101.406,208.92,-65.830,-11.584
+42.000,-48555.076,103.128,300082.580,98.128,211.90,-49.075,-12.327
+42.300,-48559.517,99.465,300065.742,94.465,215.22,-32.315,-11.517
+42.600,-48564.558,95.549,300048.828,90.549,218.75,-20.157,-9.813
+42.900,-48570.077,91.633,300031.747,86.633,222.23,-13.980,-8.498
+43.200,-48575.990,87.884,300014.453,82.884,225.55,-11.493,-7.950
+43.500,-48582.235,84.315,299996.947,79.315,228.67,-9.398,-7.613
+43.800,-48588.773,80.905,299979.242,75.905,231.62,-7.227,-7.079
+44.100,-48595.577,77.667,299961.347,72.667,234.40,-5.503,-6.341
+44.400,-48602.624,74.636,299943.265,69.636,237.02,-4.684,-5.520
+44.700,-48609.888,71.846,299925.001,66.846,239.45,-4.095,-4.783
+45.000,-48617.343,69.304,299906.565,64.304,241.72,-3.326,-4.195
+45.300,-48624.964,66.995,299887.966,61.995,243.83,-2.523,-3.807
+45.600,-48632.728,64.877,299869.219,59.877,245.80,-1.663,-3.419
+45.900,-48640.619,62.929,299850.335,57.929,247.60,-0.012,-2.945
+46.200,-48648.612,61.150,299831.318,56.150,249.33,1.567,-2.538
+46.500,-48656.685,59.525,299812.167,54.525,250.96,2.420,-2.381
+46.800,-48664.815,58.013,299792.887,53.013,252.52,3.196,-2.303
+47.100,-48672.982,56.574,299773.479,51.574,254.01,3.997,-2.159
+47.400,-48681.171,55.200,299753.943,50.200,255.45,4.669,-2.081
+47.700,-48689.374,53.873,299734.279,48.873,256.87,4.755,-2.176
+48.000,-48697.593,52.556,299714.494,47.556,258.26,4.716,-2.306
+48.300,-48705.828,51.227,299694.594,46.227,259.59,4.835,-2.186
+48.600,-48714.074,49.914,299674.579,44.914,260.90,5.179,-2.028
+48.900,-48722.325,48.639,299654.447,43.639,262.16,5.267,-2.000
+49.200,-48730.587,47.392,299634.205,42.392,263.37,3.713,-2.087
+49.500,-48738.872,46.155,299613.865,41.155,264.56,1.801,-2.174
+49.800,-48747.200,44.917,299593.436,39.917,265.74,0.132,-2.226
+50.100,-48755.594,43.678,299572.929,38.678,266.87,-1.472,-2.191
+50.400,-48764.075,42.454,299552.356,37.454,267.99,-2.769,-2.099
+50.700,-48772.667,41.262,299531.727,36.262,269.09,-3.384,-2.055
+51.000,-48781.384,40.100,299511.050,35.100,270.16,-3.613,-2.111
+51.300,-48790.229,38.946,299490.332,33.946,271.19,-3.602,-2.142
+51.600,-48799.205,37.793,299469.577,32.793,272.21,-3.550,-2.141
+51.900,-48808.309,36.642,299448.787,31.642,273.20,-3.599,-2.132
+52.200,-48817.542,35.496,299427.964,30.496,274.17,-3.682,-2.119
+52.500,-48826.906,34.359,299407.111,29.358,275.11,-4.146,-2.102
+52.800,-48836.429,33.230,299386.263,28.225,275.61,-13.721,-1.808
+53.100,-48846.223,32.159,299365.506,27.149,275.90,-31.808,-0.561
+53.400,-48856.591,31.260,299345.010,26.247,276.00,-50.149,1.251
+53.700,-48867.979,30.570,299325.057,25.553,276.02,-63.581,1.754
+54.000,-48880.775,29.965,299305.976,24.948,276.01,-68.394,0.340
+54.300,-48895.182,29.324,299288.106,24.309,275.79,-68.118,-1.254
+54.600,-48911.290,28.658,299271.774,23.647,275.45,-63.244,-2.257
+54.900,-48928.649,28.007,299256.812,22.993,274.93,-32.202,-2.027
+55.200,-48946.543,27.357,299242.532,22.254,274.93,4.092,0.609
+55.500,-48964.618,26.979,299228.497,21.768,274.41,-2.359,4.923
+55.800,-48982.795,27.545,299214.766,22.260,272.87,-36.465,11.429
+56.100,-49001.480,29.285,299202.126,23.901,270.72,-66.334,16.249
+56.400,-49021.050,31.693,299191.452,26.195,268.33,-75.495,13.032
+56.700,-49041.665,34.298,299183.667,28.802,265.53,-78.287,5.582
+57.000,-49063.034,36.714,299179.351,31.260,262.41,-81.906,1.180
+57.300,-49084.636,38.617,299178.654,33.109,259.84,-84.689,1.635
+57.600,-49105.986,39.897,299181.343,34.315,258.62,-84.644,3.290
+57.900,-49126.872,40.624,299186.540,34.971,258.40,-70.461,2.503
+58.200,-49147.487,40.848,299192.787,35.495,258.51,-41.662,-1.068
+58.500,-49168.072,40.342,299199.184,35.342,259.01,-10.700,-3.476
+58.800,-49188.682,39.146,299205.623,35.056,260.04,13.666,-4.009
+59.100,-49209.359,37.485,299212.067,35.667,261.30,26.703,-3.116
+59.400,-49230.165,35.587,299218.396,35.587,262.69,32.093,-2.185
+59.700,-49251.175,33.654,299224.435,33.654,264.07,33.939,-2.038
+60.000,-49272.435,31.784,299230.015,31.784,265.42,35.642,-2.101
+60.300,-49293.960,30.007,299235.003,30.007,266.69,37.558,-1.981
+60.600,-49315.742,28.316,299239.331,28.316,267.90,39.454,-1.571
+60.900,-49337.751,26.693,299242.978,26.693,269.03,41.206,-1.031
+61.200,-49359.961,25.138,299245.928,25.138,270.08,42.863,-0.699
+61.500,-49382.343,23.649,299248.143,23.649,270.99,44.681,-0.229
+61.800,-49404.864,22.289,299249.482,22.289,271.67,47.336,1.067
+62.100,-49427.483,21.221,299249.661,21.221,272.10,50.245,2.543
+62.400,-49450.105,20.538,299248.451,20.538,272.19,53.483,4.147
+62.700,-49472.588,20.289,299245.653,20.289,272.03,55.557,5.580
+63.000,-49494.765,20.505,299241.125,20.505,271.64,55.421,6.403
+63.300,-49516.472,21.199,299234.915,21.199,270.74,45.620,6.931
+63.600,-49537.660,22.490,299227.436,22.490,269.60,13.972,6.966
+63.900,-49558.543,24.353,299219.448,24.353,268.96,-9.466,7.440
+64.200,-49579.259,26.525,299211.371,26.525,267.22,8.208,10.398
+64.500,-49599.608,29.304,299203.124,29.304,264.51,37.425,21.520
+64.800,-49618.961,33.466,299193.944,33.466,260.05,51.775,30.376
+65.100,-49636.522,39.119,299183.118,35.901,254.53,59.521,31.879
+65.400,-49651.592,46.022,299170.376,40.896,248.68,67.871,28.875
+65.700,-49663.667,53.674,299155.827,46.140,242.47,77.778,26.730
+66.000,-49672.397,61.513,299139.791,50.965,236.13,85.987,27.045
+66.300,-49677.659,69.110,299122.785,55.554,230.03,88.653,27.926
+66.600,-49679.519,76.311,299105.448,59.847,224.32,87.616,27.377
+66.900,-49678.149,83.109,299088.395,63.938,219.03,87.708,25.470
+67.200,-49673.770,89.439,299072.140,67.821,214.12,91.364,23.143
+67.500,-49666.632,95.127,299057.102,73.117,209.60,94.614,20.717
+67.800,-49657.033,100.002,299043.643,77.992,205.60,96.246,17.858
+68.100,-49645.325,103.957,299032.071,81.947,202.26,96.996,14.421
+68.400,-49631.892,106.915,299022.630,84.905,199.65,97.439,10.545
+68.700,-49617.135,108.810,299015.503,86.800,197.79,97.633,6.461
+69.000,-49601.463,109.587,299010.827,87.577,196.69,97.460,2.370
+69.300,-49585.292,109.208,299008.692,88.213,196.37,96.705,-1.576
+69.600,-49569.046,107.663,299009.130,88.177,196.90,95.201,-5.313
+69.900,-49553.121,104.984,299012.102,87.133,198.46,92.026,-8.667
+70.200,-49537.807,101.315,299017.409,85.312,201.21,81.732,-11.605
+70.500,-49523.122,96.949,299024.558,82.416,204.89,65.410,-14.464
+70.800,-49508.872,92.122,299032.980,78.924,209.01,47.116,-16.253
+71.100,-49494.835,86.934,299042.234,75.143,213.28,27.808,-15.949
+71.400,-49480.833,81.540,299052.078,71.210,217.51,8.243,-13.987
+71.700,-49466.659,76.218,299062.356,67.397,221.76,-3.964,-11.876
+72.000,-49452.131,71.197,299072.908,63.578,225.73,-4.838,-10.659
+72.300,-49437.199,66.520,299083.620,59.562,229.37,-2.962,-9.903
+72.600,-49421.886,62.153,299094.442,55.727,232.73,-1.067,-9.051
+72.900,-49406.225,58.077,299105.366,51.545,235.85,0.747,-8.014
+73.200,-49390.263,54.309,299116.417,47.661,238.81,1.608,-7.073
+73.500,-49374.047,50.856,299127.632,44.091,241.57,1.519,-6.447
+73.800,-49357.618,47.677,299139.016,43.101,244.16,0.979,-6.137
+74.100,-49340.995,44.704,299150.548,42.359,246.59,0.420,-5.753
+74.400,-49324.182,41.901,299162.198,41.690,248.89,-0.012,-5.498
+74.700,-49307.177,39.237,299173.933,39.237,251.07,-0.427,-5.215
+75.000,-49289.982,36.700,299185.733,36.700,253.13,-0.841,-4.743
+75.300,-49272.602,34.315,299197.591,34.315,255.07,-1.193,-4.229
+75.600,-49255.046,32.104,299209.504,32.104,256.88,-1.496,-3.753
+75.900,-49237.322,30.075,299221.463,30.075,258.58,-1.702,-3.294
+76.200,-49219.438,28.229,299233.455,28.229,260.12,-1.753,-2.747
+76.500,-49201.396,26.580,299245.465,26.580,261.55,-1.817,-2.352
+76.800,-49183.204,25.111,299257.480,24.996,262.88,-1.890,-2.168
+77.100,-49164.871,23.770,299269.494,23.737,264.13,-1.951,-2.050
+77.400,-49146.412,22.522,299281.505,22.522,265.23,-0.924,-1.766
+77.700,-49127.876,21.372,299293.543,21.372,265.95,9.523,-0.790
+78.000,-49109.353,20.386,299305.712,20.386,266.55,23.108,0.857
+78.300,-49090.952,19.636,299318.170,19.636,267.14,31.754,2.134
+78.600,-49072.787,19.132,299331.062,19.132,267.67,35.631,2.505
+78.900,-49054.960,18.835,299344.493,18.835,268.14,38.908,2.292
+79.200,-49037.541,18.657,299358.515,18.657,268.63,41.418,2.057
+79.500,-49020.562,18.515,299373.129,18.515,269.13,42.055,2.122
+79.800,-49004.030,18.380,299388.310,18.380,269.63,41.262,2.096
+80.100,-48987.912,18.217,299403.993,18.217,270.15,38.956,1.381
+80.400,-48972.119,17.927,299420.064,17.927,270.64,34.422,0.528
+80.700,-48956.589,17.484,299436.428,17.484,270.91,22.892,0.351
+81.000,-48941.273,17.055,299453.002,17.055,270.90,0.921,1.623
+81.300,-48925.996,16.962,299469.613,16.962,270.87,-20.480,3.487
+81.600,-48910.459,17.332,299485.973,17.332,270.80,-34.136,4.415
+81.900,-48894.434,18.053,299501.827,18.053,270.64,-42.192,3.978
+82.200,-48877.792,18.950,299517.000,18.912,270.45,-47.215,3.043
+82.500,-48860.488,19.868,299531.385,19.053,270.25,-51.562,2.663
+82.800,-48842.527,20.714,299544.926,19.111,270.15,-52.961,2.808
+83.100,-48823.951,21.462,299557.604,18.870,270.10,-52.267,2.857
+83.400,-48804.811,22.128,299569.413,18.471,270.07,-50.182,2.492
+83.700,-48785.159,22.717,299580.358,17.774,270.13,-49.470,2.030
+84.000,-48765.036,23.232,299590.411,18.232,270.11,-50.851,2.261
+84.300,-48744.436,23.744,299599.442,18.744,270.09,-52.381,2.714
+84.600,-48723.381,24.311,299607.347,19.310,269.97,-49.706,2.467
+84.900,-48702.027,24.885,299614.326,19.885,269.40,-24.967,1.441
+85.200,-48680.549,25.335,299620.826,20.335,269.41,-0.587,2.188
+85.500,-48659.022,25.845,299627.103,20.845,269.02,2.017,7.194
+85.800,-48637.669,27.426,299633.305,22.426,266.74,2.885,19.879
+86.100,-48617.053,31.798,299639.467,26.798,261.54,4.216,32.414
+86.400,-48597.973,39.473,299645.506,34.451,254.27,5.199,42.621
+86.700,-48581.036,50.033,299651.293,44.924,245.79,6.857,51.874
+87.000,-48566.642,62.836,299656.798,57.653,236.39,16.517,60.873
+87.300,-48555.028,77.178,299662.201,71.935,226.37,30.626,69.027
+87.600,-48546.307,92.405,299667.651,87.116,215.92,58.103,74.244
+87.900,-48540.477,107.929,299673.216,102.610,205.23,94.502,73.766
+88.200,-48537.449,123.227,299678.893,117.897,194.49,120.324,68.435
+88.500,-48537.058,137.842,299684.625,132.515,183.91,136.243,61.024
+88.800,-48539.075,151.380,299690.364,146.066,173.81,149.402,53.069
+89.100,-48543.190,163.508,299696.129,158.217,164.75,158.708,44.899
+89.400,-48549.064,174.000,299701.949,168.741,157.22,162.635,37.581
+89.700,-48556.311,182.796,299707.817,177.574,151.50,163.129,31.418
+90.000,-48564.537,189.991,299713.716,184.812,147.44,162.474,25.586
+90.300,-48573.447,195.719,299719.656,190.585,144.82,161.835,19.364
+90.600,-48582.865,200.052,299725.650,194.967,143.43,161.467,12.401
+90.900,-48592.696,202.980,299731.696,197.945,143.27,161.644,4.622
+91.200,-48602.883,204.420,299737.763,199.420,144.40,162.448,-3.323
+91.500,-48613.368,204.278,299743.787,199.278,146.87,163.056,-11.061
+91.800,-48624.075,202.480,299749.689,197.480,150.68,163.834,-18.183
+92.100,-48634.906,199.003,299755.411,194.003,155.75,167.833,-24.251
+92.400,-48645.759,193.899,299760.949,188.899,161.95,175.522,-29.536
+92.700,-48656.555,187.272,299766.361,182.272,169.11,-172.596,-33.671
+93.000,-48667.262,179.277,299771.751,174.277,176.99,-155.594,-36.164
+93.300,-48677.909,170.094,299777.227,165.094,185.32,-134.969,-37.116
+93.600,-48688.539,159.868,299782.879,154.868,193.91,-113.075,-37.902
+93.900,-48699.162,148.690,299788.802,143.690,202.64,-90.910,-39.965
+94.200,-48709.785,136.620,299795.074,131.620,211.57,-71.359,-43.570
+94.500,-48720.402,123.687,299801.716,118.687,220.51,-61.172,-46.526
+94.800,-48730.913,110.005,299808.971,105.005,229.04,-52.204,-45.761
+95.100,-48741.084,95.923,299817.586,90.923,236.89,-43.611,-41.934
+95.400,-48750.612,81.936,299828.229,78.223,243.73,-40.447,-36.228
+95.700,-48759.119,68.570,299841.246,66.134,249.37,-38.454,-29.121
+96.000,-48766.137,56.393,299856.721,56.393,253.52,-37.512,-21.769
+96.300,-48771.154,45.896,299874.435,45.896,256.38,-38.771,-15.600
+96.600,-48773.726,37.330,299893.869,37.330,258.33,-39.375,-10.852
+96.900,-48773.762,30.767,299914.394,30.767,259.64,-26.030,-7.971
+97.200,-48772.096,26.055,299935.465,26.055,260.53,-1.958,-3.358
+97.500,-48769.735,22.914,299956.831,22.914,261.21,8.785,1.463
+97.800,-48767.247,21.193,299978.418,21.193,262.02,8.292,1.673
+98.100,-48764.856,20.374,300000.131,20.374,262.52,-2.359,0.932
+98.400,-48762.565,19.985,300021.893,19.985,262.90,-10.755,3.705
+98.700,-48760.240,20.234,300043.674,20.234,263.00,-6.167,5.629
+99.000,-48757.753,21.223,300065.421,21.223,262.85,-0.793,5.555
+99.300,-48755.056,22.591,300087.104,22.591,262.58,1.580,5.323
+99.600,-48752.145,24.069,300108.711,24.069,261.75,-4.953,7.224
+99.900,-48748.939,26.033,300130.077,26.033,259.56,-28.561,18.024
+100.200,-48744.598,29.718,300150.723,29.718,255.59,-44.939,28.421
+100.500,-48738.174,35.442,300169.889,35.442,250.02,-54.234,31.107
+100.800,-48729.395,42.794,300186.899,42.794,243.62,-65.336,28.205
+101.100,-48718.328,51.051,300201.286,51.051,236.62,-78.381,25.175
+101.400,-48705.161,59.426,300212.746,57.549,229.80,-90.017,23.898
+101.700,-48690.277,67.296,300221.170,63.876,223.70,-93.653,22.807
+102.000,-48674.247,74.435,300226.530,69.435,218.25,-90.023,20.355
+102.300,-48657.700,80.903,300228.847,75.903,213.30,-88.125,17.352
+102.600,-48641.179,86.708,300228.205,81.708,208.79,-91.030,15.083
+102.900,-48625.138,91.743,300224.730,86.743,204.78,-92.663,13.443
+103.200,-48610.007,95.939,300218.602,90.939,201.32,-92.055,11.461
+103.500,-48596.191,99.299,300210.054,94.299,198.38,-90.989,8.793
+103.800,-48584.045,101.839,300199.379,96.839,195.97,-89.831,5.720
+104.100,-48573.857,103.566,300186.913,98.566,194.13,-88.893,2.676
+104.400,-48565.853,104.482,300173.014,99.482,192.89,-87.879,-0.036
+104.700,-48560.193,104.604,300158.054,99.604,192.37,-85.390,-2.318
+105.000,-48556.934,104.012,300142.402,99.012,192.77,-79.679,-4.134
+105.300,-48555.911,102.856,300126.385,97.856,194.15,-72.046,-5.514
+105.600,-48556.685,101.264,300110.226,96.264,196.33,-62.864,-6.469
+105.900,-48558.721,99.279,300094.003,94.279,199.07,-54.014,-6.765
+106.200,-48561.641,96.921,300077.719,91.921,202.11,-47.638,-6.357
+106.500,-48565.294,94.280,300061.359,89.279,205.24,-41.052,-6.125
+106.800,-48569.607,91.463,300044.911,86.463,208.45,-33.320,-6.751
+107.100,-48574.493,88.515,300028.363,83.515,211.68,-27.884,-7.708
+107.400,-48579.878,85.432,300011.708,80.432,214.88,-23.099,-8.241
+107.700,-48585.717,82.236,299994.943,77.236,218.05,-18.261,-8.165
+108.000,-48591.973,78.989,299978.054,73.989,221.20,-14.866,-7.611
+108.300,-48598.619,75.775,299961.024,70.775,224.29,-14.371,-6.907
+108.600,-48605.627,72.665,299943.845,67.665,227.20,-12.817,-6.393
+108.900,-48612.955,69.681,299926.517,64.681,229.95,-8.874,-6.127
+109.200,-48620.547,66.814,299909.037,61.814,232.59,-4.991,-5.746
+109.500,-48628.365,64.074,299891.396,59.074,235.12,-3.472,-5.185
+109.800,-48636.383,61.491,299873.596,56.491,237.50,-2.143,-4.572
+110.100,-48644.570,59.089,299855.635,54.089,239.74,-0.870,-4.012
+110.400,-48652.892,56.877,299837.510,51.877,241.85,0.048,-3.449
+110.700,-48661.320,54.861,299819.223,49.861,243.82,0.561,-2.909
+111.000,-48669.837,53.041,299800.781,48.041,245.66,0.972,-2.523
+111.300,-48678.435,51.396,299782.196,46.396,247.38,1.324,-2.199
+111.600,-48687.110,49.899,299763.479,44.899,249.02,1.267,-2.049
+111.900,-48695.863,48.511,299744.641,43.511,250.60,0.274,-2.285
+112.200,-48704.699,47.151,299725.694,42.151,252.16,-1.280,-2.804
+112.500,-48713.623,45.720,299706.652,40.720,253.69,-1.117,-3.036
+112.800,-48722.634,44.214,299687.518,39.214,255.19,-0.023,-2.758
+113.100,-48731.730,42.715,299668.286,37.715,256.67,0.869,-2.439
+113.400,-48740.912,41.277,299648.956,36.277,258.08,0.518,-2.282
+113.700,-48750.181,39.910,299629.535,34.910,259.42,-0.629,-1.982
+114.000,-48759.544,38.640,299610.031,33.640,260.71,-1.564,-1.733
+114.300,-48769.004,37.473,299590.451,32.473,261.92,-2.136,-1.522
+114.600,-48778.567,36.405,299570.808,31.405,263.04,-1.931,-1.274
+114.900,-48788.232,35.436,299551.108,30.436,264.09,-0.828,-1.140
+115.200,-48797.994,34.541,299531.356,29.541,265.12,-0.029,-1.221
+115.500,-48807.847,33.668,299511.553,28.668,266.13,0.030,-1.431
+115.800,-48817.782,32.770,299491.698,27.770,267.13,-0.023,-1.491
+116.100,-48827.794,31.849,299471.789,26.849,268.13,-0.057,-1.466
+116.400,-48837.880,30.924,299451.826,25.924,269.11,-0.052,-1.459
+116.700,-48848.042,30.002,299431.811,25.002,270.05,0.242,-1.380
+117.000,-48858.280,29.102,299411.750,24.102,270.93,0.606,-1.110
+117.300,-48868.591,28.266,299391.643,23.266,271.78,0.967,-0.839
+117.600,-48878.968,27.518,299371.489,22.517,272.56,1.344,-0.595
+117.900,-48889.402,26.865,299351.290,21.863,273.29,1.732,-0.353
+118.200,-48899.883,26.308,299331.048,21.306,273.96,1.939,-0.110
+118.500,-48910.408,25.850,299310.764,20.848,274.58,1.910,0.142
+118.800,-48920.973,25.494,299290.444,20.492,275.14,1.861,0.394
+119.100,-48931.578,25.243,299270.094,20.240,275.63,1.715,0.677
+119.400,-48942.230,25.106,299249.744,20.069,275.48,-4.677,2.442
+119.700,-48953.090,25.441,299229.634,20.216,273.73,-33.099,12.054
+120.000,-48965.110,27.423,299210.574,22.069,270.33,-55.875,21.092
+120.300,-48979.228,31.138,299193.752,25.678,265.75,-66.284,21.728
+120.600,-48995.523,36.017,299180.011,30.446,260.72,-72.388,16.370
+120.900,-49013.585,41.409,299169.815,35.761,255.37,-79.537,12.060
+121.200,-49032.860,46.702,299163.381,41.079,250.36,-86.010,11.637
+121.500,-49052.744,51.479,299160.674,45.735,246.36,-90.491,12.559
+121.800,-49072.681,55.516,299161.402,49.672,243.50,-93.618,11.625
+122.100,-49092.286,58.671,299165.032,52.759,241.90,-95.149,8.177
+122.400,-49111.429,60.867,299170.819,54.912,241.39,-91.850,3.778
+122.700,-49130.255,62.144,299177.792,56.177,241.39,-77.106,0.141
+123.000,-49149.033,62.505,299185.042,57.129,241.80,-55.252,-1.889
+123.300,-49167.874,61.947,299192.268,56.947,242.77,-32.147,-3.068
+123.600,-49186.772,60.671,299199.540,55.671,244.20,-10.485,-4.556
+123.900,-49205.742,58.895,299206.888,56.191,245.85,7.633,-5.758
+124.200,-49224.798,56.642,299214.286,56.037,247.65,24.351,-6.323
+124.500,-49243.944,53.864,299221.713,53.864,249.72,38.797,-6.956
+124.800,-49263.230,50.580,299229.089,50.580,252.14,43.866,-7.519
+125.100,-49282.786,46.944,299236.166,46.944,254.65,45.333,-7.849
+125.400,-49302.718,43.117,299242.690,43.117,257.11,47.410,-7.594
+125.700,-49323.078,39.226,299248.454,39.226,259.43,49.534,-6.535
+126.000,-49343.894,35.411,299253.244,35.411,261.54,51.842,-5.273
+126.300,-49365.138,31.773,299256.866,31.773,263.32,54.147,-3.756
+126.600,-49386.762,28.451,299259.038,28.451,264.76,53.851,-2.171
+126.900,-49408.664,25.622,299259.459,25.622,265.83,53.083,-0.752
+127.200,-49430.664,23.393,299257.977,23.393,266.55,52.925,0.826
+127.500,-49452.553,21.822,299254.589,21.822,266.86,48.422,2.657
+127.800,-49474.148,21.024,299249.414,21.024,266.90,43.603,4.678
+128.100,-49495.322,21.088,299242.666,21.088,266.69,37.193,5.690
+128.400,-49516.108,21.833,299234.890,21.833,266.24,14.227,4.382
+128.700,-49536.725,22.831,299226.770,22.831,266.14,-4.718,3.962
+129.000,-49557.297,23.917,299218.606,23.917,265.59,1.680,5.378
+129.300,-49577.718,25.352,299210.411,25.352,264.10,18.768,14.560
+129.600,-49597.519,28.377,299201.754,28.377,260.54,25.650,26.430
+129.900,-49615.862,33.919,299192.171,33.919,254.89,32.947,34.833
+130.200,-49632.023,41.855,299181.544,38.471,248.17,44.052,40.010
+130.500,-49645.511,51.610,299169.896,46.510,240.78,55.767,43.477
+130.800,-49655.993,62.580,299157.374,55.405,232.79,67.823,45.951
+131.100,-49663.292,74.192,299144.240,64.904,224.46,80.007,47.271
+131.400,-49667.392,85.922,299130.812,74.145,216.10,91.473,46.698
+131.700,-49668.408,97.305,299117.414,83.301,208.03,101.447,43.785
+132.000,-49666.549,107.938,299104.332,91.894,200.52,109.738,38.741
+132.300,-49662.074,117.468,299091.803,99.619,193.77,115.536,32.176
+132.600,-49655.261,125.619,299080.056,106.344,187.94,117.293,24.838
+132.900,-49646.394,132.212,299069.336,111.792,183.19,117.121,17.318
+133.200,-49635.768,137.144,299059.899,115.767,179.55,116.328,10.187
+133.500,-49623.697,140.355,299051.984,118.978,177.06,115.103,3.762
+133.800,-49610.518,141.820,299045.799,120.950,175.79,113.286,-1.889
+134.100,-49596.585,141.552,299041.506,121.528,175.82,110.638,-6.999
+134.400,-49582.251,139.607,299039.216,120.765,177.19,106.919,-11.899
+134.700,-49567.859,136.081,299038.991,118.539,179.86,101.729,-16.643
+135.000,-49553.703,131.136,299040.847,114.998,183.84,92.161,-20.656
+135.300,-49539.922,125.085,299044.602,110.434,188.99,75.177,-24.024
+135.600,-49526.426,118.292,299049.815,105.192,194.79,54.065,-26.286
+135.900,-49513.038,110.971,299056.049,99.504,200.86,33.497,-26.104
+136.200,-49499.597,103.293,299063.060,93.279,207.06,19.449,-23.764
+136.500,-49485.925,95.532,299070.744,86.763,213.02,11.740,-20.758
+136.800,-49471.866,87.970,299079.019,80.518,218.62,8.684,-18.056
+137.100,-49457.333,80.807,299087.801,74.300,223.73,7.757,-15.890
+137.400,-49442.322,74.137,299097.019,68.183,228.39,7.245,-14.033
+137.700,-49426.872,68.002,299106.637,62.563,232.62,6.509,-12.281
+138.000,-49411.035,62.430,299116.638,56.819,236.43,5.007,-10.626
+138.300,-49394.861,57.437,299126.996,51.722,239.89,3.650,-9.056
+138.600,-49378.386,53.013,299137.660,47.805,242.99,2.564,-7.787
+138.900,-49361.633,49.097,299148.557,46.011,245.78,0.265,-7.016
+139.200,-49344.611,45.585,299159.602,44.556,248.43,-1.725,-7.008
+139.500,-49327.337,42.292,299170.730,42.292,250.96,-2.652,-7.417
+139.800,-49309.838,39.054,299181.906,39.054,253.37,-3.061,-6.997
+140.100,-49292.118,35.914,299193.127,35.914,255.63,-2.864,-5.992
+140.400,-49274.171,33.003,299204.390,33.003,257.70,-2.446,-4.872
+140.700,-49256.001,30.418,299215.686,30.418,259.54,-2.056,-3.809
+141.000,-49237.623,28.199,299227.002,28.199,261.19,-1.858,-2.991
+141.300,-49219.057,26.326,299238.326,26.326,262.66,-1.893,-2.295
+141.600,-49200.328,24.762,299249.650,24.762,263.96,-1.915,-1.707
+141.900,-49181.456,23.471,299260.969,23.471,265.11,-1.920,-1.085
+142.200,-49162.456,22.442,299272.277,22.442,266.13,-2.164,-0.423
+142.500,-49143.337,21.677,299283.560,21.677,266.98,-2.701,0.249
+142.800,-49124.107,21.180,299294.789,21.180,267.60,-5.312,1.014
+143.100,-49104.764,20.979,299305.911,20.979,267.98,-9.853,2.243
+143.400,-49085.283,21.171,299316.819,21.171,267.97,-17.643,4.293
+143.700,-49065.613,21.947,299327.297,21.931,267.45,-26.921,7.569
+144.000,-49045.669,23.589,299336.952,23.439,266.22,-36.636,11.635
+144.300,-49025.380,26.334,299345.229,25.940,264.35,-45.363,14.532
+144.600,-49004.794,30.137,299351.693,29.366,262.07,-49.060,15.986
+144.900,-48984.078,34.820,299356.152,33.498,259.39,-52.062,16.853
+145.200,-48963.426,40.182,299358.568,38.168,256.55,-54.860,17.743
+145.500,-48943.003,45.998,299359.055,43.463,253.69,-56.844,18.837
+145.800,-48922.936,52.080,299357.797,48.613,250.88,-58.273,19.698
+146.100,-48903.311,58.291,299354.974,53.872,248.14,-59.600,19.845
+146.400,-48884.187,64.511,299350.738,59.507,245.45,-61.068,19.473
+146.700,-48865.616,70.643,299345.189,65.630,242.82,-62.484,18.922
+147.000,-48847.661,76.627,299338.377,71.612,240.28,-63.384,18.441
+147.300,-48830.395,82.431,299330.350,77.415,237.83,-63.204,18.045
+147.600,-48813.877,88.048,299321.189,83.032,235.46,-60.748,17.698
+147.900,-48798.144,93.493,299311.006,88.478,233.27,-58.227,17.473
+148.200,-48783.224,98.792,299299.899,93.776,231.21,-58.115,17.393
+148.500,-48769.147,103.947,299287.944,98.931,229.27,-58.541,17.398
+148.800,-48755.948,108.955,299275.204,103.900,227.40,-58.906,17.258
+149.100,-48743.663,113.808,299261.737,108.533,225.63,-59.088,16.883
+149.400,-48732.328,118.500,299247.596,112.996,223.96,-59.303,16.351
+149.700,-48721.983,123.023,299232.834,117.282,222.38,-59.561,15.814
+150.000,-48712.672,127.372,299217.503,121.387,220.90,-59.808,15.351
+150.300,-48704.426,131.543,299201.664,125.308,219.52,-60.007,14.979
+150.600,-48697.277,135.535,299185.379,129.045,218.26,-60.169,14.641
+150.900,-48691.255,139.352,299168.714,132.603,217.10,-60.289,14.223
+151.200,-48686.381,142.993,299151.737,135.982,216.05,-60.390,13.706
+151.500,-48682.664,146.451,299134.518,139.176,215.12,-60.468,13.115
+151.800,-48680.113,149.721,299117.126,142.180,214.31,-60.538,12.510
+152.100,-48678.731,152.795,299099.631,144.990,213.61,-60.571,11.913
+152.400,-48678.520,155.672,299082.103,147.603,213.05,-60.566,11.328
+152.700,-48679.477,158.350,299064.611,150.020,212.60,-60.505,10.730
+153.000,-48681.593,160.829,299047.223,152.241,212.26,-59.928,10.070
+153.300,-48684.829,163.120,299030.008,154.160,211.96,-55.142,9.379
+153.600,-48689.074,165.272,299013.017,155.203,211.73,-44.414,8.660
+153.900,-48694.132,167.341,298996.249,156.127,211.62,-31.696,8.223
+154.200,-48699.769,169.348,298979.661,156.999,211.64,-19.016,8.005
+154.500,-48705.769,171.263,298963.179,157.785,211.82,-7.642,7.891
+154.800,-48711.964,173.056,298946.729,158.447,212.23,-0.759,7.456
+155.100,-48718.243,174.700,298930.252,158.960,212.77,0.116,6.842
+155.400,-48724.550,176.182,298913.717,159.307,213.41,-0.376,6.281
+155.700,-48730.870,177.506,298897.114,159.491,214.13,-0.619,6.003
+156.000,-48737.211,178.706,298880.443,159.546,214.89,-0.523,5.846
+156.300,-48743.586,179.817,298863.711,159.509,215.66,-0.080,5.805
+156.600,-48750.008,180.877,298846.925,159.416,216.44,0.336,5.825
+156.900,-48756.479,181.916,298830.087,159.298,217.20,0.620,5.958
+157.200,-48762.990,182.967,298813.198,159.188,217.95,0.961,6.189`;
+
+        // ---------- Парсинг CSV с сохранением всех параметров ----------
+        const lines = csvData.trim().split('\n');
+        const trajectory = [];
+        for (let i = 1; i < lines.length; i++) {
+            const vals = lines[i].split(',');
+            if (vals.length < 8) continue;
+            const time = parseFloat(vals[0]);
+            const X = parseFloat(vals[1]);
+            const Z = parseFloat(vals[3]);
+            const heightAGL = parseFloat(vals[4]);
+            const speedKmh = parseFloat(vals[5]);
+            const rollDeg = parseFloat(vals[6]);
+            const pitchDeg = parseFloat(vals[7]);
+            const x = transformX(X);
+            const y = heightAGL; // непосредственно Height_AGL
+            const z = transformY(Z);
+            trajectory.push({
+                x, y, z,
+                time, speedKmh, heightAGL,
+                roll: rollDeg * Math.PI / 180,
+                pitch: pitchDeg * Math.PI / 180,
+                rollDeg, pitchDeg
+            });
+        }
+
+        const NUM_POINTS = trajectory.length;
+        const pts = trajectory.map(p => new THREE.Vector3(p.x, p.y, p.z));
+
+        // ---------- Определение моментов входа в зону ворот (по радиусу) ----------
+        function findGateTimeIndices(gateNum, radius) {
+            const gate = gateCenters.find(g => g.num === gateNum);
+            if (!gate) return { enter: -1, exit: -1 };
+            let enterIdx = -1, exitIdx = -1;
+            for (let i = 0; i < NUM_POINTS; i++) {
+                const dx = pts[i].x - gate.cx;
+                const dz = pts[i].z - gate.cz;
+                const dist = dx*dx + dz*dz;
+                if (dist < radius*radius) {
+                    if (enterIdx === -1) enterIdx = i;
+                    exitIdx = i;
+                }
+            }
+            return { enter: enterIdx, exit: exitIdx };
+        }
+
+        const startGate = findGateTimeIndices(1, GATE_RADIUS);
+        const endGate = findGateTimeIndices(13, GATE_RADIUS);
+        const startTime = startGate.enter >= 0 ? trajectory[startGate.enter].time : 0;
+        const endTime = endGate.exit >= 0 ? trajectory[endGate.exit].time : 0;
+
+        // ================================================================
+        //  2. ЛИНИЯ ТРАССЫ: ПРОЗРАЧНАЯ НА 75% (opacity: 0.25),
+        //     ПЕРВАЯ ПОЛОВИНА – КРАСНАЯ, ВТОРАЯ – СИНЯЯ
+        // ================================================================
+        const halfIndex = Math.floor(NUM_POINTS / 2);
+
+        function createColoredLine(startIdxLine, endIdxLine, color, opacity) {
+            const positions = [];
+            for (let i = startIdxLine; i <= endIdxLine; i++) {
+                const p = pts[i];
+                positions.push(p.x, p.y, p.z);
+            }
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            const mat = new THREE.LineBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: opacity,
+            });
+            return new THREE.Line(geom, mat);
+        }
+
+        if (halfIndex > 0) {
+            const lineRed = createColoredLine(0, halfIndex, 0xff3333, 0.25);
+            scene.add(lineRed);
+        }
+        if (halfIndex < NUM_POINTS - 1) {
+            const lineBlue = createColoredLine(halfIndex, NUM_POINTS - 1, 0x3388ff, 0.25);
+            scene.add(lineBlue);
+        }
+
+        // ---------- Жёлтые конусы-стрелки (уменьшены в 1.5 раза) ----------
+        const arrowStep = 20;
+        const coneLength = 7 * (2/3);
+        const coneRadius = 2.5 * (2/3);
         function normalize(v) {
-            const len = Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-            if (len === 0) return {x:0, y:0, z:0};
-            return {x: v.x/len, y: v.y/len, z: v.z/len};
+            const len = v.length();
+            return len > 0 ? v.clone().divideScalar(len) : new THREE.Vector3(0, 1, 0);
         }
-
-        function cross(a, b) {
-            return {x: a.y*b.z - a.z*b.y, y: a.z*b.x - a.x*b.z, z: a.x*b.y - a.y*b.x};
-        }
-
-        function dot(a, b) {
-            return a.x*b.x + a.y*b.y + a.z*b.z;
-        }
-
-        function vecAdd(a, b) {
-            return {x: a.x+b.x, y: a.y+b.y, z: a.z+b.z};
-        }
-
-        function vecMul(v, s) {
-            return {x: v.x*s, y: v.y*s, z: v.z*s};
-        }
-
-        function vecSub(a, b) {
-            return {x: a.x-b.x, y: a.y-b.y, z: a.z-b.z};
-        }
-
-        function getUpVector(point, nextPoint, rollDeg, pitchDeg) {
-            const f = normalize(vecSub(nextPoint, point));
-            const wup = {x:0, y:1, z:0};
-            let right = normalize(cross(f, wup));
-            if (Math.abs(dot(f, wup)) > 0.99) {
-                right = {x:1, y:0, z:0};
+        const coneMatYellow = new THREE.MeshStandardMaterial({
+            color: 0xffcc00,
+            emissive: 0xff8800,
+            emissiveIntensity: 0.3,
+        });
+        for (let i = 0; i < NUM_POINTS; i += arrowStep) {
+            const P = pts[i];
+            let dir;
+            if (i < NUM_POINTS - 1) {
+                dir = normalize(pts[i+1].clone().sub(pts[i]));
+            } else {
+                dir = normalize(pts[i].clone().sub(pts[i-1]));
             }
-            let up = cross(right, f);
-            const rollRad = rollDeg * Math.PI / 180;
-            const pitchRad = pitchDeg * Math.PI / 180;
-            const cosR = Math.cos(rollRad);
-            const sinR = Math.sin(rollRad);
-            const u1 = vecAdd(
-                vecMul(up, cosR),
-                vecAdd(
-                    vecMul(cross(f, up), sinR),
-                    vecMul(f, dot(f, up) * (1 - cosR))
-                )
-            );
-            const cosP = Math.cos(pitchRad);
-            const sinP = Math.sin(pitchRad);
-            const u2 = vecAdd(
-                vecMul(u1, cosP),
-                vecAdd(
-                    vecMul(cross(right, u1), sinP),
-                    vecMul(right, dot(right, u1) * (1 - cosP))
-                )
-            );
-            return normalize(u2);
+            const coneGeom = new THREE.ConeGeometry(coneRadius, coneLength, 8);
+            const cone = new THREE.Mesh(coneGeom, coneMatYellow);
+            cone.position.copy(P);
+            const up = new THREE.Vector3(0, 1, 0);
+            const quat = new THREE.Quaternion().setFromUnitVectors(up, dir);
+            cone.quaternion.copy(quat);
+            cone.castShadow = true;
+            cone.receiveShadow = true;
+            scene.add(cone);
         }
 
-        // ============================================================
-        //  АНИМАЦИЯ И УПРАВЛЕНИЕ
-        // ============================================================
+        // ================================================================
+        //  3. МОДЕЛЬ САМОЛЁТА (полностью из самолет.html)
+        // ================================================================
+        function buildAirplane() {
+            const group = new THREE.Group();
 
-        let currentTime = 0;
+            function createTrapezoidGeometry(points) {
+                const geom = new THREE.BufferGeometry();
+                const verts = points.flat();
+                geom.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+                geom.setIndex([0, 1, 2, 0, 2, 3]);
+                geom.computeVertexNormals();
+                return geom;
+            }
+
+            function createSolidTrapezoid(points, thickness, topMat, bottomMat, sideMat) {
+                const group = new THREE.Group();
+                const geom = createTrapezoidGeometry(points);
+
+                const upper = new THREE.Mesh(geom.clone(), topMat);
+                upper.position.y = thickness / 2;
+                upper.castShadow = true;
+                upper.receiveShadow = true;
+                group.add(upper);
+
+                const lower = new THREE.Mesh(geom.clone(), bottomMat);
+                lower.position.y = -thickness / 2;
+                lower.castShadow = true;
+                lower.receiveShadow = true;
+                group.add(lower);
+
+                const top = points.map(p => new THREE.Vector3(p[0], thickness / 2, p[2]));
+                const bottom = points.map(p => new THREE.Vector3(p[0], -thickness / 2, p[2]));
+
+                function addSide(v0, v1, v2, v3) {
+                    const g = new THREE.BufferGeometry();
+                    const verts = new Float32Array([
+                        v0.x, v0.y, v0.z,
+                        v1.x, v1.y, v1.z,
+                        v2.x, v2.y, v2.z,
+                        v0.x, v0.y, v0.z,
+                        v2.x, v2.y, v2.z,
+                        v3.x, v3.y, v3.z
+                    ]);
+                    g.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                    g.computeVertexNormals();
+                    const mesh = new THREE.Mesh(g, sideMat);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    group.add(mesh);
+                }
+
+                addSide(top[0], top[3], bottom[3], bottom[0]);
+                addSide(top[1], top[2], bottom[2], bottom[1]);
+                addSide(top[0], top[1], bottom[1], bottom[0]);
+                addSide(top[3], top[2], bottom[2], bottom[3]);
+
+                return group;
+            }
+
+            function createSolidKeel(points, thickness, material) {
+                const group = new THREE.Group();
+
+                const top = points.map(p => new THREE.Vector3(thickness / 2, p[1], p[2]));
+                const bottom = points.map(p => new THREE.Vector3(-thickness / 2, p[1], p[2]));
+
+                function addQuad(v0, v1, v2, v3) {
+                    const g = new THREE.BufferGeometry();
+                    const verts = new Float32Array([
+                        v0.x, v0.y, v0.z,
+                        v1.x, v1.y, v1.z,
+                        v2.x, v2.y, v2.z,
+                        v0.x, v0.y, v0.z,
+                        v2.x, v2.y, v2.z,
+                        v3.x, v3.y, v3.z
+                    ]);
+                    g.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                    g.computeVertexNormals();
+                    const mesh = new THREE.Mesh(g, material);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    group.add(mesh);
+                }
+
+                addQuad(top[0], top[3], bottom[3], bottom[0]);
+                addQuad(top[1], top[2], bottom[2], bottom[1]);
+                addQuad(top[0], top[1], bottom[1], bottom[0]);
+                addQuad(top[3], top[2], bottom[2], bottom[3]);
+
+                addQuad(top[0], top[1], top[2], top[3]);
+                addQuad(bottom[0], bottom[1], bottom[2], bottom[3]);
+
+                return group;
+            }
+
+            const fuselageLength = 7.676;
+            const halfLen = fuselageLength / 2;
+            const trailingEdgeZ = -0.3;
+            const noseRadius = 0.4888889;
+
+            const cylHeight = trailingEdgeZ - (-halfLen);
+            const cylCenterZ = (-halfLen + trailingEdgeZ) / 2;
+            const coneHeight = halfLen - trailingEdgeZ;
+            const coneCenterZ = (trailingEdgeZ + halfLen) / 2;
+
+            const cylGeom = new THREE.CylinderGeometry(noseRadius, noseRadius, cylHeight, 24, 1, false);
+            const coneGeom = new THREE.CylinderGeometry(noseRadius, 0.002, coneHeight, 24, 1, false);
+            cylGeom.rotateX(-Math.PI / 2);
+            coneGeom.rotateX(-Math.PI / 2);
+
+            const fuseWhiteMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.4,
+                metalness: 0.3,
+                clippingPlanes: [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)],
+                clipShadows: true,
+            });
+            const fuseRedMat = new THREE.MeshStandardMaterial({
+                color: 0xcc2222,
+                roughness: 0.4,
+                metalness: 0.3,
+                clippingPlanes: [new THREE.Plane(new THREE.Vector3(0, -1, 0), 0)],
+                clipShadows: true,
+            });
+
+            const cylUpper = new THREE.Mesh(cylGeom, fuseWhiteMat);
+            cylUpper.position.z = cylCenterZ;
+            cylUpper.castShadow = true;
+            cylUpper.receiveShadow = true;
+            group.add(cylUpper);
+
+            const cylLower = new THREE.Mesh(cylGeom.clone(), fuseRedMat);
+            cylLower.position.z = cylCenterZ;
+            cylLower.castShadow = true;
+            cylLower.receiveShadow = true;
+            group.add(cylLower);
+
+            const coneUpper = new THREE.Mesh(coneGeom, fuseWhiteMat);
+            coneUpper.position.z = coneCenterZ;
+            coneUpper.castShadow = true;
+            coneUpper.receiveShadow = true;
+            group.add(coneUpper);
+
+            const coneLower = new THREE.Mesh(coneGeom.clone(), fuseRedMat);
+            coneLower.position.z = coneCenterZ;
+            coneLower.castShadow = true;
+            coneLower.receiveShadow = true;
+            group.add(coneLower);
+
+            const cockpitRadius = 0.233333;
+            const cockpitPosZ = -1.6;
+            const cockpitGeom = new THREE.SphereGeometry(cockpitRadius, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+            const cockpitMat = new THREE.MeshPhysicalMaterial({
+                color: 0x88ccff,
+                transparent: true,
+                opacity: 0.6,
+                roughness: 0.1,
+                metalness: 0.0,
+                clearcoat: 0.3,
+                side: THREE.DoubleSide,
+            });
+            const cockpit = new THREE.Mesh(cockpitGeom, cockpitMat);
+            cockpit.position.set(0, noseRadius, cockpitPosZ);
+            cockpit.scale.set(1, 1, 3.0);
+            cockpit.castShadow = true;
+            cockpit.receiveShadow = true;
+            group.add(cockpit);
+
+            const wingRootChord = 2.0;
+            const wingTipChord = 1.0;
+            const wingSpan = 9.5;
+            const wingSweep = 0.3;
+            const wingZOffset = trailingEdgeZ - wingRootChord / 2;
+            const wingThickness = 0.12;
+
+            const wingWhiteMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.2,
+                metalness: 0.0,
+                emissive: 0x222222,
+                emissiveIntensity: 0.15,
+                side: THREE.FrontSide,
+            });
+            const wingRedMat = new THREE.MeshStandardMaterial({
+                color: 0xcc2222,
+                roughness: 0.4,
+                metalness: 0.3,
+                side: THREE.BackSide,
+            });
+            const wingSideMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.4,
+                metalness: 0.3,
+                side: THREE.DoubleSide,
+            });
+
+            const rightWingPoints = [
+                [0, 0, -wingRootChord / 2],
+                [0, 0, wingRootChord / 2],
+                [wingSpan / 2, 0, wingTipChord / 2 + wingSweep],
+                [wingSpan / 2, 0, -wingTipChord / 2 + wingSweep],
+            ];
+            const rightWing = createSolidTrapezoid(
+                rightWingPoints,
+                wingThickness,
+                wingWhiteMat,
+                wingRedMat,
+                wingSideMat
+            );
+            rightWing.position.z = wingZOffset;
+            group.add(rightWing);
+
+            const leftWing = rightWing.clone();
+            leftWing.scale.x = -1;
+            group.add(leftWing);
+
+            const stabSpan = 3.0;
+            const stabRootChord = 1.2;
+            const stabTipChord = 0.6;
+            const stabSweep = 0.2;
+            const stabZ = halfLen - 0.9;
+            const stabThickness = 0.04;
+
+            const rightStabPoints = [
+                [0, 0, -stabRootChord / 2],
+                [0, 0, stabRootChord / 2],
+                [stabSpan / 2, 0, stabTipChord / 2 + stabSweep],
+                [stabSpan / 2, 0, -stabTipChord / 2 + stabSweep],
+            ];
+            const rightStab = createSolidTrapezoid(
+                rightStabPoints,
+                stabThickness,
+                wingWhiteMat,
+                wingRedMat,
+                wingSideMat
+            );
+            rightStab.position.z = stabZ;
+            group.add(rightStab);
+
+            const leftStab = rightStab.clone();
+            leftStab.scale.x = -1;
+            group.add(leftStab);
+
+            const keelHeight = 1.05;
+            const keelRootChord = 1.2;
+            const keelTipChord = 0.5;
+            const keelSweep = 0.15;
+            const keelZ = halfLen - 0.8;
+            const keelThickness = 0.04;
+            const keelMat = new THREE.MeshStandardMaterial({
+                color: 0xff0000,
+                roughness: 0.4,
+                metalness: 0.3,
+                side: THREE.DoubleSide,
+            });
+
+            const keelPoints = [
+                [0, 0, -keelRootChord / 2],
+                [0, 0, keelRootChord / 2],
+                [0, keelHeight, keelTipChord / 2 + keelSweep],
+                [0, keelHeight, -keelTipChord / 2 + keelSweep],
+            ];
+            const keel = createSolidKeel(keelPoints, keelThickness, keelMat);
+            keel.position.z = keelZ;
+            group.add(keel);
+
+            return group;
+        }
+
+        const airplaneGroup = buildAirplane();
+        const targetLength = 7;
+        const currentLength = 7.676;
+        const baseScale = targetLength / currentLength;
+        airplaneGroup.scale.set(baseScale, baseScale, baseScale);
+        scene.add(airplaneGroup);
+
+        // ================================================================
+        //  4. УПРАВЛЕНИЕ И ТЕЛЕМЕТРИЯ
+        // ================================================================
+        let currentIndex = 0;
         let isPlaying = false;
         let speedFactor = 1.0;
-        let animationId = null;
-        let lastTimestamp = 0;
-        let totalDuration = trackData[trackData.length-1].time;
+        let scaleFactor = 2.0;
 
         const playBtn = document.getElementById('playBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const timeSlider = document.getElementById('timeSlider');
-        const timeDisplay = document.getElementById('timeDisplay');
+        const progressSlider = document.getElementById('progressSlider');
+        const progressLabel = document.getElementById('progress-label');
         const speedSlider = document.getElementById('speedSlider');
-        const speedValue = document.getElementById('speedValue');
-        const currentTimeSpan = document.getElementById('currentTime');
-        const currentSpeedSpan = document.getElementById('currentSpeed');
-        const currentRollSpan = document.getElementById('currentRoll');
-        const currentPitchSpan = document.getElementById('currentPitch');
+        const speedLabel = document.getElementById('speed-label');
+        const scaleSlider = document.getElementById('scaleSlider');
+        const scaleLabel = document.getElementById('scale-label');
 
-        timeSlider.max = totalDuration;
-        timeSlider.value = 0;
+        const elTime = document.getElementById('t-time');
+        const elSpeed = document.getElementById('t-speed');
+        const elHeight = document.getElementById('t-height');
+        const elRoll = document.getElementById('t-roll');
+        const elPitch = document.getElementById('t-pitch');
 
-        function lerp(a, b, t) { return a + (b - a) * t; }
+        progressSlider.value = 0;
+        progressLabel.textContent = '0%';
+        speedSlider.value = '1.0';
+        speedLabel.textContent = '1.00×';
+        scaleSlider.value = '2';
+        scaleLabel.textContent = '2';
 
-        function getInterpolatedData(time) {
-            if (time <= trackData[0].time) return trackData[0];
-            if (time >= trackData[trackData.length-1].time) return trackData[trackData.length-1];
-            for (let i = 0; i < trackData.length - 1; i++) {
-                if (time >= trackData[i].time && time < trackData[i+1].time) {
-                    const t = (time - trackData[i].time) / (trackData[i+1].time - trackData[i].time);
-                    return {
-                        time: time,
-                        x: lerp(trackData[i].x, trackData[i+1].x, t),
-                        y: lerp(trackData[i].y, trackData[i+1].y, t),
-                        z: lerp(trackData[i].z, trackData[i+1].z, t),
-                        speed_ms: lerp(trackData[i].speed_ms, trackData[i+1].speed_ms, t),
-                        speed_kmh: lerp(trackData[i].speed_kmh, trackData[i+1].speed_kmh, t),
-                        roll: lerp(trackData[i].roll, trackData[i+1].roll, t),
-                        pitch: lerp(trackData[i].pitch, trackData[i+1].pitch, t),
-                    };
-                }
-            }
-            return trackData[0];
+        function updateScale(val) {
+            const s = val;
+            scaleFactor = s;
+            const totalScale = baseScale * s;
+            airplaneGroup.scale.set(totalScale, totalScale, totalScale);
+            scaleLabel.textContent = val;
         }
+        updateScale(2);
 
-        function updateTelemetry(data) {
-            if (!data) return;
-            currentTimeSpan.textContent = data.time.toFixed(1);
-            currentSpeedSpan.textContent = Math.round(data.speed_kmh);
-            currentRollSpan.textContent = data.roll.toFixed(1);
-            currentPitchSpan.textContent = data.pitch.toFixed(1);
-        }
+        function updateAirplane(index) {
+            const idx = Math.min(Math.max(index, 0), NUM_POINTS - 1);
+            const i0 = Math.floor(idx);
+            const i1 = Math.min(i0 + 1, NUM_POINTS - 1);
+            const frac = idx - i0;
 
-        function render() {
-            ctx.clearRect(0, 0, W, H);
+            const p0 = pts[i0];
+            const p1 = pts[i1];
+            const pos = new THREE.Vector3().lerpVectors(p0, p1, frac);
+            airplaneGroup.position.copy(pos);
 
-            // Сетка
-            ctx.strokeStyle = 'rgba(102,204,255,0.05)';
-            ctx.lineWidth = 0.5;
-            for (let i = 0; i < 10; i++) {
-                const t = i / 9;
-                const x = minX + t * rangeX;
-                const z = minZ + t * rangeZ;
-                const p1 = isoProject(x, minZ);
-                const p2 = isoProject(x, maxZ);
-                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
-                const p3 = isoProject(minX, z);
-                const p4 = isoProject(maxX, z);
-                ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.stroke();
-            }
-
-            // Ворота
-            gates.forEach(g => {
-                const pts = g.vertices.map(v => isoProject(v.x, v.y, 0));
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                ctx.closePath();
-                ctx.strokeStyle = '#66ccff';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.fillStyle = 'rgba(102,204,255,0.08)';
-                ctx.fill();
-            });
-
-            // Пилоны
-            const coneHeight = 25, coneRadius = 4.5;
-            pylons.forEach(p => {
-                const base = isoProject(p.x, p.y, 0);
-                const tip = isoProject(p.x, p.y, coneHeight);
-                const r = coneRadius * baseScale * state.scale;
-                const rx = r, ry = r * 0.5;
-                ctx.beginPath();
-                ctx.ellipse(base.x, base.y, rx, ry, 0, 0, Math.PI * 2);
-                ctx.fillStyle = '#661122';
-                ctx.fill();
-                ctx.strokeStyle = '#ff4466';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.moveTo(tip.x, tip.y);
-                ctx.lineTo(base.x - rx, base.y);
-                ctx.lineTo(base.x + rx, base.y);
-                ctx.closePath();
-                ctx.fillStyle = 'rgba(255,68,102,0.25)';
-                ctx.fill();
-                ctx.strokeStyle = '#ff4466';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                const angleStep = Math.PI / 6;
-                for (let ang = 0; ang < Math.PI * 2; ang += angleStep) {
-                    const ex = base.x + rx * Math.cos(ang);
-                    const ey = base.y + ry * Math.sin(ang);
-                    ctx.beginPath();
-                    ctx.moveTo(tip.x, tip.y);
-                    ctx.lineTo(ex, ey);
-                    ctx.strokeStyle = 'rgba(255,68,102,0.3)';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                }
-            });
-
-            // Лента траектории (высота /8)
-            if (trackData.length > 1) {
-                const totalPoints = trackData.length;
-                const halfTime = trackData[totalPoints-1].time / 2;
-                const ribbonWidth = 6.0;
-                const points3d = trackData.map(p => ({
-                    x: p.x,
-                    y: p.y * 0.125,
-                    z: p.z,
-                    time: p.time,
-                    roll: p.roll,
-                    pitch: p.pitch
-                }));
-
-                ctx.shadowColor = 'rgba(255,255,255,0.3)';
-                ctx.shadowBlur = 8;
-
-                for (let i = 0; i < points3d.length - 1; i++) {
-                    const p0 = points3d[i];
-                    const p1 = points3d[i+1];
-                    const a = {x: p0.x, y: p0.y, z: p0.z};
-                    const b = {x: p1.x, y: p1.y, z: p1.z};
-                    const avgRoll = (p0.roll + p1.roll) / 2;
-                    const avgPitch = (p0.pitch + p1.pitch) / 2;
-                    const upVec = getUpVector(a, b, avgRoll, avgPitch);
-                    const offset = vecMul(upVec, ribbonWidth/2);
-                    const a_top = vecAdd(a, offset);
-                    const a_bot = vecSub(a, offset);
-                    const b_top = vecAdd(b, offset);
-                    const b_bot = vecSub(b, offset);
-
-                    const pa_top = isoProject(a_top.x, a_top.z, a_top.y);
-                    const pa_bot = isoProject(a_bot.x, a_bot.z, a_bot.y);
-                    const pb_top = isoProject(b_top.x, b_top.z, b_top.y);
-                    const pb_bot = isoProject(b_bot.x, b_bot.z, b_bot.y);
-
-                    const t = (p0.time + p1.time) / 2;
-                    const isFirstHalf = t <= halfTime;
-                    const r = isFirstHalf ? 255 : 68;
-                    const g = isFirstHalf ? 68 : 136;
-                    const b_val = isFirstHalf ? 68 : 255;
-                    const alpha = 0.5;
-
-                    ctx.beginPath();
-                    ctx.moveTo(pa_top.x, pa_top.y);
-                    ctx.lineTo(pb_top.x, pb_top.y);
-                    ctx.lineTo(pb_bot.x, pb_bot.y);
-                    ctx.lineTo(pa_bot.x, pa_bot.y);
-                    ctx.closePath();
-                    ctx.fillStyle = `rgba(${r}, ${g}, ${b_val}, ${alpha})`;
-                    ctx.fill();
-                    ctx.strokeStyle = `rgba(${r}, ${g}, ${b_val}, 0.3)`;
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                }
-                ctx.shadowBlur = 0;
-
-                // Стрелки
-                const arrowStep = 20;
-                const arrowLen = 12.0;
-                const arrowWidth = 4.0;
-                for (let i = 0; i < points3d.length - 1; i++) {
-                    if (i % arrowStep !== 0) continue;
-                    const p0 = points3d[i];
-                    const p1 = points3d[Math.min(i+1, points3d.length-1)];
-                    const mid = { x: (p0.x+p1.x)/2, y: (p0.y+p1.y)/2, z: (p0.z+p1.z)/2 };
-                    const dir = normalize(vecSub(p1, p0));
-                    const upVec = getUpVector(
-                        {x: p0.x, y: p0.y, z: p0.z},
-                        {x: p1.x, y: p1.y, z: p1.z},
-                        (p0.roll+p1.roll)/2,
-                        (p0.pitch+p1.pitch)/2
-                    );
-                    const offsetUp = vecMul(upVec, ribbonWidth/2 + 0.5);
-                    const origin = vecAdd(mid, offsetUp);
-                    const tip = vecAdd(origin, vecMul(dir, arrowLen));
-                    const rightDir = normalize(cross(dir, upVec));
-                    const left = vecAdd(origin, vecMul(rightDir, -arrowWidth/2));
-                    const right = vecAdd(origin, vecMul(rightDir, arrowWidth/2));
-
-                    const pTip = isoProject(tip.x, tip.z, tip.y);
-                    const pLeft = isoProject(left.x, left.z, left.y);
-                    const pRight = isoProject(right.x, right.z, right.y);
-
-                    ctx.beginPath();
-                    ctx.moveTo(pTip.x, pTip.y);
-                    ctx.lineTo(pLeft.x, pLeft.y);
-                    ctx.lineTo(pRight.x, pRight.y);
-                    ctx.closePath();
-                    ctx.fillStyle = '#ffff88';
-                    ctx.fill();
-                    ctx.strokeStyle = '#ffaa00';
-                    ctx.lineWidth = 1.2;
-                    ctx.stroke();
-                }
-            }
-
-            // Подписи ворот
-            const gateCenters = gates.map(g => {
-                let cx = 0, cz = 0;
-                g.vertices.forEach(v => { cx += v.x; cz += v.y; });
-                cx /= g.vertices.length;
-                cz /= g.vertices.length;
-                return { id: g.id, x: cx, z: cz };
-            });
-
-            const labelOffset = 30;
-
-            for (let i = 1; i <= 6; i++) {
-                const small = gateCenters.find(c => c.id === i);
-                const big = gateCenters.find(c => c.id === i + 6);
-                if (!small || !big) continue;
-                const midX = (small.x + big.x) / 2;
-                const midZ = (small.z + big.z) / 2;
-                const pos = isoProject(midX, midZ, 0);
-
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-                let label = (i === 1) ? 'СТАРТ' : i.toString();
-                ctx.fillStyle = '#ff4466';
-                ctx.font = (i === 1) ? 'bold 16px Arial' : 'bold 14px Arial';
-                ctx.fillText(label, pos.x, pos.y - labelOffset);
-
-                const bigId = i + 6;
-                ctx.textBaseline = 'top';
-                ctx.fillStyle = (bigId === 7) ? '#ffffff' : '#4488ff';
-                ctx.font = 'bold 14px Arial';
-                ctx.fillText(bigId.toString(), pos.x, pos.y + labelOffset);
-            }
-
-            const finish = gateCenters.find(c => c.id === 13);
-            if (finish) {
-                const pos = isoProject(finish.x, finish.z, 0);
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'top';
-                ctx.fillStyle = '#4488ff';
-                ctx.font = 'bold 16px Arial';
-                ctx.fillText('ФИНИШ', pos.x, pos.y + 45);
-            }
-
-            // Самолётик
-            if (currentTime >= 0 && currentTime <= totalDuration) {
-                const data = getInterpolatedData(currentTime);
-                const pos3d = { x: data.x, y: data.y * 0.125, z: data.z };
-                let dir = {x:1, y:0, z:0};
-                if (currentTime < totalDuration) {
-                    const nextData = getInterpolatedData(currentTime + 0.1);
-                    dir = normalize(vecSub({x: nextData.x, y: nextData.y*0.125, z: nextData.z}, pos3d));
-                }
-                const upVec = getUpVector(
-                    {x: data.x, y: data.y*0.125, z: data.z},
-                    {x: data.x + dir.x, y: data.y*0.125 + dir.y, z: data.z + dir.z},
-                    data.roll, data.pitch
-                );
-                const rightVec = normalize(cross(dir, upVec));
-
-                const center = isoProject(pos3d.x, pos3d.z, pos3d.y);
-                const planeScale = 2.5 * baseScale * state.scale;
-                const nose = vecAdd(pos3d, vecMul(dir, 5 * planeScale / 5));
-                const left = vecAdd(pos3d, vecMul(rightVec, -3 * planeScale / 5));
-                const right = vecAdd(pos3d, vecMul(rightVec, 3 * planeScale / 5));
-                const tail = vecAdd(pos3d, vecMul(dir, -4 * planeScale / 5));
-
-                const offsetUpPlane = vecMul(upVec, 0.3);
-                const pNose = isoProject(nose.x + offsetUpPlane.x, nose.z + offsetUpPlane.z, nose.y + offsetUpPlane.y);
-                const pLeft = isoProject(left.x + offsetUpPlane.x, left.z + offsetUpPlane.z, left.y + offsetUpPlane.y);
-                const pRight = isoProject(right.x + offsetUpPlane.x, right.z + offsetUpPlane.z, right.y + offsetUpPlane.y);
-                const pTail = isoProject(tail.x + offsetUpPlane.x, tail.z + offsetUpPlane.z, tail.y + offsetUpPlane.y);
-
-                ctx.beginPath();
-                ctx.moveTo(pNose.x, pNose.y);
-                ctx.lineTo(pLeft.x, pLeft.y);
-                ctx.lineTo(pTail.x, pTail.y);
-                ctx.lineTo(pRight.x, pRight.y);
-                ctx.closePath();
-                ctx.fillStyle = '#88ddff';
-                ctx.fill();
-                ctx.strokeStyle = '#66ccff';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                ctx.shadowColor = 'rgba(102,204,255,0.8)';
-                ctx.shadowBlur = 15;
-                ctx.strokeStyle = 'rgba(102,204,255,0.3)';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                ctx.beginPath();
-                ctx.arc(center.x, center.y, 4, 0, 2 * Math.PI);
-                ctx.fillStyle = '#ffffff';
-                ctx.fill();
-            }
-
-            ctx.fillStyle = '#556677';
-            ctx.font = '11px Arial';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(`Масштаб: ${(state.scale * baseScale).toFixed(3)}`, 15, H - 10);
-
-            if (currentTime >= 0 && currentTime <= totalDuration) {
-                const data = getInterpolatedData(currentTime);
-                updateTelemetry(data);
-            }
-        }
-
-        function updateUI() {
-            timeSlider.value = currentTime;
-            timeDisplay.textContent = currentTime.toFixed(1) + ' с';
-            if (currentTime >= totalDuration) {
-                isPlaying = false;
-                playBtn.textContent = '▶';
-            }
-        }
-
-        function animationLoop(timestamp) {
-            if (isPlaying) {
-                if (!lastTimestamp) lastTimestamp = timestamp;
-                const delta = (timestamp - lastTimestamp) / 1000 * speedFactor;
-                lastTimestamp = timestamp;
-                currentTime += delta;
-                if (currentTime > totalDuration) {
-                    currentTime = totalDuration;
-                    isPlaying = false;
-                    playBtn.textContent = '▶';
-                }
-                render();
-                updateUI();
+            let dir;
+            if (i0 < NUM_POINTS - 1) {
+                dir = normalize(pts[i1].clone().sub(pts[i0]));
             } else {
-                lastTimestamp = 0;
+                dir = normalize(pts[i0].clone().sub(pts[Math.max(i0 - 1, 0)]));
             }
-            animationId = requestAnimationFrame(animationLoop);
+            if (dir.length() < 0.001) {
+                dir = new THREE.Vector3(0, 0, 1);
+            }
+
+            const yaw = Math.atan2(dir.x, dir.z);
+            const pitch0 = trajectory[i0].pitch;
+            const pitch1 = trajectory[i1].pitch;
+            const pitch = pitch0 + (pitch1 - pitch0) * frac;
+            const roll0 = trajectory[i0].roll;
+            const roll1 = trajectory[i1].roll;
+            const roll = roll0 + (roll1 - roll0) * frac;
+
+            airplaneGroup.rotation.order = 'YXZ';
+            airplaneGroup.rotation.y = yaw + Math.PI;
+            airplaneGroup.rotation.x = pitch;
+            airplaneGroup.rotation.z = -roll;
+
+            const progress = (idx / (NUM_POINTS - 1)) * 100;
+            progressSlider.value = progress;
+            progressLabel.textContent = Math.round(progress) + '%';
+
+            // --- Телеметрия (время по данным) ---
+            const t0 = trajectory[i0];
+            const t1 = trajectory[i1];
+            const time = t0.time + (t1.time - t0.time) * frac;
+
+            let displayTime = 0;
+            if (time >= startTime && time <= endTime) {
+                displayTime = time - startTime;
+            } else if (time > endTime) {
+                displayTime = endTime - startTime;
+            }
+
+            const speed = t0.speedKmh + (t1.speedKmh - t0.speedKmh) * frac;
+            const height = t0.heightAGL + (t1.heightAGL - t0.heightAGL) * frac;
+            const rollDeg = t0.rollDeg + (t1.rollDeg - t0.rollDeg) * frac;
+            const pitchDeg = t0.pitchDeg + (t1.pitchDeg - t0.pitchDeg) * frac;
+
+            elTime.textContent = displayTime.toFixed(2);
+            elSpeed.textContent = Math.round(speed);
+            elHeight.textContent = height.toFixed(1);
+            elRoll.textContent = rollDeg.toFixed(1);
+            elPitch.textContent = pitchDeg.toFixed(1);
         }
+
+        updateAirplane(0);
 
         playBtn.addEventListener('click', () => {
-            if (currentTime >= totalDuration) {
-                currentTime = 0;
-                render();
-                updateUI();
-            }
             isPlaying = !isPlaying;
-            playBtn.textContent = isPlaying ? '⏸' : '▶';
-            if (isPlaying) lastTimestamp = 0;
-        });
-
-        resetBtn.addEventListener('click', () => {
-            currentTime = 0;
-            isPlaying = false;
-            playBtn.textContent = '▶';
-            render();
-            updateUI();
-        });
-
-        timeSlider.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            currentTime = Math.min(val, totalDuration);
-            if (isPlaying) {
-                isPlaying = false;
-                playBtn.textContent = '▶';
+            playBtn.textContent = isPlaying ? '⏸ Пауза' : '▶ Старт';
+            if (isPlaying && currentIndex >= NUM_POINTS - 1) {
+                currentIndex = 0;
             }
-            render();
-            updateUI();
+        });
+
+        progressSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            const idx = (val / 100) * (NUM_POINTS - 1);
+            currentIndex = idx;
+            updateAirplane(idx);
         });
 
         speedSlider.addEventListener('input', (e) => {
             speedFactor = parseFloat(e.target.value);
-            speedValue.textContent = speedFactor.toFixed(1) + '×';
+            speedLabel.textContent = speedFactor.toFixed(2) + '×';
         });
 
-        animationLoop(0);
-        resetView();
+        scaleSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            updateScale(val);
+        });
 
-        console.log('Gelenjik track with aircraft animation (height /8) ready');
+        let lastTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const now = performance.now();
+            const delta = (now - lastTime) / 1000;
+            lastTime = now;
+
+            if (isPlaying) {
+                const deltaIndex = (delta / 0.3) * speedFactor;
+                currentIndex += deltaIndex;
+                if (currentIndex >= NUM_POINTS - 1) {
+                    currentIndex = NUM_POINTS - 1;
+                    isPlaying = false;
+                    playBtn.textContent = '▶ Старт';
+                }
+                updateAirplane(currentIndex);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            labelRenderer.setSize(w, h);
+        });
+
+        console.log('ТРАССА — Геленджик (высота из Height_AGL, время по зоне ворот)');
     </script>
 </body>
 </html>
