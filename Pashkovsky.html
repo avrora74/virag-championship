@@ -34,64 +34,80 @@
         }
         #controls {
             position: absolute;
+            left: 20px;
             bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) scale(0.5);
-            transform-origin: bottom center;
             background: rgba(0,0,0,0.55);
             backdrop-filter: blur(8px);
-            padding: 20px 40px;
-            border-radius: 50px;
-            display: flex;
-            align-items: center;
-            gap: 24px;
+            border-radius: 16px;
             z-index: 20;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             border: 1px solid rgba(255,255,255,0.15);
-            flex-wrap: wrap;
-            justify-content: center;
             pointer-events: auto;
-            width: auto;
-            max-width: 90vw;
+            padding: 10px 14px;
+            display: grid;
+            grid-template-rows: auto auto auto;
+            gap: 6px;
+            min-width: 280px;
+            max-width: 480px;
+            width: fit-content;
+            max-height: 95vh;
+            overflow: hidden;
+        }
+        #controls .row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+            min-height: 28px;
+        }
+        #controls .row:last-child {
+            min-height: 24px;
         }
         #controls button {
             background: #2a6f8a;
             border: none;
             color: white;
-            font-size: 22px;
-            padding: 10px 30px;
+            font-size: 14px;
+            padding: 4px 14px;
             border-radius: 30px;
             cursor: pointer;
             font-weight: 600;
             letter-spacing: 0.5px;
             transition: background 0.2s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            min-width: 200px;
+            flex-shrink: 0;
+            white-space: nowrap;
+            height: 26px;
+            line-height: 1;
         }
         #controls button:hover { background: #3a8aaa; }
         #controls button:active { transform: scale(0.97); }
         #controls label {
             color: rgba(255,255,255,0.85);
-            font-size: 18px;
+            font-size: 12px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         #controls input[type="range"] {
-            width: 340px;
-            height: 5px;
+            height: 4px;
             background: rgba(255,255,255,0.2);
             border-radius: 4px;
             -webkit-appearance: none;
             appearance: none;
             outline: none;
             cursor: pointer;
+            flex: 1 1 auto;
+            min-width: 30px;
+            max-width: 120px;
         }
         #controls input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             background: #88ccff;
             border: 2px solid white;
@@ -99,61 +115,45 @@
             box-shadow: 0 0 8px rgba(136,204,255,0.5);
         }
         #controls input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             background: #88ccff;
             border: 2px solid white;
             cursor: pointer;
         }
-        #progress-label, #speed-label, #scale-label {
+        .val-label {
             color: white;
-            font-size: 18px;
-            min-width: 90px;
+            font-size: 12px;
+            min-width: 34px;
             text-align: center;
-        }
-        #controls .group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            font-weight: 500;
+            flex-shrink: 0;
         }
         #telemetry {
             display: flex;
-            flex-wrap: wrap;
-            gap: 18px 28px;
+            flex-wrap: nowrap;
+            gap: 4px 10px;
             color: white;
-            font-size: 17px;
-            background: rgba(0,0,0,0.35);
-            padding: 8px 24px;
-            border-radius: 30px;
-            border: 1px solid rgba(255,255,255,0.12);
-            backdrop-filter: blur(2px);
-            justify-content: center;
-            margin-top: 4px;
+            font-size: 12px;
+            background: rgba(0,0,0,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            justify-content: space-between;
             width: 100%;
-            max-width: 800px;
+            overflow: hidden;
+            flex: 1;
+            min-height: 22px;
+            align-items: center;
         }
         #telemetry span {
             white-space: nowrap;
+            flex-shrink: 0;
         }
         #telemetry .val {
             font-weight: 600;
             color: #88ccff;
-        }
-        @media (max-width: 700px) {
-            #controls {
-                flex-direction: column;
-                gap: 14px;
-                padding: 20px 16px;
-                border-radius: 30px;
-                bottom: 10px;
-                width: 95%;
-                max-width: 500px;
-                transform: translateX(-50%) scale(0.5);
-            }
-            #controls .group { width: 100%; justify-content: center; }
-            #controls input[type="range"] { width: 100%; }
-            #telemetry { font-size: 14px; gap: 10px 16px; }
         }
         #controls-note {
             position: absolute;
@@ -170,6 +170,42 @@
             color: #1a2a3a;
             backdrop-filter: blur(2px);
         }
+        @media (max-width: 700px) {
+            #controls {
+                left: 10px;
+                bottom: 10px;
+                padding: 8px 10px;
+                min-width: 200px;
+                max-width: 340px;
+                gap: 4px;
+            }
+            #controls button { font-size: 12px; padding: 3px 10px; height: 22px; }
+            #controls label { font-size: 10px; }
+            .val-label { font-size: 10px; min-width: 28px; }
+            #telemetry { font-size: 10px; gap: 3px 6px; padding: 1px 6px; min-height: 18px; }
+            #controls input[type="range"] { min-width: 20px; max-width: 80px; }
+            #controls .row { min-height: 22px; gap: 4px; }
+            #controls .row:last-child { min-height: 18px; }
+        }
+        @media (max-width: 500px) {
+            #controls {
+                left: 6px;
+                bottom: 6px;
+                padding: 6px 8px;
+                min-width: 150px;
+                max-width: 280px;
+                gap: 3px;
+                border-radius: 12px;
+            }
+            #controls button { font-size: 10px; padding: 2px 8px; height: 18px; }
+            #controls label { font-size: 9px; }
+            .val-label { font-size: 9px; min-width: 22px; }
+            #telemetry { font-size: 8px; gap: 2px 4px; padding: 1px 4px; min-height: 16px; }
+            #controls input[type="range"] { min-width: 16px; max-width: 60px; height: 3px; }
+            #controls input[type="range"]::-webkit-slider-thumb { width: 12px; height: 12px; }
+            #controls .row { min-height: 18px; gap: 3px; }
+            #controls .row:last-child { min-height: 16px; }
+        }
         @media (max-width: 640px) {
             #info { font-size: 16px; padding: 6px 16px; top: 12px; }
             #controls-note { display: none; }
@@ -180,29 +216,33 @@
     <div id="info">ТРАССА — Пашковский | Ворот: 25 | Пилонов: 12</div>
     <div id="controls-note">🖱 Мышь: вращение · колёсико: масштаб</div>
 
+    <!-- ========== ПАНЕЛЬ УПРАВЛЕНИЯ (как в Anapa) ========== -->
     <div id="controls">
-        <button id="playBtn">▶ Старт</button>
-        <div class="group">
+        <!-- Строка 1: Кнопка + Прогресс -->
+        <div class="row">
+            <button id="playBtn">▶ Старт</button>
             <label>Прогресс</label>
             <input type="range" id="progressSlider" min="0" max="100" value="0" />
-            <span id="progress-label">0%</span>
+            <span class="val-label" id="progress-label">0%</span>
         </div>
-        <div class="group">
+        <!-- Строка 2: Скорость + Масштаб -->
+        <div class="row">
             <label>Скорость</label>
             <input type="range" id="speedSlider" min="0.25" max="3" step="0.05" value="1.0" />
-            <span id="speed-label">1.00×</span>
-        </div>
-        <div class="group">
+            <span class="val-label" id="speed-label">1.00×</span>
             <label>Масштаб</label>
             <input type="range" id="scaleSlider" min="1" max="4" step="1" value="2" />
-            <span id="scale-label">2</span>
+            <span class="val-label" id="scale-label">2</span>
         </div>
-        <div id="telemetry">
-            <span>Время: <span class="val" id="t-time">0.00</span> с</span>
-            <span>Скорость: <span class="val" id="t-speed">0</span> км/ч</span>
-            <span>Высота: <span class="val" id="t-height">0</span> м</span>
-            <span>Крен: <span class="val" id="t-roll">0.0</span>°</span>
-            <span>Тангаж: <span class="val" id="t-pitch">0.0</span>°</span>
+        <!-- Строка 3: Телеметрия -->
+        <div class="row" style="padding:0;">
+            <div id="telemetry">
+                <span>Время: <span class="val" id="t-time">0.00</span> с</span>
+                <span>Скорость: <span class="val" id="t-speed">0</span> км/ч</span>
+                <span>Высота: <span class="val" id="t-height">0</span> м</span>
+                <span>Крен: <span class="val" id="t-roll">0.0</span>°</span>
+                <span>Тангаж: <span class="val" id="t-pitch">0.0</span>°</span>
+            </div>
         </div>
     </div>
 
