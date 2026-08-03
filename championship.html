@@ -1440,7 +1440,6 @@
                 </div>`;
         }
 
-        // Остальные методы инсайтов (без изменений, но оставлены для полноты)
         _insightLeader(calculator, stageOrder, sorted) {
             if (sorted.length === 0) return '';
             const leader = sorted[0];
@@ -1742,7 +1741,7 @@
                 </div>`;
         }
 
-        // ---- АНАЛИТИКА ТРАССЫ (без изменений) ----
+        // ---- АНАЛИТИКА ТРАССЫ (исправлен подсчёт DNF) ----
         _renderAnalytics(calculator) {
             const stageOrder = calculator.getStageOrder();
             if (stageOrder.length === 0) {
@@ -1796,11 +1795,17 @@
                 return t === track && status === 'ФИНИШ' && type === 'Race';
             });
 
-            const allAttemptsOnTrack = rows.filter(row => {
+            // ИСПРАВЛЕННЫЙ подсчёт DNF – только Race‑записи со статусом не «ФИНИШ»
+            const dnfCount = rows.filter(row => {
                 const t = (row[trackIdx] || '').trim();
-                return t === track;
-            });
-            const dnfCount = allAttemptsOnTrack.length - finishRows.length;
+                const status = (row[statusIdx] || '').trim();
+                let type = 'Race';
+                if (typeIdx !== undefined && typeIdx !== -1 && row[typeIdx]) {
+                    const typ = row[typeIdx].trim();
+                    if (typ === 'Stream' || typ === 'stream') type = 'Stream';
+                }
+                return t === track && type === 'Race' && status !== 'ФИНИШ';
+            }).length;
 
             if (finishRows.length === 0) {
                 container.innerHTML = '<div class="empty">Нет финишных попыток на этой трассе (Race)</div>';
