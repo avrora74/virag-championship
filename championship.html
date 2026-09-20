@@ -207,6 +207,15 @@
             font-size: 0.8em;
             margin-left: 4px;
         }
+        .ucid-badge {
+            background: rgba(102,204,255,0.1);
+            color: #88ddff;
+            font-family: 'Consolas', monospace;
+            font-size: 0.75em;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
 
         .modal-overlay {
             position: fixed;
@@ -561,7 +570,6 @@
             th, td { padding: 8px 6px; }
             .modal { padding: 20px; }
             .change-arrow { font-size: 16px; width: 20px; }
-            .rules-content { font-size: 14px; padding: 15px; }
             .penalty-icons-cell img { height: 16px; width: 16px; }
             .stat-card .value { font-size: 16px; }
             .segment-value { font-size: 12px; }
@@ -623,7 +631,6 @@
         <div id="modalBody"></div>
     </div>
 </div>
-
 <script>
     // ================================================================
     //  МОДУЛЬ 1: КОНФИГУРАЦИЯ
@@ -637,11 +644,11 @@
     }
 
     // ================================================================
-    //  МОДУЛЬ 2: ЗАГРУЗЧИК ДАННЫХ
+    //  МОДУЛЬ 2: ЗАГРУЗЧИК ДАННЫХ (UCID в колонке R → диапазон A:R)
     // ================================================================
     class DataLoader {
         async fetchData() {
-            const range = encodeURIComponent(Config.SHEET_NAME + '!A:Q');
+            const range = encodeURIComponent(Config.SHEET_NAME + '!A:R');
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${Config.SPREADSHEET_ID}/values/${range}?key=${Config.API_KEY}`;
             const response = await fetch(url);
             if (!response.ok) {
@@ -657,7 +664,7 @@
     }
 
     // ================================================================
-    //  МОДУЛЬ 3: КАЛЬКУЛЯТОР РЕЗУЛЬТАТОВ
+    //  МОДУЛЬ 3: КАЛЬКУЛЯТОР РЕЗУЛЬТАТОВ (идентификация по UCID)
     // ================================================================
     class ScoreCalculator {
         constructor(rows, headers) {
@@ -670,11 +677,19 @@
             this.overall = {};
             this.previousPositions = {};
             this._pilotStatsCache = new Map();
+
+            this.ucidToName = {};
+            this.nameToUCID = {};
+            this.ucids = [];
+            this.aliases = {};
+
+            this._buildIdentityMaps();
             console.log('[ViRAG] Найденные индексы колонок:', this.columnIndices);
+            console.log('[ViRAG] Уникальных UCID:', this.ucids.length);
         }
 
         _normalize(str) {
-            return str.replace(/\s+/g, ' ').trim().toLowerCase();
+            return String(str || '').replace(/\s+/g, ' ').trim().toLowerCase();
         }
 
         _findColumns(headers) {
@@ -688,15 +703,14 @@
                     if (words.length > 0) {
                         for (let i = 0; i < normalizedHeaders.length; i++) {
                             const h = normalizedHeaders[i];
-                            if (words.every(w => h.includes(w))) {
-                                return i;
-                            }
+                            if (words.every(w => h.includes(w))) return i;
                         }
                     }
                 }
                 return -1;
             };
             const indices = {
+                ucidIdx: find(['UCID', 'Ucid', 'ucid', 'Player ID', 'ID']),
                 nameIdx: find(['Пилот', 'Имя пилота', 'Имя', 'Pilot']),
                 trackIdx: find(['Трасса', 'Трек', 'Track', 'Stage', 'Этап']),
                 statusIdx: find(['Статус', 'Status', 'Результат']),
@@ -721,8 +735,53 @@
             return indices;
         }
 
+        _buildIdentityMaps() {
+            const { ucidIdx, nameIdx } = this.columnIndices;
+            if (nameIdx === undefined || nameIdx === -1) return;
+            const hasUCID = (ucidIdx !== undefined && ucidIdx !== -1);
+
+            this.rows.forEach(row => {
+                const name = (row[nameIdx] || '').trim();
+                if (!name) return;
+                let ucid = hasUCID ? (row[ucidIdx] || '').trim() : '';
+                if (!ucid || ucid === 'unknown') ucid = 'name:' + name;
+
+                this.ucidToName[ucid] = name;
+                this.nameToUCID[name] = ucid;
+
+                if (!this.aliases[ucid]) this.aliases[ucid] = new Set();
+                this.aliases[ucid].add(name);
+            });
+
+            this.ucids = Object.keys(this.ucidToName);
+
+            for (const ucid of this.ucids) {
+                if (this.aliases[ucid].size > 1) {
+                    console.log(`[ViRAG] UCID ${ucid} имеет несколько имён: ${[...this.aliases[ucid]].join(', ')}`);
+                }
+            }
+        }
+
+        _getUCIDForRow(row) {
+            const { ucidIdx, nameIdx } = this.columnIndices;
+            const name = (nameIdx !== undefined && nameIdx !== -1) ? (row[nameIdx] || '').trim() : '';
+            let ucid = (ucidIdx !== undefined && ucidIdx !== -1) ? (row[ucidIdx] || '').trim() : '';
+            if (!ucid || ucid === 'unknown') ucid = 'name:' + name;
+            return ucid;
+        }
+
+        _getDisplayName(ucid) {
+            if (ucid.startsWith('name:')) return ucid.substring(5);
+            return this.ucidToName[ucid] || ucid;
+        }
+
+        _getAliases(ucid) {
+            if (!this.aliases[ucid]) return [];
+            return [...this.aliases[ucid]];
+        }
+
         process() {
-            const { nameIdx, trackIdx, statusIdx, timeIdx, penaltyIdx, typeIdx } = this.columnIndices;
+            const { typeIdx } = this.columnIndices;
             const raceRows = [];
             const streamRows = [];
 
@@ -732,9 +791,9 @@
                     const t = row[typeIdx].trim();
                     if (t === 'Stream' || t === 'stream') type = 'Stream';
                 }
-                const track = (row[trackIdx] || '').trim();
+                const track = (row[this.columnIndices.trackIdx] || '').trim();
                 if (!track) return;
-                const name = (row[nameIdx] || '').trim();
+                const name = (row[this.columnIndices.nameIdx] || '').trim();
                 if (!name) return;
 
                 if (type === 'Race') raceRows.push(row);
@@ -749,13 +808,13 @@
             const newOverall = {};
             for (const [track, results] of Object.entries(this.stages)) {
                 results.forEach(r => {
-                    if (!newOverall[r.name]) newOverall[r.name] = 0;
-                    newOverall[r.name] += r.points;
+                    if (!newOverall[r.ucid]) newOverall[r.ucid] = 0;
+                    newOverall[r.ucid] += r.points;
                 });
             }
-            for (const [name, bonus] of Object.entries(this.streamBonuses)) {
-                if (!newOverall[name]) newOverall[name] = 0;
-                newOverall[name] += bonus;
+            for (const [ucid, bonus] of Object.entries(this.streamBonuses)) {
+                if (!newOverall[ucid]) newOverall[ucid] = 0;
+                newOverall[ucid] += bonus;
             }
             this.overall = newOverall;
             this._updatePositions();
@@ -763,23 +822,22 @@
         }
 
         _calculateStages(rows) {
-            const { nameIdx, trackIdx, statusIdx, timeIdx, penaltyIdx } = this.columnIndices;
+            const { trackIdx, statusIdx, timeIdx } = this.columnIndices;
             const attempts = {};
 
             rows.forEach(row => {
                 const track = (row[trackIdx] || '').trim();
                 if (!track) return;
-                const name = (row[nameIdx] || '').trim();
-                if (!name) return;
+                const ucid = this._getUCIDForRow(row);
                 const status = (row[statusIdx] || '').trim();
                 const timeStr = (row[timeIdx] || '').replace(',', '.').trim();
                 const time = parseFloat(timeStr);
 
                 if (!attempts[track]) attempts[track] = {};
-                if (!attempts[track][name]) {
-                    attempts[track][name] = { total: 0, finished: 0, bestTime: Infinity };
+                if (!attempts[track][ucid]) {
+                    attempts[track][ucid] = { total: 0, finished: 0, bestTime: Infinity };
                 }
-                const pilotData = attempts[track][name];
+                const pilotData = attempts[track][ucid];
                 pilotData.total += 1;
 
                 if (status === 'ФИНИШ' && !isNaN(time) && time > 0) {
@@ -791,10 +849,15 @@
             const newStages = {};
             for (const [track, pilots] of Object.entries(attempts)) {
                 const finishedPilots = [];
-                for (const [name, data] of Object.entries(pilots)) {
+                for (const [ucid, data] of Object.entries(pilots)) {
                     if (data.finished > 0 && isFinite(data.bestTime)) {
                         const dnfCount = data.total - data.finished;
-                        finishedPilots.push({ name, time: data.bestTime, dnf: dnfCount });
+                        finishedPilots.push({
+                            ucid,
+                            name: this._getDisplayName(ucid),
+                            time: data.bestTime,
+                            dnf: dnfCount
+                        });
                     }
                 }
                 finishedPilots.sort((a, b) => a.time - b.time);
@@ -806,7 +869,16 @@
                     let bonus = idx < podiumBonus.length ? podiumBonus[idx] : 0;
                     let basePoints = pts + bonus;
                     let finalPoints = Math.max(0, basePoints - p.dnf);
-                    return { name: p.name, time: p.time, place: idx + 1, points: finalPoints, bonus: bonus, dnf: p.dnf, basePoints: basePoints };
+                    return {
+                        ucid: p.ucid,
+                        name: p.name,
+                        time: p.time,
+                        place: idx + 1,
+                        points: finalPoints,
+                        bonus: bonus,
+                        dnf: p.dnf,
+                        basePoints: basePoints
+                    };
                 });
                 newStages[track] = results;
             }
@@ -814,30 +886,33 @@
         }
 
         _calculateStreams(rows) {
-            const { nameIdx, trackIdx, statusIdx, timeIdx } = this.columnIndices;
+            const { trackIdx, statusIdx, timeIdx } = this.columnIndices;
             const attempts = {};
 
             rows.forEach(row => {
                 const track = (row[trackIdx] || '').trim();
                 if (!track) return;
-                const name = (row[nameIdx] || '').trim();
-                if (!name) return;
+                const ucid = this._getUCIDForRow(row);
                 const status = (row[statusIdx] || '').trim();
                 const timeStr = (row[timeIdx] || '').replace(',', '.').trim();
                 const time = parseFloat(timeStr);
                 if (status !== 'ФИНИШ' || isNaN(time) || time <= 0) return;
                 if (!attempts[track]) attempts[track] = {};
-                if (!attempts[track][name]) attempts[track][name] = { times: [] };
-                attempts[track][name].times.push(time);
+                if (!attempts[track][ucid]) attempts[track][ucid] = { times: [] };
+                attempts[track][ucid].times.push(time);
             });
 
             const results = {};
             const bonuses = {};
             for (const [track, pilots] of Object.entries(attempts)) {
                 const pilotBest = [];
-                for (const [name, data] of Object.entries(pilots)) {
+                for (const [ucid, data] of Object.entries(pilots)) {
                     if (data.times.length === 0) continue;
-                    pilotBest.push({ name, time: Math.min(...data.times) });
+                    pilotBest.push({
+                        ucid,
+                        name: this._getDisplayName(ucid),
+                        time: Math.min(...data.times)
+                    });
                 }
                 pilotBest.sort((a, b) => a.time - b.time);
 
@@ -846,9 +921,15 @@
                 pilotBest.forEach((p, idx) => {
                     let bonus = 1;
                     if (idx < bonusMap.length) bonus += bonusMap[idx];
-                    streamResults.push({ name: p.name, time: p.time, place: idx + 1, bonus });
-                    if (!bonuses[p.name]) bonuses[p.name] = 0;
-                    bonuses[p.name] += bonus;
+                    streamResults.push({
+                        ucid: p.ucid,
+                        name: p.name,
+                        time: p.time,
+                        place: idx + 1,
+                        bonus
+                    });
+                    if (!bonuses[p.ucid]) bonuses[p.ucid] = 0;
+                    bonuses[p.ucid] += bonus;
                 });
                 results[track] = streamResults;
             }
@@ -857,17 +938,21 @@
 
         _updatePositions() {
             const pilotData = [];
-            for (const [name, points] of Object.entries(this.overall)) {
+            for (const [ucid, points] of Object.entries(this.overall)) {
                 let gold = 0, silver = 0, bronze = 0;
                 for (const [track, results] of Object.entries(this.stages)) {
-                    const pr = results.find(r => r.name === name);
+                    const pr = results.find(r => r.ucid === ucid);
                     if (pr) {
                         if (pr.place === 1) gold++;
                         else if (pr.place === 2) silver++;
                         else if (pr.place === 3) bronze++;
                     }
                 }
-                pilotData.push({ name, points, gold, silver, bronze });
+                pilotData.push({
+                    ucid,
+                    name: this._getDisplayName(ucid),
+                    points, gold, silver, bronze
+                });
             }
             pilotData.sort((a, b) => {
                 if (b.points !== a.points) return b.points - a.points;
@@ -876,17 +961,17 @@
                 return b.bronze - a.bronze;
             });
             const currentPositions = {};
-            pilotData.forEach(({ name }, idx) => { currentPositions[name] = idx; });
+            pilotData.forEach(({ ucid }, idx) => { currentPositions[ucid] = idx; });
             const changes = {};
-            for (const [name, curPos] of Object.entries(currentPositions)) {
-                const prevPos = this.previousPositions[name];
+            for (const [ucid, curPos] of Object.entries(currentPositions)) {
+                const prevPos = this.previousPositions[ucid];
                 if (prevPos !== undefined) {
                     const diff = prevPos - curPos;
-                    if (diff > 0) changes[name] = 'up';
-                    else if (diff < 0) changes[name] = 'down';
-                    else changes[name] = 'same';
+                    if (diff > 0) changes[ucid] = 'up';
+                    else if (diff < 0) changes[ucid] = 'down';
+                    else changes[ucid] = 'same';
                 } else {
-                    changes[name] = 'new';
+                    changes[ucid] = 'new';
                 }
             }
             this.previousPositions = currentPositions;
@@ -894,18 +979,21 @@
         }
 
         getPilotStats(pilotName) {
-            if (this._pilotStatsCache.has(pilotName)) {
-                return this._pilotStatsCache.get(pilotName);
+            let ucid = pilotName;
+            if (!this.ucidToName[ucid]) {
+                ucid = this.nameToUCID[pilotName] || ('name:' + pilotName);
             }
-            const { nameIdx, trackIdx, statusIdx, penaltyIdx, intermediatesIdx, penaltyDetailsIdx,
+            if (this._pilotStatsCache.has(ucid)) {
+                return this._pilotStatsCache.get(ucid);
+            }
+            const { trackIdx, statusIdx, penaltyIdx, intermediatesIdx, penaltyDetailsIdx,
                 timeIdx, totalTimeIdx, penaltyCodesIdx,
                 timestampIdx, startSpeedIdx, startFuelIdx, dnfReasonIdx, typeIdx } = this.columnIndices;
-            if (nameIdx === undefined) return null;
 
             const stats = {};
             this.rows.forEach((row, rowIndex) => {
-                const name = (row[nameIdx] || '').trim();
-                if (name !== pilotName) return;
+                const rowUCID = this._getUCIDForRow(row);
+                if (rowUCID !== ucid) return;
                 const track = (row[trackIdx] || '').trim();
                 if (!track) return;
                 const status = (row[statusIdx] || '').trim();
@@ -980,7 +1068,7 @@
                 atts.forEach((att, idx) => att.attemptNumber = idx + 1);
             }
 
-            this._pilotStatsCache.set(pilotName, stats);
+            this._pilotStatsCache.set(ucid, stats);
             return stats;
         }
 
@@ -988,7 +1076,6 @@
             const stats = this.getPilotStats(pilotName);
             if (!stats) return null;
             let startAggressiveness = [];
-            let finishConsistency = [];
             let allTimes = [];
 
             for (const track in stats) {
@@ -996,11 +1083,6 @@
                 finAttempts.forEach(a => {
                     if (a.startSpeed !== null) startAggressiveness.push(a.startSpeed);
                     allTimes.push(a.validTime);
-                    if (a.intermediates.length >= 2) {
-                        const last = a.intermediates[a.intermediates.length - 1];
-                        const prev = a.intermediates[a.intermediates.length - 2];
-                        if (last > prev) finishConsistency.push(last - prev);
-                    }
                 });
             }
 
@@ -1016,12 +1098,7 @@
             else if (stability < 1.5) style = 'Стабильный';
             else if (stability > 4) style = 'Нестабильный';
 
-            return {
-                style,
-                avgStartSpeed: avgStart,
-                stability,
-                attemptsCount: allTimes.length
-            };
+            return { style, avgStartSpeed: avgStart, stability, attemptsCount: allTimes.length };
         }
 
         getPilotRecommendations(pilotName) {
@@ -1074,9 +1151,9 @@
             if (totalAttempts > 0) {
                 const dnfRate = totalDnf / totalAttempts;
                 if (dnfRate > 0.3) {
-                    recommendations.push(`Высокий процент DNF: <strong>${(dnfRate * 100).toFixed(0)}%</strong>. Сфокусируйтесь на стабильности — лучше медленнее, но финишировать.`);
+                    recommendations.push(`Высокий процент DNF: <strong>${(dnfRate * 100).toFixed(0)}%</strong>. Сфокусируйтесь на стабильности.`);
                 } else if (dnfRate > 0.15) {
-                    recommendations.push(`DNF в ${totalDnf} из ${totalAttempts} попыток. Старайтесь избегать критических ошибок (высота < 10м, 3+ пилонов).`);
+                    recommendations.push(`DNF в ${totalDnf} из ${totalAttempts} попыток. Избегайте критических ошибок.`);
                 }
             }
 
@@ -1087,11 +1164,11 @@
 
             const style = this.getPilotStyle(pilotName);
             if (style && style.stability > 3) {
-                recommendations.push(`Время очень нестабильное (разброс ±${style.stability.toFixed(1)}с). Попробуйте летать по одной траектории.`);
+                recommendations.push(`Время очень нестабильное (разброс ±${style.stability.toFixed(1)}с). Летайте по одной траектории.`);
             }
 
             if (recommendations.length === 0) {
-                recommendations.push('Отличная работа! Продолжайте в том же духе и снижайте время прохождения.');
+                recommendations.push('Отличная работа! Продолжайте снижать время.');
             }
 
             return recommendations;
@@ -1152,9 +1229,10 @@
             return ordered.concat(missing);
         }
     }
-
+</script>
+<script>
     // ================================================================
-    //  МОДУЛЬ 4: РЕНДЕРИНГ
+    //  МОДУЛЬ 4: РЕНДЕРИНГ (с поддержкой UCID)
     // ================================================================
     class Renderer {
         constructor(containerId, modalOverlayId) {
@@ -1298,12 +1376,12 @@
             const stageOrder = calculator.getStageOrder();
 
             const pilotData = [];
-            for (const [name, points] of Object.entries(overall)) {
+            for (const [ucid, points] of Object.entries(overall)) {
                 let gold = 0, silver = 0, bronze = 0, totalDnf = 0, racePoints = 0;
                 const stagePoints = {};
                 for (const track of stageOrder) {
                     const results = stages[track] || [];
-                    const pr = results.find(r => r.name === name);
+                    const pr = results.find(r => r.ucid === ucid);
                     if (pr) {
                         stagePoints[track] = pr.points;
                         racePoints += pr.points;
@@ -1315,8 +1393,13 @@
                         stagePoints[track] = 0;
                     }
                 }
-                const bonus = streamBonuses[name] || 0;
-                pilotData.push({ name, points, racePoints, bonus, gold, silver, bronze, dnf: totalDnf, stagePoints });
+                const bonus = streamBonuses[ucid] || 0;
+                pilotData.push({
+                    ucid,
+                    name: calculator._getDisplayName(ucid),
+                    points, racePoints, bonus, gold, silver, bronze,
+                    dnf: totalDnf, stagePoints
+                });
             }
 
             pilotData.sort((a, b) => {
@@ -1344,9 +1427,19 @@
                 pos++;
                 const cls = pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : '';
                 const podiumStr = `${p.gold > 0 ? '🥇' + p.gold : ''} ${p.silver > 0 ? '🥈' + p.silver : ''} ${p.bronze > 0 ? '🥉' + p.bronze : ''}`.trim() || '—';
+                const aliases = calculator._getAliases(p.ucid);
+                const aliasStr = aliases.length > 1
+                    ? ` <span style="color:#8899aa;font-size:0.85em;" title="Ранее: ${aliases.filter(a => a !== p.name).join(', ')}">(👥)</span>`
+                    : '';
+                const ucidShort = p.ucid.startsWith('name:') ? '' : `<span class="ucid-badge" title="UCID: ${p.ucid}">${p.ucid.substring(0, 8)}…</span>`;
+
                 html += `<tr>
                     <td class="pos ${cls}">${pos}</td>
-                    <td><span class="pilot-name" data-pilot="${p.name}">${p.name}</span></td>
+                    <td><span class="pilot-name" 
+                        data-pilot="${p.ucid}"
+                        data-ucid="${p.ucid}"
+                        title="UCID: ${p.ucid}${aliases.length > 1 ? ' · Ранее: ' + aliases.filter(a => a !== p.name).join(', ') : ''}"
+                    >${p.name}</span>${aliasStr}${ucidShort}</td>
                     <td><span class="points">${p.points}</span></td>
                     <td>${p.racePoints}</td>
                     <td>${p.bonus > 0 ? `<span class="stream-bonus-badge">+${p.bonus}</span>` : '—'}</td>
@@ -1387,7 +1480,11 @@
                     const cls = r.place === 1 ? 'gold' : r.place === 2 ? 'silver' : r.place === 3 ? 'bronze' : '';
                     html += `<tr>
                         <td class="pos ${cls}">${r.place}</td>
-                        <td><span class="pilot-name" data-pilot="${r.name}">${r.name}</span></td>
+                        <td><span class="pilot-name" 
+                            data-pilot="${r.ucid}"
+                            data-ucid="${r.ucid}"
+                            title="UCID: ${r.ucid}"
+                        >${r.name}</span></td>
                         <td class="time">${this._formatTime(r.time)}</td>
                         <td><span class="points">+${r.bonus}</span></td>
                     </tr>`;
@@ -1403,6 +1500,43 @@
             });
         }
 
+        _renderStage(tabName, calculator) {
+            const results = calculator.getStages()[tabName];
+            if (!results || results.length === 0) {
+                this.container.innerHTML = `<div class="empty">Нет результатов для этапа «${tabName}»</div>`;
+                return;
+            }
+            let html = `<div class="stage-title">🏁 Этап: ${tabName}</div>
+                <table>
+                    <thead><tr>
+                        <th>#</th><th>Пилот</th><th>Зачётное время</th><th>Итого</th>
+                        <th>Очки (место+бонус)</th><th>DNF</th>
+                    </tr></thead><tbody>`;
+            results.forEach(r => {
+                const cls = r.place === 1 ? 'gold' : r.place === 2 ? 'silver' : r.place === 3 ? 'bronze' : '';
+                const basePoints = r.basePoints !== undefined ? r.basePoints : r.points + (r.dnf || 0);
+                html += `<tr>
+                    <td class="pos ${cls}">${r.place}</td>
+                    <td><span class="pilot-name" 
+                        data-pilot="${r.ucid}"
+                        data-ucid="${r.ucid}"
+                        title="UCID: ${r.ucid}"
+                    >${r.name}</span></td>
+                    <td><span class="time">${this._formatTime(r.time)}</span></td>
+                    <td><span class="points">${r.points}</span></td>
+                    <td>${basePoints}</td>
+                    <td>${r.dnf > 0 ? `<span class="dnf-badge">${r.dnf}</span>` : '—'}</td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            this.container.innerHTML = html;
+            this.container.querySelectorAll('.pilot-name').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    document.dispatchEvent(new CustomEvent('showPilotStats', { detail: { pilot: e.currentTarget.dataset.pilot } }));
+                });
+            });
+        }
+
         _renderInsights(calculator) {
             const overall = calculator.getOverall();
             const stages = calculator.getStages();
@@ -1411,27 +1545,34 @@
             const stageOrder = calculator.getStageOrder();
 
             const pilotStats = {};
-            for (const [name, points] of Object.entries(overall)) {
+            for (const [ucid, points] of Object.entries(overall)) {
                 let gold = 0, silver = 0, bronze = 0, totalDnf = 0, totalPenalty = 0;
-                let stagesParticipated = 0, streamCount = 0, streamBonus = streamBonuses[name] || 0;
+                let stagesParticipated = 0, streamCount = 0;
+                const streamBonus = streamBonuses[ucid] || 0;
 
                 for (const track of stageOrder) {
                     const results = stages[track] || [];
-                    const pr = results.find(r => r.name === name);
+                    const pr = results.find(r => r.ucid === ucid);
                     if (pr) {
                         stagesParticipated++;
                         totalDnf += pr.dnf || 0;
                         if (pr.place === 1) gold++;
                         else if (pr.place === 2) silver++;
                         else if (pr.place === 3) bronze++;
-                        const stats = calculator.getPilotStats(name);
+                        const stats = calculator.getPilotStats(ucid);
                         if (stats && stats[track]) totalPenalty += stats[track].penaltySum || 0;
                     }
                     if (streamResults[track]) {
-                        if (streamResults[track].find(r => r.name === name)) streamCount++;
+                        if (streamResults[track].find(r => r.ucid === ucid)) streamCount++;
                     }
                 }
-                pilotStats[name] = { points, gold, silver, bronze, dnf: totalDnf, participated: stagesParticipated, penalty: totalPenalty, totalStages: stageOrder.length, streamCount, streamBonus };
+                pilotStats[ucid] = {
+                    ucid,
+                    name: calculator._getDisplayName(ucid),
+                    points, gold, silver, bronze, dnf: totalDnf,
+                    participated: stagesParticipated, penalty: totalPenalty,
+                    totalStages: stageOrder.length, streamCount, streamBonus
+                };
             }
 
             const sorted = Object.entries(pilotStats).sort((a, b) => {
@@ -1447,30 +1588,25 @@
                 return;
             }
 
-            // ---- ВЫЧИСЛЕНИЯ ДЛЯ НОМИНАЦИЙ ----
-            // 1. Скоростной демон: пилот с максимальной стартовой скоростью (без штрафа)
-            //    скорость должна быть <= 300 км/ч (не более стартовой скорости)
-            let fastestStartPilot = null;
-            let maxStartSpeed = -1;
-            for (const [name] of sorted) {
-                const stats = calculator.getPilotStats(name);
+            let fastestStartPilot = null, fastestStartName = '', maxStartSpeed = -1;
+            for (const [ucid] of sorted) {
+                const stats = calculator.getPilotStats(ucid);
                 if (!stats) continue;
                 for (const track in stats) {
                     const attempts = stats[track].attempts || [];
                     for (const att of attempts) {
                         if (!att.isDnf && att.startSpeed !== null && att.startSpeed <= 300 && att.startSpeed > maxStartSpeed) {
                             maxStartSpeed = att.startSpeed;
-                            fastestStartPilot = name;
+                            fastestStartPilot = ucid;
+                            fastestStartName = calculator._getDisplayName(ucid);
                         }
                     }
                 }
             }
 
-            // 2. Марафонец: пилот с наибольшим количеством попыток (Race + Stream)
-            let marathonPilot = null;
-            let maxAttempts = -1;
-            for (const [name] of sorted) {
-                const stats = calculator.getPilotStats(name);
+            let marathonPilot = null, marathonName = '', maxAttempts = -1;
+            for (const [ucid] of sorted) {
+                const stats = calculator.getPilotStats(ucid);
                 if (!stats) continue;
                 let totalAttempts = 0;
                 for (const track in stats) {
@@ -1478,10 +1614,10 @@
                 }
                 if (totalAttempts > maxAttempts) {
                     maxAttempts = totalAttempts;
-                    marathonPilot = name;
+                    marathonPilot = ucid;
+                    marathonName = calculator._getDisplayName(ucid);
                 }
             }
-            // ---- КОНЕЦ ВЫЧИСЛЕНИЙ ----
 
             let html = `<div class="insights-container"><h2>📋 Аналитика чемпионата</h2>`;
 
@@ -1496,13 +1632,12 @@
             html += this._insightStreams(calculator, sorted);
             html += this._insightGeneralRecommendation(calculator);
 
-            // НОМИНАЦИИ — отдельными блоками (без заголовка, раздельно)
             html += `<div class="insight-block nomination" style="margin-top:5px; padding:8px 16px;">
-                🚀 <strong>Скоростной демон</strong> – <strong>${fastestStartPilot || '—'}</strong> ${fastestStartPilot ? '(' + maxStartSpeed.toFixed(1) + ' км/ч)' : ''}
+                🚀 <strong>Скоростной демон</strong> – <strong>${fastestStartName || '—'}</strong> ${fastestStartPilot ? '(' + maxStartSpeed.toFixed(1) + ' км/ч)' : ''}
             </div>`;
 
             html += `<div class="insight-block nomination" style="margin-top:2px; padding:8px 16px;">
-                🏃 <strong>Марафонец</strong> – <strong>${marathonPilot || '—'}</strong> ${marathonPilot ? '(' + maxAttempts + ' попыток)' : ''}
+                🏃 <strong>Марафонец</strong> – <strong>${marathonName || '—'}</strong> ${marathonPilot ? '(' + maxAttempts + ' попыток)' : ''}
             </div>`;
 
             html += `</div>`;
@@ -1511,7 +1646,7 @@
 
         _insightPositionChanges(sorted) {
             if (sorted.length < 3) return '';
-            const top3 = sorted.slice(0, 3).map(([name]) => name);
+            const top3 = sorted.slice(0, 3).map(([_, data]) => data.name);
             return `<div class="insight-block position">
                 <strong style="color: #00ff88;">🏅 Текущая тройка лидеров:</strong> ${top3.join(', ')}. Следите за динамикой — позиции могут меняться после каждого этапа.
             </div>`;
@@ -1520,22 +1655,26 @@
         _insightStreams(calculator, sorted) {
             const streamBonuses = calculator.getStreamBonuses();
             if (Object.keys(streamBonuses).length === 0) return '';
-            let maxBonus = 0, maxPilot = '', totalBonuses = 0, participants = 0;
-            for (const [name, bonus] of Object.entries(streamBonuses)) {
+            let maxBonus = 0, maxName = '', totalBonuses = 0, participants = 0;
+            for (const [ucid, bonus] of Object.entries(streamBonuses)) {
                 totalBonuses += bonus;
                 participants++;
-                if (bonus > maxBonus) { maxBonus = bonus; maxPilot = name; }
+                if (bonus > maxBonus) {
+                    maxBonus = bonus;
+                    maxName = calculator._getDisplayName(ucid);
+                }
             }
             const avgBonus = (totalBonuses / participants).toFixed(1);
             return `<div class="insight-block stream">
-                <strong style="color: #ffcc44;">🎬 Стримы «ФОРСАЖ»</strong> – всего <strong>${participants}</strong> пилотов получили бонусы. Лидер: <strong>${maxPilot}</strong> (${maxBonus} очков). Средний бонус: <strong>${avgBonus}</strong>.
+                <strong style="color: #ffcc44;">🎬 Стримы «ФОРСАЖ»</strong> – всего <strong>${participants}</strong> пилотов получили бонусы. Лидер: <strong>${maxName}</strong> (${maxBonus} очков). Средний бонус: <strong>${avgBonus}</strong>.
             </div>`;
         }
 
         _insightLeader(calculator, stageOrder, sorted) {
             if (sorted.length === 0) return '';
             const leader = sorted[0];
-            const leaderName = leader[0];
+            const leaderName = leader[1].name;
+            const leaderUCID = leader[0];
             const leaderData = leader[1];
             const stages = calculator.getStages();
 
@@ -1543,7 +1682,7 @@
             for (const [track, results] of Object.entries(stages)) {
                 if (results.length === 0) continue;
                 const bestTime = results[0].time;
-                const pr = results.find(r => r.name === leaderName);
+                const pr = results.find(r => r.ucid === leaderUCID);
                 if (pr && Math.abs(pr.time - bestTime) < Config.EPSILON) {
                     recordTracks.push({ track, time: bestTime });
                 }
@@ -1555,8 +1694,11 @@
             } else {
                 let bestPersonal = Infinity, bestPersonalTrack = '';
                 for (const [track, results] of Object.entries(stages)) {
-                    const pr = results.find(r => r.name === leaderName);
-                    if (pr && pr.time < bestPersonal) { bestPersonal = pr.time; bestPersonalTrack = track; }
+                    const pr = results.find(r => r.ucid === leaderUCID);
+                    if (pr && pr.time < bestPersonal) {
+                        bestPersonal = pr.time;
+                        bestPersonalTrack = track;
+                    }
                 }
                 if (bestPersonalTrack) trackText = `показал личный рекорд на <strong>${bestPersonalTrack}</strong> (${this._formatTime(bestPersonal)})`;
                 else trackText = 'ещё не финишировал ни на одном этапе';
@@ -1574,7 +1716,7 @@
             const diff3 = leader[1].points - third[1].points;
             const remaining = Math.max(0, Config.TOTAL_STAGES - stageOrder.length);
             return `<div class="insight-block battle">
-                <strong style="color: #66ccff;">⚔️ Борьба за призовую тройку</strong> – <strong>${second[0]}</strong> и <strong>${third[0]}</strong> отстают на <strong>${diff2}</strong> и <strong>${diff3}</strong> очков. ${remaining > 0 ? `Впереди ещё <strong>${remaining}</strong> этапов.` : 'Все этапы завершены.'}
+                <strong style="color: #66ccff;">⚔️ Борьба за призовую тройку</strong> – <strong>${second[1].name}</strong> и <strong>${third[1].name}</strong> отстают на <strong>${diff2}</strong> и <strong>${diff3}</strong> очков. ${remaining > 0 ? `Впереди ещё <strong>${remaining}</strong> этапов.` : 'Все этапы завершены.'}
             </div>`;
         }
 
@@ -1584,17 +1726,17 @@
             if (maxDnf === 0) return '';
             const worstDnfPilots = sorted.filter(([_, data]) => data.dnf === maxDnf);
             return `<div class="insight-block dnf">
-                <strong style="color: #ff4466;">⚠️ Рекордсмены по DNF</strong> – <strong>${worstDnfPilots.map(p => p[0]).join(', ')}</strong> имеют ${maxDnf} DNF. Рекомендуется внимательнее следить за стартовой скоростью и высотой.
+                <strong style="color: #ff4466;">⚠️ Рекордсмены по DNF</strong> – <strong>${worstDnfPilots.map(p => p[1].name).join(', ')}</strong> имеют ${maxDnf} DNF. Рекомендуется внимательнее следить за стартовой скоростью и высотой.
             </div>`;
         }
 
         _insightPenalties(calculator, sorted) {
             const penaltyPilots = sorted
-                .map(([name, data]) => {
-                    const stats = calculator.getPilotStats(name);
+                .map(([ucid, data]) => {
+                    const stats = calculator.getPilotStats(ucid);
                     let totalPenalty = 0;
                     if (stats) for (const track in stats) totalPenalty += stats[track].penaltySum || 0;
-                    return { name, penalty: totalPenalty };
+                    return { name: data.name, penalty: totalPenalty };
                 })
                 .filter(p => p.penalty > 0)
                 .sort((a, b) => b.penalty - a.penalty);
@@ -1625,7 +1767,7 @@
             let imagesHtml = '';
             mostCommon.forEach(([code, cnt]) => {
                 const pct = (cnt / totalPenalties * 100).toFixed(0);
-                imagesHtml += `<img src="penalty_${code}.png" style="height:20px;width:20px;vertical-align:middle;margin:0 4px;" title="Код ${code} (${pct}%)" />`;
+                imagesHtml += `<img src="penalty_${code}.png" style="height:20px;width:20px;vertical-align:middle;margin:0 4px;" onerror="this.style.display='none'" title="Код ${code} (${pct}%)" />`;
                 imagesHtml += `<span style="font-size:12px;color:#88ddff;margin-right:12px;">${pct}%</span>`;
             });
             return `<div class="insight-block error" style="text-align: left; padding: 6px 12px; margin: 8px 0;">
@@ -1634,10 +1776,10 @@
         }
 
         _insightStability(calculator) {
-            const pilots = Object.keys(calculator.getOverall());
-            if (pilots.length < 2) return '';
-            let stabilityData = pilots.map(name => {
-                const stats = calculator.getPilotStats(name);
+            const ucids = Object.keys(calculator.getOverall());
+            if (ucids.length < 2) return '';
+            let stabilityData = ucids.map(ucid => {
+                const stats = calculator.getPilotStats(ucid);
                 if (!stats) return null;
                 let allTimes = [];
                 for (const track in stats) {
@@ -1646,7 +1788,7 @@
                 if (allTimes.length < 2) return null;
                 const mean = allTimes.reduce((s, t) => s + t, 0) / allTimes.length;
                 const variance = allTimes.reduce((s, t) => s + (t - mean) ** 2, 0) / allTimes.length;
-                return { name, std: Math.sqrt(variance), count: allTimes.length };
+                return { name: calculator._getDisplayName(ucid), std: Math.sqrt(variance), count: allTimes.length };
             }).filter(d => d !== null);
             if (stabilityData.length < 2) return '';
             stabilityData.sort((a, b) => a.std - b.std);
@@ -1656,11 +1798,11 @@
         }
 
         _insightTrends(calculator, stageOrder) {
-            const pilots = Object.keys(calculator.getOverall());
-            if (pilots.length === 0) return '';
+            const ucids = Object.keys(calculator.getOverall());
+            if (ucids.length === 0) return '';
             let trendData = [];
-            pilots.forEach(name => {
-                const stats = calculator.getPilotStats(name);
+            ucids.forEach(ucid => {
+                const stats = calculator.getPilotStats(ucid);
                 if (!stats) return;
                 let totalImprovement = 0, countImprovement = 0;
                 for (const track in stats) {
@@ -1674,7 +1816,12 @@
                     totalImprovement += improvements / (atts.length - 1);
                     countImprovement++;
                 }
-                if (countImprovement > 0) trendData.push({ name, avgImp: totalImprovement / countImprovement });
+                if (countImprovement > 0) {
+                    trendData.push({
+                        name: calculator._getDisplayName(ucid),
+                        avgImp: totalImprovement / countImprovement
+                    });
+                }
             });
             if (trendData.length === 0) return '';
             trendData.sort((a, b) => b.avgImp - a.avgImp);
@@ -1937,8 +2084,8 @@
         }
 
         _renderPilotAnalytics(calculator) {
-            const pilots = Object.keys(calculator.getOverall()).sort();
-            if (pilots.length === 0) {
+            const ucids = Object.keys(calculator.getOverall()).sort();
+            if (ucids.length === 0) {
                 this.container.innerHTML = '<div class="empty">Нет данных для аналитики пилота</div>';
                 return;
             }
@@ -1946,7 +2093,12 @@
                 <div style="margin-bottom:15px;">
                     <label for="pilotSelect" style="color:#88ddff; font-weight:500; margin-right:10px;">Выберите пилота:</label>
                     <select id="pilotSelect">`;
-            pilots.forEach(p => html += `<option value="${p}">${p}</option>`);
+            ucids.forEach(ucid => {
+                const name = calculator._getDisplayName(ucid);
+                const aliases = calculator._getAliases(ucid);
+                const aliasStr = aliases.length > 1 ? ` [ранее: ${aliases.filter(a => a !== name).join(', ')}]` : '';
+                html += `<option value="${ucid}">${name}${aliasStr}</option>`;
+            });
             html += `</select></div><div id="pilotAnalyticsContent"><div class="loading">Загрузка...</div></div></div>`;
             this.container.innerHTML = html;
 
@@ -1955,15 +2107,18 @@
                 this.destroyAllCharts();
                 this._renderPilotAnalyticsData(select.value, calculator);
             });
-            this._renderPilotAnalyticsData(pilots[0], calculator);
+            this._renderPilotAnalyticsData(ucids[0], calculator);
         }
 
-        _renderPilotAnalyticsData(pilotName, calculator) {
+        _renderPilotAnalyticsData(ucid, calculator) {
             const container = document.getElementById('pilotAnalyticsContent');
             if (!container) return;
             this.destroyAllCharts();
 
-            const stats = calculator.getPilotStats(pilotName);
+            const displayName = calculator._getDisplayName(ucid);
+            const aliases = calculator._getAliases(ucid);
+
+            const stats = calculator.getPilotStats(ucid);
             if (!stats || Object.keys(stats).length === 0) {
                 container.innerHTML = '<div class="empty">Нет данных для выбранного пилота</div>';
                 return;
@@ -1973,7 +2128,6 @@
             const tracks = stageOrder.filter(t => stats.hasOwnProperty(t));
 
             let totalAttempts = 0, totalDnf = 0, totalPenalty = 0;
-            let bestOverall = Infinity, worstOverall = 0, sumValid = 0, countValid = 0;
             const trackData = {};
 
             tracks.forEach(track => {
@@ -1986,31 +2140,27 @@
                 if (times.length > 0) {
                     const best = Math.min(...times), worst = Math.max(...times);
                     const avg = times.reduce((a, b) => a + b, 0) / times.length;
-                    if (best < bestOverall) bestOverall = best;
-                    if (worst > worstOverall) worstOverall = worst;
-                    sumValid += times.reduce((a, b) => a + b, 0);
-                    countValid += times.length;
                     trackData[track] = { best, worst, avg, count: times.length, dnf: s.dnf, penaltySum: s.penaltySum };
                 } else {
                     trackData[track] = { best: null, worst: null, avg: null, count: 0, dnf: s.dnf, penaltySum: s.penaltySum };
                 }
             });
 
-            const totalPoints = calculator.getOverall()[pilotName] || 0;
-            const streamBonus = calculator.getStreamBonuses()[pilotName] || 0;
+            const totalPoints = calculator.getOverall()[ucid] || 0;
+            const streamBonus = calculator.getStreamBonuses()[ucid] || 0;
 
-            const style = calculator.getPilotStyle(pilotName);
+            const style = calculator.getPilotStyle(ucid);
             let styleHtml = '';
             if (style) {
                 styleHtml = `<div class="insight-block style">
                     <strong style="color:#aa66ff;">🎭 Стиль пилотирования:</strong> <strong>${style.style}</strong><br>
                     Средняя стартовая скорость: <strong>${style.avgStartSpeed ? style.avgStartSpeed.toFixed(1) + ' км/ч' : '—'}</strong> · 
-                    Разброс времени: <strong>±${style.stability.toFixed(2)}с</strong> <span style="font-size:11px; color:#8899aa;">(насколько время отклоняется от среднего — чем меньше, тем стабильнее)</span> · 
+                    Разброс времени: <strong>±${style.stability.toFixed(2)}с</strong> · 
                     Попыток: <strong>${style.attemptsCount}</strong>
                 </div>`;
             }
 
-            const recommendations = calculator.getPilotRecommendations(pilotName);
+            const recommendations = calculator.getPilotRecommendations(ucid);
             let recsHtml = '';
             if (recommendations.length > 0) {
                 recsHtml = `<div class="insight-block recommendation">
@@ -2021,7 +2171,13 @@
                 </div>`;
             }
 
-            let html = styleHtml + recsHtml;
+            const aliasHtml = aliases.length > 1 
+                ? `<div class="insight-block" style="border-color:#66ccff; background:rgba(102,204,255,0.03); margin-bottom:15px;">
+                    <strong style="color:#66ccff;">👥 Все имена (UCID: ${ucid.startsWith('name:') ? '—' : ucid}):</strong> ${aliases.join(', ')}
+                </div>` 
+                : '';
+
+            let html = aliasHtml + styleHtml + recsHtml;
 
             html += `<div class="analytics-stats">`;
             html += `<div class="stat-card"><div class="label">Попыток</div><div class="value blue">${totalAttempts}</div></div>`;
@@ -2041,7 +2197,7 @@
                 const best = data.best;
                 const stageResults = calculator.getStages()[track] || [];
                 const record = stageResults.length > 0 ? stageResults[0].time : null;
-                const recordName = stageResults.length > 0 ? stageResults[0].name : null;
+                const recordName = stageResults.length > 0 ? calculator._getDisplayName(stageResults[0].ucid) : null;
                 const diff = (best !== null && record !== null) ? (best - record) : null;
                 html += `<tr><td><strong>${track}</strong></td>`;
                 html += `<td><strong>${best !== null ? this._formatTime(best) : '—'}</strong></td>`;
@@ -2084,16 +2240,16 @@
                     selector.querySelectorAll('.track-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     this.destroyAllCharts();
-                    this._drawPilotSegmentChart(pilotName, btn.dataset.track, stats, calculator);
-                    this._drawPilotAttemptsChart(pilotName, btn.dataset.track, stats);
+                    this._drawPilotSegmentChart(ucid, btn.dataset.track, stats, calculator);
+                    this._drawPilotAttemptsChart(ucid, btn.dataset.track, stats);
                 });
-                this._drawPilotSegmentChart(pilotName, tracks[0], stats, calculator);
-                this._drawPilotAttemptsChart(pilotName, tracks[0], stats);
+                this._drawPilotSegmentChart(ucid, tracks[0], stats, calculator);
+                this._drawPilotAttemptsChart(ucid, tracks[0], stats);
             }
-            this._drawPilotDnfChart(pilotName, stats);
+            this._drawPilotDnfChart(ucid, stats, calculator);
         }
 
-        _drawPilotDnfChart(pilotName, stats) {
+        _drawPilotDnfChart(ucid, stats, calculator) {
             const container = document.getElementById('pilotDnfChartContainer');
             if (!container) return;
 
@@ -2151,8 +2307,7 @@
             });
         }
 
-        // [FIX] Возвращено сравнение лучшей попытки пилота с рекордом
-        _drawPilotSegmentChart(pilotName, track, stats, calculator) {
+        _drawPilotSegmentChart(ucid, track, stats, calculator) {
             const container = document.getElementById('pilotSegmentChartContainer');
             if (!container) return;
 
@@ -2168,7 +2323,6 @@
                 return;
             }
 
-            // Находим лучшую попытку пилота (минимальное validTime)
             let bestAttempt = null;
             let bestTime = Infinity;
             finishAttempts.forEach(a => {
@@ -2182,21 +2336,20 @@
                 return;
             }
 
-            // Используем промежуточные времена лучшей попытки
             const intermediates = bestAttempt.intermediates;
             const totalTime = bestAttempt.totalTime || bestAttempt.validTime;
             const fullTimes = [0, ...intermediates, totalTime];
-            const segCount = fullTimes.length - 1;
 
             const stageResults = calculator.getStages()[track] || [];
             if (stageResults.length === 0) {
                 container.innerHTML = '<div class="empty">Нет рекорда трассы</div>';
                 return;
             }
-            const recordPilot = stageResults[0].name;
+            const recordUCID = stageResults[0].ucid;
+            const recordPilot = calculator._getDisplayName(recordUCID);
             const recordTime = stageResults[0].time;
 
-            const recordStats = calculator.getPilotStats(recordPilot);
+            const recordStats = calculator.getPilotStats(recordUCID);
             if (!recordStats || !recordStats[track]) {
                 container.innerHTML = '<div class="empty">Нет данных рекордсмена</div>';
                 return;
@@ -2213,6 +2366,7 @@
             const recordTotal = recordAttempt.totalTime || recordAttempt.validTime;
             const recordFull = [0, ...recordInter, recordTotal];
 
+            const pilotName = calculator._getDisplayName(ucid);
             const diffs = [];
             const totalSegs = Math.min(fullTimes.length - 1, recordFull.length - 1);
             for (let i = 0; i < totalSegs; i++) {
@@ -2252,7 +2406,7 @@
             container.innerHTML = html;
         }
 
-        _drawPilotAttemptsChart(pilotName, track, stats) {
+        _drawPilotAttemptsChart(ucid, track, stats) {
             const container = document.getElementById('pilotAttemptsChartContainer');
             if (!container) return;
             const trackData = stats[track];
@@ -2417,39 +2571,6 @@
             }
             return 'Другое';
         }
-
-        _renderStage(tabName, calculator) {
-            const results = calculator.getStages()[tabName];
-            if (!results || results.length === 0) {
-                this.container.innerHTML = `<div class="empty">Нет результатов для этапа «${tabName}»</div>`;
-                return;
-            }
-            let html = `<div class="stage-title">🏁 Этап: ${tabName}</div>
-                <table>
-                    <thead><tr>
-                        <th>#</th><th>Пилот</th><th>Зачётное время</th><th>Итого</th>
-                        <th>Очки (место+бонус)</th><th>DNF</th>
-                    </tr></thead><tbody>`;
-            results.forEach(r => {
-                const cls = r.place === 1 ? 'gold' : r.place === 2 ? 'silver' : r.place === 3 ? 'bronze' : '';
-                const basePoints = r.basePoints !== undefined ? r.basePoints : r.points + (r.dnf || 0);
-                html += `<tr>
-                    <td class="pos ${cls}">${r.place}</td>
-                    <td><span class="pilot-name" data-pilot="${r.name}">${r.name}</span></td>
-                    <td><span class="time">${this._formatTime(r.time)}</span></td>
-                    <td><span class="points">${r.points}</span></td>
-                    <td>${basePoints}</td>
-                    <td>${r.dnf > 0 ? `<span class="dnf-badge">${r.dnf}</span>` : '—'}</td>
-                </tr>`;
-            });
-            html += '</tbody></table>';
-            this.container.innerHTML = html;
-            this.container.querySelectorAll('.pilot-name').forEach(el => {
-                el.addEventListener('click', (e) => {
-                    document.dispatchEvent(new CustomEvent('showPilotStats', { detail: { pilot: e.currentTarget.dataset.pilot } }));
-                });
-            });
-        }
     }
 
     // ================================================================
@@ -2507,13 +2628,19 @@
             this.renderer.renderTab(tabName, this.calculator, null);
         }
 
-        showPilotStats(pilotName) {
+        showPilotStats(ucid) {
             if (!this.calculator) return;
-            const stats = this.calculator.getPilotStats(pilotName);
+            const stats = this.calculator.getPilotStats(ucid);
             if (!stats || Object.keys(stats).length === 0) {
-                this.renderer.showModal(`Статистика: ${pilotName}`, '<p style="color:#8899aa;">Нет данных для этого пилота.</p>');
+                this.renderer.showModal(`Статистика`, '<p style="color:#8899aa;">Нет данных.</p>');
                 return;
             }
+
+            const displayName = this.calculator._getDisplayName(ucid);
+            const aliases = this.calculator._getAliases(ucid);
+            const aliasStr = aliases.length > 1
+                ? ` <span style="color:#8899aa;font-size:0.85em;">(ранее: ${aliases.filter(a => a !== displayName).join(', ')})</span>`
+                : '';
 
             const stageOrder = this.calculator.getStageOrder();
             const tracks = stageOrder.filter(t => stats.hasOwnProperty(t));
@@ -2525,10 +2652,12 @@
                 totalPenalty += stats[track].penaltySum;
             });
 
-            const recommendations = this.calculator.getPilotRecommendations(pilotName);
-            const style = this.calculator.getPilotStyle(pilotName);
+            const recommendations = this.calculator.getPilotRecommendations(ucid);
+            const style = this.calculator.getPilotStyle(ucid);
 
-            let html = `<div style="margin-bottom:15px;">
+            let html = `<div style="font-size:0.85em;color:#66ccff;margin-bottom:10px;font-family:Consolas,monospace;">UCID: ${ucid}${aliasStr}</div>`;
+
+            html += `<div style="margin-bottom:15px;">
                 <p><strong>Всего попыток:</strong> ${totalAll} · <strong>DNF:</strong> ${totalDnf} · <strong>Штрафов (сек):</strong> ${totalPenalty.toFixed(1)}</p>
             </div>`;
 
@@ -2554,7 +2683,7 @@
             });
             html += `</div><div id="modalAttemptsContainer"></div>`;
 
-            this.renderer.showModal(`Статистика: ${pilotName}`, html);
+            this.renderer.showModal(`Статистика: ${displayName}`, html);
 
             const renderAttempts = (track) => {
                 const container = document.getElementById('modalAttemptsContainer');
