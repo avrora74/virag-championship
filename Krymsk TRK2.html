@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ТРАССА — Крымск (2 пилота)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            overflow: hidden;
+            background-color: #b0d0e8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #1a1a2e;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.70);
+            padding: 8px 24px;
+            border-radius: 30px;
+            pointer-events: none;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid rgba(255,255,255,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 10;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: #1a2a3a;
+            text-shadow: 0 1px 4px rgba(255,255,255,0.5);
+        }
+        #controls {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(8px);
+            border-radius: 16px;
+            z-index: 20;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
+            pointer-events: auto;
+            padding: 10px 14px;
+            display: grid;
+            grid-template-rows: auto auto auto auto auto auto;
+            gap: 6px;
+            min-width: 340px;
+            max-width: 700px;
+            width: fit-content;
+            max-height: 95vh;
+            overflow: hidden;
+        }
+        #controls .row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+            min-height: 28px;
+        }
+        #controls .row:last-child {
+            min-height: 24px;
+        }
+        #controls button {
+            background: #2a6f8a;
+            border: none;
+            color: white;
+            font-size: 14px;
+            padding: 4px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: background 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+            white-space: nowrap;
+            height: 26px;
+            line-height: 1;
+        }
+        #controls button:hover { background: #3a8aaa; }
+        #controls button:active { transform: scale(0.97); }
+        #controls label {
+            color: rgba(255,255,255,0.85);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        #controls input[type="range"] {
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            cursor: pointer;
+            flex: 1 1 auto;
+            min-width: 30px;
+            max-width: 120px;
+        }
+        #controls input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #88ccff;
+            border: 2px solid white;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(136,204,255,0.5);
+        }
+        #controls input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #88ccff;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+        .val-label {
+            color: white;
+            font-size: 12px;
+            min-width: 34px;
+            text-align: center;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        #telemetry {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 4px 10px;
+            color: white;
+            font-size: 12px;
+            background: rgba(0,0,0,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            justify-content: space-between;
+            width: 100%;
+            overflow: hidden;
+            flex: 1;
+            min-height: 22px;
+            align-items: center;
+        }
+        #telemetry span {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        #telemetry .val {
+            font-weight: 600;
+            color: #88ccff;
+        }
+        #telemetry2 {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 4px 10px;
+            color: white;
+            font-size: 12px;
+            background: rgba(0,0,0,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            justify-content: space-between;
+            width: 100%;
+            overflow: hidden;
+            flex: 1;
+            min-height: 22px;
+            align-items: center;
+        }
+        #telemetry2 span {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        #telemetry2 .val {
+            font-weight: 600;
+            color: #88ccff;
+        }
+        #controls-note {
+            position: absolute;
+            bottom: 100px;
+            right: 30px;
+            background: rgba(255,255,255,0.5);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 0.5;
+            z-index: 10;
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #1a2a3a;
+            backdrop-filter: blur(2px);
+        }
+        .file-label {
+            color: rgba(255,255,255,0.8);
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+        .file-name {
+            color: #88ccff;
+            font-size: 11px;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 40px;
+        }
+        @media (max-width: 700px) {
+            #controls {
+                left: 10px;
+                bottom: 10px;
+                padding: 8px 10px;
+                min-width: 240px;
+                max-width: 400px;
+                gap: 4px;
+            }
+            #controls button { font-size: 12px; padding: 3px 10px; height: 22px; }
+            #controls label { font-size: 10px; }
+            .val-label { font-size: 10px; min-width: 28px; }
+            #telemetry { font-size: 10px; gap: 3px 6px; padding: 1px 6px; min-height: 18px; }
+            #telemetry2 { font-size: 10px; gap: 3px 6px; padding: 1px 6px; min-height: 18px; }
+            #controls input[type="range"] { min-width: 20px; max-width: 80px; }
+            #controls .row { min-height: 22px; gap: 4px; }
+            #controls .row:last-child { min-height: 18px; }
+            .file-label { font-size: 9px; }
+            .file-name { font-size: 9px; }
+        }
+        @media (max-width: 500px) {
+            #controls {
+                left: 6px;
+                bottom: 6px;
+                padding: 6px 8px;
+                min-width: 180px;
+                max-width: 320px;
+                gap: 3px;
+                border-radius: 12px;
+            }
+            #controls button { font-size: 10px; padding: 2px 8px; height: 18px; }
+            #controls label { font-size: 9px; }
+            .val-label { font-size: 9px; min-width: 22px; }
+            #telemetry { font-size: 8px; gap: 2px 4px; padding: 1px 4px; min-height: 16px; }
+            #telemetry2 { font-size: 8px; gap: 2px 4px; padding: 1px 4px; min-height: 16px; }
+            #controls input[type="range"] { min-width: 16px; max-width: 60px; height: 3px; }
+            #controls input[type="range"]::-webkit-slider-thumb { width: 12px; height: 12px; }
+            #controls .row { min-height: 18px; gap: 3px; }
+            #controls .row:last-child { min-height: 16px; }
+            .file-label { font-size: 8px; }
+            .file-name { font-size: 8px; }
+        }
+        @media (max-width: 640px) {
+            #info { font-size: 16px; padding: 6px 16px; top: 12px; }
+            #controls-note { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="info">ТРАССА — Крымск | Ворот: 19 | Пилонов: 14</div>
+    <div id="controls-note">🖱 Мышь: вращение · колёсико: масштаб</div>
+
+    <div id="controls">
+        <!-- Строка загрузки пилота 1 (красный) -->
+        <div class="row">
+            <span class="file-label" style="color:#ff6666;">🔴 Пилот 1:</span>
+            <input type="file" id="file1" accept=".csv" style="display:none;" />
+            <button id="loadBtn1" style="background:#6a3a3a;">Выбрать CSV</button>
+            <span class="file-name" id="file1name">не выбран</span>
+        </div>
+        <!-- Строка загрузки пилота 2 (синий) -->
+        <div class="row">
+            <span class="file-label" style="color:#66aaff;">🔵 Пилот 2:</span>
+            <input type="file" id="file2" accept=".csv" style="display:none;" />
+            <button id="loadBtn2" style="background:#2a5a7a;">Выбрать CSV</button>
+            <span class="file-name" id="file2name">не выбран</span>
+        </div>
+        <!-- Строка 1: Кнопка + Прогресс -->
+        <div class="row">
+            <button id="playBtn">▶ Старт</button>
+            <label>Прогресс</label>
+            <input type="range" id="progressSlider" min="0" max="100" value="0" />
+            <span class="val-label" id="progress-label">0%</span>
+        </div>
+        <!-- Строка 2: Скорость + Масштаб -->
+        <div class="row">
+            <label>Скорость</label>
+            <input type="range" id="speedSlider" min="0.25" max="3" step="0.05" value="1.0" />
+            <span class="val-label" id="speed-label">1.00×</span>
+            <label>Масштаб</label>
+            <input type="range" id="scaleSlider" min="1" max="4" step="1" value="2" />
+            <span class="val-label" id="scale-label">2</span>
+        </div>
+        <!-- Строка 3: Телеметрия для пилота 1 (с меткой) -->
+        <div class="row" style="padding:0;">
+            <div id="telemetry">
+                <span style="color:#ff6666;">🔴 Пилот 1:</span>
+                <span>Время: <span class="val" id="t-time">0.00</span> с</span>
+                <span>Скорость: <span class="val" id="t-speed">0</span> км/ч</span>
+                <span>Высота: <span class="val" id="t-height">0</span> м</span>
+                <span>Крен: <span class="val" id="t-roll">0.0</span>°</span>
+                <span>Тангаж: <span class="val" id="t-pitch">0.0</span>°</span>
+            </div>
+        </div>
+        <!-- Строка 4: Телеметрия для пилота 2 (с меткой) -->
+        <div class="row" style="padding:0;">
+            <div id="telemetry2">
+                <span style="color:#66aaff;">🔵 Пилот 2:</span>
+                <span>Время: <span class="val" id="t2-time">0.00</span> с</span>
+                <span>Скорость: <span class="val" id="t2-speed">0</span> км/ч</span>
+                <span>Высота: <span class="val" id="t2-height">0</span> м</span>
+                <span>Крен: <span class="val" id="t2-roll">0.0</span>°</span>
+                <span>Тангаж: <span class="val" id="t2-pitch">0.0</span>°</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        // ---------- Константы Крымска ----------
+        const CENTER_X = -6600;
+        const CENTER_Y = 293900;
+        const PYLON_HEIGHT = 25;
+        const PYLON_RADIUS = 4.5;
+        const GATE_RADIUS = 60;
+
+        // ---------- Данные ворот и пилонов (из Крымска) ----------
+        const gateData = [
+            [1, [
+                    [-6122.0876702439, 293918.26480278],
+                    [-6149.3123593696, 293947.46313675],
+                    [-6144.2621505126, 293952.04895858],
+                    [-6116.9213646316, 293922.96672137]
+                ]],
+            [2, [
+                    [-6428.9765588147, 293776.86577624],
+                    [-6425.5428327524, 293782.69084723],
+                    [-6383.357055415, 293757.79633328],
+                    [-6386.913414551, 293752.21652843]
+                ]],
+            [3, [
+                    [-6529.5205442007, 293585.47593575],
+                    [-6546.9063007658, 293632.67380694],
+                    [-6540.6095363688, 293635.1256444],
+                    [-6523.2237798038, 293588.03922037]
+                ]],
+            [4, [
+                    [-6692.6285879666, 293492.60666022],
+                    [-6723.2943933873, 293530.24963972],
+                    [-6717.4425699676, 293534.69477482],
+                    [-6687.0018346784, 293496.77045766]
+                ]],
+            [5, [
+                    [-6849.9873032117, 293229.01104645],
+                    [-6877.2146734164, 293257.73618948],
+                    [-6872.1864360898, 293262.7644268],
+                    [-6844.8520821122, 293233.45087303]
+                ]],
+            [6, [
+                    [-6909.6898148338, 293639.68772045],
+                    [-6934.3119492276, 293671.11333934],
+                    [-6928.0484238117, 293675.1630325],
+                    [-6904.1282362317, 293643.79140951]
+                ]],
+            [7, [
+                    [-6590.8517345145, 293868.42166582],
+                    [-6615.3251471352, 293900.33548781],
+                    [-6609.2375394733, 293904.08643798],
+                    [-6585.1945637579, 293872.6030529]
+                ]],
+            [8, [
+                    [-6404.9182485508, 294251.2180524],
+                    [-6428.9075356808, 294283.14899851],
+                    [-6423.1566791771, 294287.14721303],
+                    [-6399.167392047, 294255.59965735]
+                ]],
+            [9, [
+                    [-5976.2635491341, 294308.62214562],
+                    [-5980.9091972228, 294313.96782287],
+                    [-5940.943895857, 294344.76910609],
+                    [-5936.2346087534, 294339.10523376]
+                ]],
+            [10, [
+                    [-6122.0876702439, 293918.26480278],
+                    [-6149.2543109919, 293947.46313675],
+                    [-6144.2621505126, 293951.9909102],
+                    [-6116.9794130092, 293922.96672137]
+                ]],
+            [11, [
+                    [-6386.913414551, 293752.27784497],
+                    [-6429.0991918884, 293777.04972585],
+                    [-6425.4815162155, 293782.75216377],
+                    [-6383.2957388782, 293757.73501675]
+                ]],
+            [12, [
+                    [-6529.464820622, 293585.53165933],
+                    [-6546.9063007658, 293632.61808336],
+                    [-6540.5538127901, 293635.18136798],
+                    [-6523.2237798038, 293587.87204964]
+                ]],
+            [13, [
+                    [-6692.7411230324, 293492.49412516],
+                    [-6723.2943933873, 293530.24963972],
+                    [-6717.3300349018, 293534.75104235],
+                    [-6686.9455671455, 293496.65792259]
+                ]],
+            [14, [
+                    [-6850.0407950981, 293228.95755457],
+                    [-6877.1611815299, 293257.78968136],
+                    [-6872.1329442033, 293262.71093492],
+                    [-6844.8520821122, 293233.5578568]
+                ]],
+            [15, [
+                    [-6909.7044469477, 293639.78949043],
+                    [-6934.2932525837, 293671.05746683],
+                    [-6928.1024197204, 293675.21702841],
+                    [-6904.1282362317, 293643.84540542]
+                ]],
+            [16, [
+                    [-6590.790243528, 293868.48315681],
+                    [-6615.2021651622, 293900.21250584],
+                    [-6609.2375394733, 293904.08643798],
+                    [-6585.2560547444, 293872.54156192]
+                ]],
+            [17, [
+                    [-6404.8087084269, 294251.27282246],
+                    [-6428.8527656189, 294283.09422845],
+                    [-6423.1019091151, 294287.14721303],
+                    [-6399.1126219851, 294255.59965735]
+                ]],
+            [18, [
+                    [-5980.8455582079, 294313.96782287],
+                    [-5940.8166178272, 294344.70546708],
+                    [-5936.2346087534, 294339.04159475],
+                    [-5976.2635491341, 294308.55850661]
+                ]],
+            [19, [
+                    [-6122.1457186216, 293918.26480278],
+                    [-6149.3123593696, 293947.52118512],
+                    [-6144.2621505126, 293952.04895858],
+                    [-6116.9213646316, 293922.96672137]
+                ]]
+        ];
+
+        const pylonData = [
+            [1, -6929.7514606918, 293665.88019438],
+            [2, -6913.9809586526, 293645.15208853],
+            [3, -6610.8628756718, 293894.70928073],
+            [4, -6595.0823819403, 293873.80050157],
+            [5, -6424.5471946423, 294277.62641539],
+            [6, -6408.8888015524, 294256.77069907],
+            [7, -5975.1588359287, 294318.23131223],
+            [8, -6139.4471125813, 293947.08539688],
+            [9, -6121.7551321028, 293927.99012592],
+            [10, -6389.0610831496, 293761.66720099],
+            [11, -6538.3128682066, 293628.6799617],
+            [12, -6691.4898585659, 293501.90927307],
+            [13, -6867.3147272096, 293257.62796689],
+            [14, -6849.5591126943, 293238.60556823]
+        ];
+
+        // ---------- Преобразования координат ----------
+        function transformX(x) { return -(x - CENTER_X); }
+        function transformY(y) { return -(y - CENTER_Y); }
+
+        // ---------- Сцена, камера, рендереры ----------
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xb0d0e8);
+
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 50000);
+        camera.position.set(1500, 1200, 1800);
+        camera.lookAt(0, 100, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.localClippingEnabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 120, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 300;
+        controls.maxDistance = 5000;
+        controls.update();
+
+        // ---------- Освещение ----------
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffeedd, 1.0);
+        dirLight.position.set(400, 800, 600);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        const d = 1500;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        dirLight.shadow.camera.near = 1;
+        dirLight.shadow.camera.far = 2000;
+        scene.add(dirLight);
+
+        const fillLight = new THREE.DirectionalLight(0xccddff, 0.4);
+        fillLight.position.set(-400, 300, -600);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.2);
+        rimLight.position.set(0, -200, 800);
+        scene.add(rimLight);
+
+        // ---------- Трава и сетка ----------
+        const groundGeo = new THREE.PlaneGeometry(2800, 2800);
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0x6a9e5a,
+            roughness: 0.9,
+            metalness: 0.0,
+            side: THREE.DoubleSide,
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -1;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const gridHelper = new THREE.GridHelper(2400, 40, 0x4a7a3a, 0x3a6a2a);
+        gridHelper.position.y = -0.5;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.15;
+        scene.add(gridHelper);
+
+        // ---------- Ворота (кластеризация и метки) ----------
+        const gateCenters = gateData.map(([num, verts]) => {
+            const pts = verts.map(v => new THREE.Vector3(transformX(v[0]), 0, transformY(v[1])));
+            const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+            const cz = pts.reduce((s, p) => s + p.z, 0) / pts.length;
+            return { num, cx, cz };
+        });
+
+        const meanXtrans = gateCenters.reduce((s, g) => s + g.cx, 0) / gateCenters.length;
+        const meanYtrans = gateCenters.reduce((s, g) => s + g.cz, 0) / gateCenters.length;
+        const clusterThreshold = 50;
+        const clusters = [];
+        const used = new Set();
+        for (let i = 0; i < gateCenters.length; i++) {
+            if (used.has(i)) continue;
+            const cluster = [gateCenters[i]];
+            used.add(i);
+            for (let j = i + 1; j < gateCenters.length; j++) {
+                if (used.has(j)) continue;
+                const dx = gateCenters[i].cx - gateCenters[j].cx;
+                const dz = gateCenters[i].cz - gateCenters[j].cz;
+                const dist = Math.sqrt(dx*dx + dz*dz);
+                if (dist < clusterThreshold) {
+                    cluster.push(gateCenters[j]);
+                    used.add(j);
+                }
+            }
+            clusters.push(cluster);
+        }
+
+        const baseY = 55;
+        const offsetDist = 60;
+        const halfGates = 10; // для цветов меток
+
+        for (const cluster of clusters) {
+            cluster.sort((a, b) => a.num - b.num);
+            let avgX = cluster.reduce((s, g) => s + g.cx, 0) / cluster.length;
+            let avgZ = cluster.reduce((s, g) => s + g.cz, 0) / cluster.length;
+            const dx = avgX - meanXtrans;
+            const dz = avgZ - meanYtrans;
+            const len = Math.sqrt(dx*dx + dz*dz);
+            if (len > 1) {
+                avgX += (dx / len) * offsetDist;
+                avgZ += (dz / len) * offsetDist;
+            } else {
+                avgX += offsetDist;
+                avgZ += 0;
+            }
+            const numbers = cluster.map(g => g.num);
+            const allRed = numbers.every(n => n <= halfGates);
+            const allBlue = numbers.every(n => n > halfGates);
+            let borderColor = 'rgba(255,255,255,0.3)';
+            if (allRed) borderColor = 'rgba(204, 51, 51, 0.4)';
+            else if (allBlue) borderColor = 'rgba(26, 107, 138, 0.4)';
+
+            const container = document.createElement('div');
+            container.style.display = 'inline-block';
+            container.style.background = 'rgba(255, 255, 255, 0.10)';
+            container.style.padding = '2px 10px';
+            container.style.borderRadius = '4px';
+            container.style.border = `1px solid ${borderColor}`;
+            container.style.backdropFilter = 'blur(1px)';
+            container.style.fontFamily = 'monospace';
+            container.style.fontSize = '14px';
+            container.style.fontWeight = 'bold';
+            container.style.textShadow = '0 0 10px rgba(255,255,255,0.8), 0 0 4px rgba(255,255,255,0.6)';
+            container.style.color = '#1a1a2e';
+            const parts = numbers.map(n => {
+                const color = n <= halfGates ? '#cc3333' : '#1a6b8a';
+                return `<span style="color:${color}; text-shadow: 0 0 6px rgba(255,255,255,0.7);">#${n}</span>`;
+            });
+            container.innerHTML = parts.join(', ');
+            const label = new CSS2DObject(container);
+            label.position.set(avgX, baseY, avgZ);
+            scene.add(label);
+        }
+
+        // ---------- Пилоны ----------
+        function createPylon(num, x, y) {
+            const group = new THREE.Group();
+            const px = transformX(x);
+            const pz = transformY(y);
+            const coneMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.5,
+                metalness: 0.2,
+            });
+            const coneGeo = new THREE.CylinderGeometry(0, PYLON_RADIUS, PYLON_HEIGHT, 16, 1);
+            const cone = new THREE.Mesh(coneGeo, coneMat);
+            cone.position.set(px, PYLON_HEIGHT / 2, pz);
+            cone.castShadow = true;
+            cone.receiveShadow = true;
+            group.add(cone);
+
+            const topHeight = 4;
+            const topRadius = PYLON_RADIUS * (1 - (PYLON_HEIGHT - topHeight) / PYLON_HEIGHT);
+            const topMat = new THREE.MeshStandardMaterial({
+                color: 0xff0000,
+                roughness: 0.3,
+                metalness: 0.1,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.15,
+            });
+            const topGeo = new THREE.CylinderGeometry(0, topRadius, topHeight, 16);
+            const topCone = new THREE.Mesh(topGeo, topMat);
+            topCone.position.set(px, PYLON_HEIGHT - topHeight/2, pz);
+            topCone.castShadow = true;
+            topCone.receiveShadow = true;
+            group.add(topCone);
+
+            const stripHeight = 1.5;
+            const midHeight = PYLON_HEIGHT / 2;
+            const radiusAtMid = PYLON_RADIUS * (1 - midHeight / PYLON_HEIGHT);
+            const stripMat = new THREE.MeshStandardMaterial({
+                color: 0xff0000,
+                roughness: 0.3,
+                metalness: 0.1,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.15,
+            });
+            const stripGeo = new THREE.CylinderGeometry(radiusAtMid + 0.6, radiusAtMid + 0.6, stripHeight, 16);
+            const strip = new THREE.Mesh(stripGeo, stripMat);
+            strip.position.set(px, midHeight, pz);
+            strip.castShadow = true;
+            strip.receiveShadow = true;
+            group.add(strip);
+            scene.add(group);
+        }
+        for (const [num, x, y] of pylonData) {
+            createPylon(num, x, y);
+        }
+
+        // ================================================================
+        //  1. ПАРСИНГ CSV
+        // ================================================================
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const result = [];
+            for (let i = 1; i < lines.length; i++) {
+                const vals = lines[i].split(',');
+                if (vals.length < 8) continue;
+                const time = parseFloat(vals[0]);
+                const X = parseFloat(vals[1]);
+                const Z = parseFloat(vals[3]);
+                const heightAGL = parseFloat(vals[4]);
+                const speedKmh = parseFloat(vals[5]);
+                const rollDeg = parseFloat(vals[6]);
+                const pitchDeg = parseFloat(vals[7]);
+                const x = transformX(X);
+                const y = heightAGL;
+                const z = transformY(Z);
+                result.push({
+                    x, y, z,
+                    time, speedKmh, heightAGL,
+                    roll: rollDeg * Math.PI / 180,
+                    pitch: pitchDeg * Math.PI / 180,
+                    rollDeg, pitchDeg
+                });
+            }
+            return result;
+        }
+
+        // ================================================================
+        //  2. ПОСТРОЕНИЕ САМОЛЁТА С ЦВЕТОМ
+        // ================================================================
+        function buildAirplane(color = 'red') {
+            const group = new THREE.Group();
+
+            // Вспомогательные функции (скопированы из оригинального buildAirplane)
+            function createTrapezoidGeometry(points) {
+                const geom = new THREE.BufferGeometry();
+                const verts = points.flat();
+                geom.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+                geom.setIndex([0, 1, 2, 0, 2, 3]);
+                geom.computeVertexNormals();
+                return geom;
+            }
+
+            function createSolidTrapezoid(points, thickness, topMat, bottomMat, sideMat) {
+                const group = new THREE.Group();
+                const geom = createTrapezoidGeometry(points);
+
+                const upper = new THREE.Mesh(geom.clone(), topMat);
+                upper.position.y = thickness / 2;
+                upper.castShadow = true;
+                upper.receiveShadow = true;
+                group.add(upper);
+
+                const lower = new THREE.Mesh(geom.clone(), bottomMat);
+                lower.position.y = -thickness / 2;
+                lower.castShadow = true;
+                lower.receiveShadow = true;
+                group.add(lower);
+
+                const top = points.map(p => new THREE.Vector3(p[0], thickness / 2, p[2]));
+                const bottom = points.map(p => new THREE.Vector3(p[0], -thickness / 2, p[2]));
+
+                function addSide(v0, v1, v2, v3) {
+                    const g = new THREE.BufferGeometry();
+                    const verts = new Float32Array([
+                        v0.x, v0.y, v0.z,
+                        v1.x, v1.y, v1.z,
+                        v2.x, v2.y, v2.z,
+                        v0.x, v0.y, v0.z,
+                        v2.x, v2.y, v2.z,
+                        v3.x, v3.y, v3.z
+                    ]);
+                    g.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                    g.computeVertexNormals();
+                    const mesh = new THREE.Mesh(g, sideMat);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    group.add(mesh);
+                }
+
+                addSide(top[0], top[3], bottom[3], bottom[0]);
+                addSide(top[1], top[2], bottom[2], bottom[1]);
+                addSide(top[0], top[1], bottom[1], bottom[0]);
+                addSide(top[3], top[2], bottom[2], bottom[3]);
+
+                return group;
+            }
+
+            function createSolidKeel(points, thickness, material) {
+                const group = new THREE.Group();
+
+                const top = points.map(p => new THREE.Vector3(thickness / 2, p[1], p[2]));
+                const bottom = points.map(p => new THREE.Vector3(-thickness / 2, p[1], p[2]));
+
+                function addQuad(v0, v1, v2, v3) {
+                    const g = new THREE.BufferGeometry();
+                    const verts = new Float32Array([
+                        v0.x, v0.y, v0.z,
+                        v1.x, v1.y, v1.z,
+                        v2.x, v2.y, v2.z,
+                        v0.x, v0.y, v0.z,
+                        v2.x, v2.y, v2.z,
+                        v3.x, v3.y, v3.z
+                    ]);
+                    g.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                    g.computeVertexNormals();
+                    const mesh = new THREE.Mesh(g, material);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    group.add(mesh);
+                }
+
+                addQuad(top[0], top[3], bottom[3], bottom[0]);
+                addQuad(top[1], top[2], bottom[2], bottom[1]);
+                addQuad(top[0], top[1], bottom[1], bottom[0]);
+                addQuad(top[3], top[2], bottom[2], bottom[3]);
+
+                addQuad(top[0], top[1], top[2], top[3]);
+                addQuad(bottom[0], bottom[1], bottom[2], bottom[3]);
+
+                return group;
+            }
+
+            // Цвета
+            const mainColor = color === 'red' ? 0xcc2222 : 0x2266cc;
+            const lightColor = color === 'red' ? 0xff6666 : 0x66aaff;
+            const darkColor = color === 'red' ? 0x881111 : 0x114488;
+
+            const fuselageLength = 7.676;
+            const halfLen = fuselageLength / 2;
+            const trailingEdgeZ = -0.3;
+            const noseRadius = 0.4888889;
+
+            const cylHeight = trailingEdgeZ - (-halfLen);
+            const cylCenterZ = (-halfLen + trailingEdgeZ) / 2;
+            const coneHeight = halfLen - trailingEdgeZ;
+            const coneCenterZ = (trailingEdgeZ + halfLen) / 2;
+
+            const cylGeom = new THREE.CylinderGeometry(noseRadius, noseRadius, cylHeight, 24, 1, false);
+            const coneGeom = new THREE.CylinderGeometry(noseRadius, 0.002, coneHeight, 24, 1, false);
+            cylGeom.rotateX(-Math.PI / 2);
+            coneGeom.rotateX(-Math.PI / 2);
+
+            const fuseWhiteMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.4,
+                metalness: 0.3,
+                clippingPlanes: [new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)],
+                clipShadows: true,
+            });
+            const fuseColorMat = new THREE.MeshStandardMaterial({
+                color: mainColor,
+                roughness: 0.4,
+                metalness: 0.3,
+                clippingPlanes: [new THREE.Plane(new THREE.Vector3(0, -1, 0), 0)],
+                clipShadows: true,
+            });
+
+            const cylUpper = new THREE.Mesh(cylGeom, fuseWhiteMat);
+            cylUpper.position.z = cylCenterZ;
+            cylUpper.castShadow = true;
+            cylUpper.receiveShadow = true;
+            group.add(cylUpper);
+
+            const cylLower = new THREE.Mesh(cylGeom.clone(), fuseColorMat);
+            cylLower.position.z = cylCenterZ;
+            cylLower.castShadow = true;
+            cylLower.receiveShadow = true;
+            group.add(cylLower);
+
+            const coneUpper = new THREE.Mesh(coneGeom, fuseWhiteMat);
+            coneUpper.position.z = coneCenterZ;
+            coneUpper.castShadow = true;
+            coneUpper.receiveShadow = true;
+            group.add(coneUpper);
+
+            const coneLower = new THREE.Mesh(coneGeom.clone(), fuseColorMat);
+            coneLower.position.z = coneCenterZ;
+            coneLower.castShadow = true;
+            coneLower.receiveShadow = true;
+            group.add(coneLower);
+
+            const cockpitRadius = 0.233333;
+            const cockpitPosZ = -1.6;
+            const cockpitGeom = new THREE.SphereGeometry(cockpitRadius, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+            const cockpitMat = new THREE.MeshPhysicalMaterial({
+                color: 0x88ccff,
+                transparent: true,
+                opacity: 0.6,
+                roughness: 0.1,
+                metalness: 0.0,
+                clearcoat: 0.3,
+                side: THREE.DoubleSide,
+            });
+            const cockpit = new THREE.Mesh(cockpitGeom, cockpitMat);
+            cockpit.position.set(0, noseRadius, cockpitPosZ);
+            cockpit.scale.set(1, 1, 3.0);
+            cockpit.castShadow = true;
+            cockpit.receiveShadow = true;
+            group.add(cockpit);
+
+            const wingRootChord = 2.0;
+            const wingTipChord = 1.0;
+            const wingSpan = 9.5;
+            const wingSweep = 0.3;
+            const wingZOffset = trailingEdgeZ - wingRootChord / 2;
+            const wingThickness = 0.12;
+
+            const wingWhiteMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.2,
+                metalness: 0.0,
+                emissive: 0x222222,
+                emissiveIntensity: 0.15,
+                side: THREE.FrontSide,
+            });
+            const wingColorMat = new THREE.MeshStandardMaterial({
+                color: mainColor,
+                roughness: 0.4,
+                metalness: 0.3,
+                side: THREE.BackSide,
+            });
+            const wingSideMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.4,
+                metalness: 0.3,
+                side: THREE.DoubleSide,
+            });
+
+            const rightWingPoints = [
+                [0, 0, -wingRootChord / 2],
+                [0, 0, wingRootChord / 2],
+                [wingSpan / 2, 0, wingTipChord / 2 + wingSweep],
+                [wingSpan / 2, 0, -wingTipChord / 2 + wingSweep],
+            ];
+            const rightWing = createSolidTrapezoid(
+                rightWingPoints,
+                wingThickness,
+                wingWhiteMat,
+                wingColorMat,
+                wingSideMat
+            );
+            rightWing.position.z = wingZOffset;
+            group.add(rightWing);
+
+            const leftWing = rightWing.clone();
+            leftWing.scale.x = -1;
+            group.add(leftWing);
+
+            const stabSpan = 3.0;
+            const stabRootChord = 1.2;
+            const stabTipChord = 0.6;
+            const stabSweep = 0.2;
+            const stabZ = halfLen - 0.9;
+            const stabThickness = 0.04;
+
+            const rightStabPoints = [
+                [0, 0, -stabRootChord / 2],
+                [0, 0, stabRootChord / 2],
+                [stabSpan / 2, 0, stabTipChord / 2 + stabSweep],
+                [stabSpan / 2, 0, -stabTipChord / 2 + stabSweep],
+            ];
+            const rightStab = createSolidTrapezoid(
+                rightStabPoints,
+                stabThickness,
+                wingWhiteMat,
+                wingColorMat,
+                wingSideMat
+            );
+            rightStab.position.z = stabZ;
+            group.add(rightStab);
+
+            const leftStab = rightStab.clone();
+            leftStab.scale.x = -1;
+            group.add(leftStab);
+
+            const keelHeight = 1.05;
+            const keelRootChord = 1.2;
+            const keelTipChord = 0.5;
+            const keelSweep = 0.15;
+            const keelZ = halfLen - 0.8;
+            const keelThickness = 0.04;
+            const keelMat = new THREE.MeshStandardMaterial({
+                color: mainColor,
+                roughness: 0.4,
+                metalness: 0.3,
+                side: THREE.DoubleSide,
+            });
+
+            const keelPoints = [
+                [0, 0, -keelRootChord / 2],
+                [0, 0, keelRootChord / 2],
+                [0, keelHeight, keelTipChord / 2 + keelSweep],
+                [0, keelHeight, -keelTipChord / 2 + keelSweep],
+            ];
+            const keel = createSolidKeel(keelPoints, keelThickness, keelMat);
+            keel.position.z = keelZ;
+            group.add(keel);
+
+            return group;
+        }
+
+        // ================================================================
+        //  3. УПРАВЛЕНИЕ ЗАГРУЗКОЙ ФАЙЛОВ И ОТОБРАЖЕНИЕМ
+        // ================================================================
+        let trajectory1 = null, trajectory2 = null;
+        let pts1 = [], pts2 = [];
+        let airplane1 = null, airplane2 = null;
+        let line1 = null, line2 = null;
+        let currentIndex = 0;
+        let isPlaying = false;
+        let speedFactor = 1.0;
+        let scaleFactor = 2.0;
+        const baseScale = 7 / 7.676; // целевая длина 7
+
+        // DOM-элементы
+        const fileInput1 = document.getElementById('file1');
+        const fileInput2 = document.getElementById('file2');
+        const loadBtn1 = document.getElementById('loadBtn1');
+        const loadBtn2 = document.getElementById('loadBtn2');
+        const fileName1 = document.getElementById('file1name');
+        const fileName2 = document.getElementById('file2name');
+        const playBtn = document.getElementById('playBtn');
+        const progressSlider = document.getElementById('progressSlider');
+        const progressLabel = document.getElementById('progress-label');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedLabel = document.getElementById('speed-label');
+        const scaleSlider = document.getElementById('scaleSlider');
+        const scaleLabel = document.getElementById('scale-label');
+
+        const elTime = document.getElementById('t-time');
+        const elSpeed = document.getElementById('t-speed');
+        const elHeight = document.getElementById('t-height');
+        const elRoll = document.getElementById('t-roll');
+        const elPitch = document.getElementById('t-pitch');
+
+        // Элементы для второго пилота
+        const elTime2 = document.getElementById('t2-time');
+        const elSpeed2 = document.getElementById('t2-speed');
+        const elHeight2 = document.getElementById('t2-height');
+        const elRoll2 = document.getElementById('t2-roll');
+        const elPitch2 = document.getElementById('t2-pitch');
+
+        // Функция удаления старых объектов
+        function clearTrajectory(pilotNum) {
+            if (pilotNum === 1) {
+                if (line1) { scene.remove(line1); line1 = null; }
+                if (airplane1) { scene.remove(airplane1); airplane1 = null; }
+                trajectory1 = null;
+                pts1 = [];
+            } else {
+                if (line2) { scene.remove(line2); line2 = null; }
+                if (airplane2) { scene.remove(airplane2); airplane2 = null; }
+                trajectory2 = null;
+                pts2 = [];
+            }
+            if (!airplane1 && !airplane2) {
+                currentIndex = 0;
+                updateUI(0);
+            }
+        }
+
+        // Создание линии траектории
+        function createLine(pts, color, opacity = 0.4) {
+            const positions = [];
+            for (const p of pts) {
+                positions.push(p.x, p.y, p.z);
+            }
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            const mat = new THREE.LineBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: opacity,
+            });
+            return new THREE.Line(geom, mat);
+        }
+
+        // Обновление позиции самолета
+        function updateAirplanePosition(airplane, trajectory, pts, index) {
+            if (!airplane || !trajectory || pts.length === 0) return;
+            const idx = Math.min(Math.max(index, 0), pts.length - 1);
+            const i0 = Math.floor(idx);
+            const i1 = Math.min(i0 + 1, pts.length - 1);
+            const frac = idx - i0;
+
+            const p0 = pts[i0];
+            const p1 = pts[i1];
+            const pos = new THREE.Vector3().lerpVectors(p0, p1, frac);
+            airplane.position.copy(pos);
+
+            let dir;
+            if (i0 < pts.length - 1) {
+                dir = new THREE.Vector3().copy(p1).sub(p0).normalize();
+            } else {
+                dir = new THREE.Vector3().copy(pts[i0]).sub(pts[Math.max(i0 - 1, 0)]).normalize();
+            }
+            if (dir.length() < 0.001) {
+                dir.set(0, 0, 1);
+            }
+
+            const yaw = Math.atan2(dir.x, dir.z);
+            const pitch0 = trajectory[i0].pitch;
+            const pitch1 = trajectory[i1].pitch;
+            const pitch = pitch0 + (pitch1 - pitch0) * frac;
+            const roll0 = trajectory[i0].roll;
+            const roll1 = trajectory[i1].roll;
+            const roll = roll0 + (roll1 - roll0) * frac;
+
+            airplane.rotation.order = 'YXZ';
+            airplane.rotation.y = yaw + Math.PI;
+            airplane.rotation.x = pitch;
+            airplane.rotation.z = -roll;
+        }
+
+        // Обновление интерфейса (прогресс, телеметрия)
+        function updateUI(index) {
+            const total = Math.max(pts1.length, pts2.length);
+            if (total === 0) return;
+            const progress = (index / (total - 1)) * 100;
+            progressSlider.value = progress;
+            progressLabel.textContent = Math.round(progress) + '%';
+
+            // Телеметрия по первому пилоту
+            if (trajectory1 && pts1.length > 0) {
+                const idx = Math.min(Math.max(index, 0), pts1.length - 1);
+                const i0 = Math.floor(idx);
+                const i1 = Math.min(i0 + 1, pts1.length - 1);
+                const frac = idx - i0;
+                const t0 = trajectory1[i0];
+                const t1 = trajectory1[i1];
+                const time = t0.time + (t1.time - t0.time) * frac;
+                const speed = t0.speedKmh + (t1.speedKmh - t0.speedKmh) * frac;
+                const height = t0.heightAGL + (t1.heightAGL - t0.heightAGL) * frac;
+                const rollDeg = t0.rollDeg + (t1.rollDeg - t0.rollDeg) * frac;
+                const pitchDeg = t0.pitchDeg + (t1.pitchDeg - t0.pitchDeg) * frac;
+                elTime.textContent = time.toFixed(2);
+                elSpeed.textContent = Math.round(speed);
+                elHeight.textContent = height.toFixed(1);
+                elRoll.textContent = rollDeg.toFixed(1);
+                elPitch.textContent = pitchDeg.toFixed(1);
+            }
+
+            // Телеметрия по второму пилоту
+            if (trajectory2 && pts2.length > 0) {
+                const idx = Math.min(Math.max(index, 0), pts2.length - 1);
+                const i0 = Math.floor(idx);
+                const i1 = Math.min(i0 + 1, pts2.length - 1);
+                const frac = idx - i0;
+                const t0 = trajectory2[i0];
+                const t1 = trajectory2[i1];
+                const time = t0.time + (t1.time - t0.time) * frac;
+                const speed = t0.speedKmh + (t1.speedKmh - t0.speedKmh) * frac;
+                const height = t0.heightAGL + (t1.heightAGL - t0.heightAGL) * frac;
+                const rollDeg = t0.rollDeg + (t1.rollDeg - t0.rollDeg) * frac;
+                const pitchDeg = t0.pitchDeg + (t1.pitchDeg - t0.pitchDeg) * frac;
+                elTime2.textContent = time.toFixed(2);
+                elSpeed2.textContent = Math.round(speed);
+                elHeight2.textContent = height.toFixed(1);
+                elRoll2.textContent = rollDeg.toFixed(1);
+                elPitch2.textContent = pitchDeg.toFixed(1);
+            }
+        }
+
+        // Обновление обоих самолетов
+        function updateAll(index) {
+            if (airplane1 && trajectory1 && pts1.length > 0) {
+                updateAirplanePosition(airplane1, trajectory1, pts1, index);
+            }
+            if (airplane2 && trajectory2 && pts2.length > 0) {
+                updateAirplanePosition(airplane2, trajectory2, pts2, index);
+            }
+            updateUI(index);
+        }
+
+        // Загрузка файла для пилота
+        function loadPilot(pilotNum, file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const data = parseCSV(text);
+                if (data.length === 0) {
+                    alert('Ошибка: CSV пуст или неверный формат.');
+                    return;
+                }
+                const pts = data.map(p => new THREE.Vector3(p.x, p.y, p.z));
+
+                if (pilotNum === 1) {
+                    clearTrajectory(1);
+                    trajectory1 = data;
+                    pts1 = pts;
+                    line1 = createLine(pts, 0xff3333, 0.35);
+                    scene.add(line1);
+                    airplane1 = buildAirplane('red');
+                    const totalScale = baseScale * scaleFactor;
+                    airplane1.scale.set(totalScale, totalScale, totalScale);
+                    scene.add(airplane1);
+                    fileName1.textContent = file.name;
+                    updateAll(currentIndex);
+                } else {
+                    clearTrajectory(2);
+                    trajectory2 = data;
+                    pts2 = pts;
+                    line2 = createLine(pts, 0x3388ff, 0.35);
+                    scene.add(line2);
+                    airplane2 = buildAirplane('blue');
+                    const totalScale = baseScale * scaleFactor;
+                    airplane2.scale.set(totalScale, totalScale, totalScale);
+                    scene.add(airplane2);
+                    fileName2.textContent = file.name;
+                    updateAll(currentIndex);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Обработчики кнопок загрузки
+        loadBtn1.addEventListener('click', () => fileInput1.click());
+        loadBtn2.addEventListener('click', () => fileInput2.click());
+        fileInput1.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                loadPilot(1, e.target.files[0]);
+            }
+            fileInput1.value = '';
+        });
+        fileInput2.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                loadPilot(2, e.target.files[0]);
+            }
+            fileInput2.value = '';
+        });
+
+        // ================================================================
+        //  4. УПРАВЛЕНИЕ ВОСПРОИЗВЕДЕНИЕМ
+        // ================================================================
+        playBtn.addEventListener('click', () => {
+            if (!airplane1 && !airplane2) {
+                alert('Загрузите хотя бы один CSV-файл.');
+                return;
+            }
+            isPlaying = !isPlaying;
+            playBtn.textContent = isPlaying ? '⏸ Пауза' : '▶ Старт';
+            if (isPlaying && currentIndex >= Math.max(pts1.length, pts2.length) - 1) {
+                currentIndex = 0;
+            }
+        });
+
+        progressSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            const total = Math.max(pts1.length, pts2.length);
+            if (total === 0) return;
+            const idx = (val / 100) * (total - 1);
+            currentIndex = idx;
+            updateAll(currentIndex);
+        });
+
+        speedSlider.addEventListener('input', (e) => {
+            speedFactor = parseFloat(e.target.value);
+            speedLabel.textContent = speedFactor.toFixed(2) + '×';
+        });
+
+        scaleSlider.addEventListener('input', (e) => {
+            scaleFactor = parseFloat(e.target.value);
+            scaleLabel.textContent = scaleFactor;
+            const totalScale = baseScale * scaleFactor;
+            if (airplane1) airplane1.scale.set(totalScale, totalScale, totalScale);
+            if (airplane2) airplane2.scale.set(totalScale, totalScale, totalScale);
+        });
+
+        // ================================================================
+        //  5. АНИМАЦИОННЫЙ ЦИКЛ
+        // ================================================================
+        let lastTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = performance.now();
+            const delta = (now - lastTime) / 1000;
+            lastTime = now;
+
+            if (isPlaying) {
+                const total = Math.max(pts1.length, pts2.length);
+                if (total > 1) {
+                    const deltaIndex = (delta / 0.3) * speedFactor;
+                    currentIndex += deltaIndex;
+                    if (currentIndex >= total - 1) {
+                        currentIndex = total - 1;
+                        isPlaying = false;
+                        playBtn.textContent = '▶ Старт';
+                    }
+                    updateAll(currentIndex);
+                } else {
+                    isPlaying = false;
+                    playBtn.textContent = '▶ Старт';
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        // ================================================================
+        //  6. ИНИЦИАЛИЗАЦИЯ
+        // ================================================================
+        progressSlider.value = 0;
+        progressLabel.textContent = '0%';
+        speedSlider.value = '1.0';
+        speedLabel.textContent = '1.00×';
+        scaleSlider.value = '2';
+        scaleLabel.textContent = '2';
+        updateAll(0);
+
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            labelRenderer.setSize(w, h);
+        });
+
+        animate();
+
+        console.log('ТРАССА — Крымск (2 пилота) — загрузите два CSV-файла.');
+    </script>
+</body>
+</html>
