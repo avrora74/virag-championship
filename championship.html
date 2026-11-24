@@ -466,6 +466,37 @@
             border: none;
         }
 
+        .analytics-intro { color:#aebdd0; margin:0 0 14px; font-size:14px; line-height:1.55; }
+        .overview-kpis { margin:14px 0 18px; }
+        .season-story { display:flex; flex-direction:column; gap:4px; }
+        .track-story { margin:8px 0 14px; }
+        .track-rate-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+        .track-rate-grid > div { background:rgba(102,204,255,.055); border:1px solid rgba(102,204,255,.13); border-radius:9px; padding:12px; display:flex; flex-direction:column; }
+        .track-rate-value { color:#66ccff; font-size:clamp(20px,3vw,28px); font-weight:700; }
+        .track-rate-label { color:#9aacc0; font-size:12px; }
+        .track-takeaway { display:flex; flex-direction:column; gap:4px; }
+        .pilot-profile-intro { margin:4px 0 18px; padding:18px; border:1px solid rgba(102,204,255,.2); border-radius:12px; background:linear-gradient(120deg,rgba(102,204,255,.09),rgba(170,102,255,.045)); }
+        .pilot-profile-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+        .pilot-profile-heading h3 { margin:2px 0; color:#f2f7ff; font-size:23px; }
+        .pilot-profile-heading p { margin:0; color:#9aacc0; font-size:13px; }
+        .pilot-profile-eyebrow { color:#66ccff; font-size:10px; letter-spacing:1.4px; font-weight:700; }
+        .pilot-rank { width:54px; height:54px; border-radius:50%; border:1px solid rgba(255,215,0,.45); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#ffd700; flex-shrink:0; }
+        .pilot-rank span { font-size:22px; line-height:1; font-weight:800; }
+        .pilot-rank small { font-size:9px; color:#b9a96c; }
+        .pilot-profile-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:16px; }
+        .pilot-profile-kpis > div { background:rgba(0,0,0,.18); border-radius:8px; padding:10px; display:flex; flex-direction:column; }
+        .pilot-profile-kpis strong { font-size:21px; color:#f4f8ff; }
+        .pilot-profile-kpis span,.pilot-best-result span { font-size:11px; color:#9aacc0; }
+        .pilot-best-result { display:flex; justify-content:space-between; align-items:center; gap:10px; border-top:1px solid rgba(255,255,255,.08); margin-top:12px; padding-top:11px; }
+        .pilot-best-result strong { color:#00ff88; text-align:right; }
+        @media(max-width:600px) {
+            .track-rate-grid { grid-template-columns:1fr 1fr; }
+            .pilot-profile-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .pilot-best-result { align-items:flex-start; flex-direction:column; }
+            .pilot-best-result strong { text-align:left; }
+            .insights-container { padding:10px; }
+        }
+
         .insights-container { padding: 20px; line-height: 1.6; }
         .insights-container h2 {
             color: #66ccff;
@@ -1705,7 +1736,30 @@
                 }
             }
 
-            let html = `<div class="insights-container"><h2>📋 Аналитика чемпионата</h2>`;
+            const allRows = calculator.getAllRows();
+            const col = calculator.getColumnIndices();
+            const raceRows = allRows.filter(row => {
+                const type = col.typeIdx !== undefined && col.typeIdx !== -1 ? (row[col.typeIdx] || '').trim().toLowerCase() : 'race';
+                return !type || type === 'race';
+            });
+            const finishRows = raceRows.filter(row => (row[col.statusIdx] || '').trim() === 'ФИНИШ');
+            const dnfRows = raceRows.filter(row => (row[col.statusIdx] || '').trim() === 'DNF');
+            const finishRate = raceRows.length ? finishRows.length / raceRows.length * 100 : 0;
+            const stageCount = stageOrder.filter(track => (stages[track] || []).length > 0).length;
+            const leaderGap = sorted.length > 1 ? sorted[0][1].points - sorted[1][1].points : null;
+
+            let html = `<div class="insights-container"><h2>📋 Сводка чемпионата</h2>
+                <p class="analytics-intro">Главное о сезоне: турнирная ситуация, результативность участников и события, которые формируют борьбу за чемпионство.</p>
+                <div class="analytics-stats overview-kpis">
+                    <div class="stat-card"><div class="label">Пилотов в зачёте</div><div class="value blue">${sorted.length}</div></div>
+                    <div class="stat-card"><div class="label">Этапов с результатами</div><div class="value blue">${stageCount} / ${stageOrder.length}</div></div>
+                    <div class="stat-card"><div class="label">Попыток Race</div><div class="value">${raceRows.length}</div></div>
+                    <div class="stat-card"><div class="label">Успешные финиши</div><div class="value green">${finishRate.toFixed(1)}%</div></div>
+                    <div class="stat-card"><div class="label">DNF</div><div class="value red">${dnfRows.length}</div></div>
+                </div>
+                <div class="insight-block battle season-story"><strong>⚔️ Турнирная интрига</strong>
+                    <span>${sorted.length > 1 ? `Лидирует <strong>${sorted[0][1].name}</strong> с ${sorted[0][1].points} очками. Отрыв от второго места — <strong>${leaderGap} очк.</strong>.` : `Для оценки борьбы за чемпионство нужны результаты ещё хотя бы одного пилота.`}</span>
+                </div>`;
 
             html += this._insightLeader(calculator, stageOrder, sorted);
             html += this._insightBattle(calculator, stageOrder, sorted);
@@ -2045,6 +2099,12 @@
                 segStats.push({ best: count > 0 ? best : null, worst: count > 0 ? worst : null, avg: count > 0 ? sum / count : null, count });
             }
 
+            const segmentSpread = segStats
+                .map((seg, index) => ({ index: index + 1, spread: seg.best !== null && seg.worst !== null ? seg.worst - seg.best : -1, count: seg.count }))
+                .filter(seg => seg.spread >= 0 && seg.count >= 2)
+                .sort((a, b) => b.spread - a.spread);
+            const mostVariableSegment = segmentSpread[0];
+
             const penaltiesByGate = {};
             allPenaltyDetails.forEach(details => {
                 details.forEach(item => {
@@ -2070,8 +2130,16 @@
             html += `<div class="stat-card"><div class="label">Всего штрафов</div><div class="value red">${totalPenalties}</div></div>`;
             html += `</div>`;
 
+            if (mostVariableSegment) {
+                html += `<div class="insight-block trend track-takeaway"><strong>📍 Самый нестабильный отрезок</strong>
+                    <span>Отрезок ${mostVariableSegment.index}: разброс между лучшим и худшим временем — <strong>${mostVariableSegment.spread.toFixed(2)} сек</strong> (${mostVariableSegment.count} наблюдений). Здесь результаты различаются сильнее всего.</span>
+                </div>`;
+            } else {
+                html += `<div class="insight-block trend track-takeaway"><strong>📍 Анализ отрезков</strong>
+                    <span>Пока недостаточно сопоставимых промежуточных результатов, чтобы определить самый нестабильный участок.</span></div>`;
+            }
             html += `<div class="insight-block heatmap" style="margin-top:15px;">
-                <strong style="color:#ff4466;">🔥 Штрафы по воротам (heatmap)</strong>
+                <strong style="color:#ff4466;">🔥 Где чаще возникают ошибки</strong>
                 <div class="heatmap-grid">`;
             for (let g = 1; g <= SEG_COUNT + 1; g++) {
                 const codes = penaltiesByGate[g] || [];
@@ -2086,7 +2154,7 @@
             html += `</div></div>`;
 
             html += `<div class="progressbar-wrapper">`;
-            html += `<div class="progressbar-title">Время прохождения отрезков (сек) — лучшие / средние / худшие</div>`;
+            html += `<div class="progressbar-title">Сравнение времени на отрезках: лучший, средний и худший результат</div>`;
             html += `<div class="progressbar-container">`;
             html += `<div style="display:flex; margin-bottom:6px;">`;
             const codesGate1 = penaltiesByGate[1] || [];
@@ -2105,14 +2173,14 @@
                 html += `<div style="flex:${flex}; text-align:center; color:#00ff88;">${val}</div>`;
             }
             html += `</div>`;
-            html += `<div style="display:flex; margin:2px 0;"><div style="flex:0 0 50px; text-align:center; color:#88ddff;">СТАРТ</div>`;
+            html += `<div style="display:flex; margin:2px 0;"><div style="flex:0 0 50px; text-align:center; color:#88ddff;">СРЕД.</div>`;
             for (let i = 0; i < SEG_COUNT; i++) {
                 const val = segStats[i].avg !== null ? segStats[i].avg.toFixed(2) : '—';
                 const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
                 html += `<div style="flex:${flex}; text-align:center; color:#66ccff;">${val}</div>`;
             }
             html += `</div>`;
-            html += `<div style="display:flex; margin:2px 0;"><div style="flex:0 0 50px; text-align:center; color:#88ddff;">СТАРТ</div>`;
+            html += `<div style="display:flex; margin:2px 0;"><div style="flex:0 0 50px; text-align:center; color:#88ddff;">ХУДШ.</div>`;
             for (let i = 0; i < SEG_COUNT; i++) {
                 const val = segStats[i].worst !== null ? segStats[i].worst.toFixed(2) : '—';
                 const flex = (i === SEG_COUNT - 1) ? '0 0 50px' : '1';
@@ -2214,6 +2282,16 @@
             });
 
             const totalPoints = calculator.getOverall()[ucid] || 0;
+            const overallEntries = Object.entries(calculator.getOverall()).sort((a, b) => b[1] - a[1]);
+            const pilotRank = overallEntries.findIndex(([id]) => id === ucid) + 1;
+            const finishCount = totalAttempts - totalDnf;
+            const finishRate = totalAttempts ? finishCount / totalAttempts * 100 : 0;
+            const wins = tracks.reduce((sum, track) => {
+                const result = (calculator.getStages()[track] || []).find(r => r.ucid === ucid);
+                return sum + (result && result.place === 1 ? 1 : 0);
+            }, 0);
+            const bestTrackEntry = Object.entries(trackData).filter(([, d]) => d.best !== null).sort((a, b) => a[1].best - b[1].best)[0];
+            const bestTrackText = bestTrackEntry ? `${bestTrackEntry[0]} · ${this._formatTime(bestTrackEntry[1].best)}` : 'Пока нет финишей';
 
             const style = calculator.getPilotStyle(ucid);
             let styleHtml = '';
@@ -2243,10 +2321,22 @@
                 </div>` 
                 : '';
 
-            let html = aliasHtml + styleHtml + recsHtml;
+            let html = aliasHtml + `<div class="pilot-profile-intro">
+                <div class="pilot-profile-heading">
+                    <div><div class="pilot-profile-eyebrow">ПРОФИЛЬ УЧАСТНИКА</div><h3>${displayName}</h3><p>Спортивная форма и результаты в текущем сезоне</p></div>
+                    <div class="pilot-rank"><span>${pilotRank || '—'}</span><small>место</small></div>
+                </div>
+                <div class="pilot-profile-kpis">
+                    <div><strong>${totalPoints}</strong><span>очков</span></div>
+                    <div><strong>${wins}</strong><span>побед</span></div>
+                    <div><strong>${finishRate.toFixed(1)}%</strong><span>финишей</span></div>
+                    <div><strong>${totalDnf}</strong><span>DNF</span></div>
+                </div>
+                <div class="pilot-best-result"><span>Лучший результат</span><strong>${bestTrackText}</strong></div>
+            </div>` + styleHtml + recsHtml;
 
             html += `<div class="analytics-stats">`;
-            html += `<div class="stat-card"><div class="label">Попыток</div><div class="value blue">${totalAttempts}</div></div>`;
+            html += `<div class="stat-card"><div class="label">Финишных попыток</div><div class="value blue">${totalAttempts}</div></div>`;
             html += `<div class="stat-card"><div class="label">Финишей</div><div class="value green">${totalAttempts - totalDnf}</div></div>`;
             html += `<div class="stat-card"><div class="label">DNF</div><div class="value red">${totalDnf}</div></div>`;
             html += `<div class="stat-card"><div class="label">Штрафов (сек)</div><div class="value red">${totalPenalty.toFixed(1)}</div></div>`;
@@ -2275,16 +2365,16 @@
                 <div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Выберите трассу для анализа</div>
                 <div class="pilot-track-selector" id="pilotTrackSelector"></div>
                 <div style="margin-top:20px;">
-                    <div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Сравнение лучшей попытки с рекордом по сегментам</div>
+                    <div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Где пилот теряет время относительно рекорда</div>
                     <div id="pilotSegmentChartContainer"><div class="loading">Выберите трассу</div></div>
                 </div>
                 <div style="margin-top:20px;">
-                    <div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Динамика по попыткам</div>
+                    <div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Прогресс на трассе по попыткам</div>
                     <div id="pilotAttemptsChartContainer" class="attempts-chart-wrapper"><div class="loading">Выберите трассу</div></div>
                 </div>
             </div>
             <div style="margin-top:20px;">
-                <div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Причины DNF</div>
+                <div class="subtitle" style="color:#88ddff; text-align:center; margin-bottom:10px;">Из-за чего попытки заканчиваются DNF</div>
                 <div id="pilotDnfChartContainer" class="dnf-chart-container"><div class="loading">Загрузка...</div></div>
             </div>`;
 
