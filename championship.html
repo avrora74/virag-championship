@@ -562,6 +562,34 @@
             margin-right: 4px;
         }
 
+        .schedule-panel { margin: 20px 0 24px; padding: 18px; border: 1px solid rgba(102,204,255,.22); border-radius: 14px; background: linear-gradient(135deg, rgba(20,35,58,.92), rgba(10,18,32,.96)); }
+        .schedule-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+        .schedule-head h2 { color:#fff; font-size:20px; }
+        .schedule-current { color:#88ddff; font-size:13px; }
+        .schedule-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(245px,1fr)); gap:10px; }
+        .schedule-card { padding:13px; border:1px solid rgba(102,204,255,.14); border-radius:10px; background:rgba(255,255,255,.025); transition:background .2s, border-color .2s, box-shadow .2s; }
+        /* Цвет статуса этапа: текущий — жёлтый, завершённый — зелёный, будущий — красный. */
+        .schedule-card.current { border-color:#ffcc44; background:rgba(255,204,68,.12); box-shadow:0 0 0 1px rgba(255,204,68,.22), 0 0 18px rgba(255,204,68,.08); }
+        .schedule-card.completed { border-color:#00d98b; background:rgba(0,217,139,.10); }
+        .schedule-card.upcoming { border-color:#ff596e; background:rgba(255,68,102,.09); }
+        .schedule-card h3 { color:#eaf5ff; font-size:15px; margin-bottom:8px; }
+        .schedule-card.current h3, .schedule-card.current .schedule-status { color:#ffcc44; }
+        .schedule-card.completed h3, .schedule-card.completed .schedule-status { color:#00e69a; }
+        .schedule-card.upcoming h3, .schedule-card.upcoming .schedule-status { color:#ff7184; }
+        .schedule-card .track-name { color:#fff; font-weight:700; margin-bottom:8px; }
+        .schedule-dates { display:grid; gap:5px; color:#b9c9d9; font-size:12px; }
+        .schedule-dates strong { color:#e8f5ff; font-weight:600; }
+        .schedule-status { margin-top:9px; padding-top:8px; border-top:1px solid rgba(102,204,255,.12); color:#b9c9d9; font-size:12px; font-weight:700; }
+        .schedule-legend { display:flex; flex-wrap:wrap; gap:12px; margin-top:13px; color:#b9c9d9; font-size:12px; }
+        .schedule-legend span { display:inline-flex; align-items:center; gap:6px; }
+        .schedule-legend i { width:9px; height:9px; border-radius:50%; display:inline-block; }
+        .schedule-legend .legend-current { background:#ffcc44; }
+        .schedule-legend .legend-completed { background:#00d98b; }
+        .schedule-legend .legend-upcoming { background:#ff596e; }
+        .schedule-video { display:inline-block; margin-top:8px; color:#88ddff; font-size:12px; text-decoration:none; border-bottom:1px dashed rgba(136,221,255,.45); }
+        .schedule-video:hover { color:#fff; }
+        @media (max-width: 768px) { .schedule-panel { padding:13px; } .schedule-head h2 { font-size:18px; } }
+
         @media (max-width: 768px) {
             .header-text h1 { font-size: 24px; }
             .logo { height: 50px; }
@@ -612,6 +640,59 @@
         </div>
     </div>
 
+    <section class="schedule-panel" aria-label="Календарь чемпионата">
+        <div class="schedule-head">
+            <h2>📅 Календарь сезона 2026/2027</h2>
+            <div class="schedule-current" id="scheduleCurrent">Календарь этапов</div>
+        </div>
+        <div class="schedule-grid" id="scheduleGrid">
+            <article class="schedule-card" data-stage="1" data-intro-start="2026-11-16" data-intro-end="2026-11-22" data-race-start="2026-11-23" data-race-end="2026-11-28">
+                <h3>Этап 1</h3><div class="track-name">Анапа</div>
+                <div class="schedule-dates"><div>Ознакомление: <strong>16.11–22.11.2026</strong></div><div>Зачётные полёты: <strong>23.11–28.11.2026</strong></div></div>
+                <a class="schedule-video" href="https://youtu.be/HMDepVmIIg4" target="_blank" rel="noopener">Видео трассы ↗</a><div class="schedule-status">—</div>
+            </article>
+            <article class="schedule-card" data-stage="2" data-intro-start="2026-11-30" data-intro-end="2026-12-06" data-race-start="2026-12-07" data-race-end="2026-12-12">
+                <h3>Этап 2</h3><div class="track-name">Новороссийск</div>
+                <div class="schedule-dates"><div>Ознакомление: <strong>30.11–06.12.2026</strong></div><div>Зачётные полёты: <strong>07.12–12.12.2026</strong></div></div>
+                <a class="schedule-video" href="https://youtu.be/izwLrX4b19Y" target="_blank" rel="noopener">Видео трассы ↗</a><div class="schedule-status">—</div>
+            </article>
+            <article class="schedule-card" data-stage="3" data-intro-start="2026-12-14" data-intro-end="2026-12-20" data-race-start="2026-12-21" data-race-end="2026-12-26">
+                <h3>Этап 3</h3><div class="track-name">Майкоп</div>
+                <div class="schedule-dates"><div>Ознакомление: <strong>14.12–20.12.2026</strong></div><div>Зачётные полёты: <strong>21.12–26.12.2026</strong></div></div>
+                <a class="schedule-video" href="https://youtu.be/z0nyh1dwA_Q" target="_blank" rel="noopener">Видео трассы ↗</a><div class="schedule-status">—</div>
+            </article>
+            <article class="schedule-card" data-stage="4" data-intro-start="2027-01-04" data-intro-end="2027-01-10" data-race-start="2027-01-11" data-race-end="2027-01-16">
+                <h3>Этап 4</h3><div class="track-name">Геленджик</div>
+                <div class="schedule-dates"><div>Ознакомление: <strong>04.01–10.01.2027</strong></div><div>Зачётные полёты: <strong>11.01–16.01.2027</strong></div></div>
+                <a class="schedule-video" href="https://youtu.be/QHTxwA8bTUs" target="_blank" rel="noopener">Видео трассы ↗</a><div class="schedule-status">—</div>
+            </article>
+            <article class="schedule-card" data-stage="5" data-intro-start="2027-01-18" data-intro-end="2027-01-24" data-race-start="2027-01-25" data-race-end="2027-01-30">
+                <h3>Этап 5</h3><div class="track-name">Пашковский</div>
+                <div class="schedule-dates"><div>Ознакомление: <strong>18.01–24.01.2027</strong></div><div>Зачётные полёты: <strong>25.01–30.01.2027</strong></div></div>
+                <a class="schedule-video" href="https://youtu.be/-X1BPoQBfNU" target="_blank" rel="noopener">Видео трассы ↗</a><div class="schedule-status">—</div>
+            </article>
+            <article class="schedule-card" data-stage="6" data-intro-start="2027-02-01" data-intro-end="2027-02-07" data-race-start="2027-02-08" data-race-end="2027-02-13">
+                <h3>Этап 6</h3><div class="track-name">МинВоды</div>
+                <div class="schedule-dates"><div>Ознакомление: <strong>01.02–07.02.2027</strong></div><div>Зачётные полёты: <strong>08.02–13.02.2027</strong></div></div>
+                <a class="schedule-video" href="https://youtu.be/Zi6Z1I6RwXM" target="_blank" rel="noopener">Видео трассы ↗</a><div class="schedule-status">—</div>
+            </article>
+            <article class="schedule-card" data-stage="7" data-intro-start="2027-02-15" data-intro-end="2027-02-21" data-race-start="2027-02-22" data-race-end="2027-02-27">
+                <h3>Этап 7</h3><div class="track-name">Гудаута</div>
+                <div class="schedule-dates"><div>Ознакомление: <strong>15.02–21.02.2027</strong></div><div>Зачётные полёты: <strong>22.02–27.02.2027</strong></div></div>
+                <a class="schedule-video" href="https://youtu.be/nhJOSHuZLso" target="_blank" rel="noopener">Видео трассы ↗</a><div class="schedule-status">—</div>
+            </article>
+            <article class="schedule-card" data-stage="8" data-intro-start="2027-03-01" data-intro-end="2027-03-07" data-race-start="2027-03-08" data-race-end="2027-03-13">
+                <h3>Этап 8</h3><div class="track-name">Сочи</div>
+                <div class="schedule-dates"><div>Ознакомление: <strong>01.03–07.03.2027</strong></div><div>Зачётные полёты: <strong>08.03–13.03.2027</strong></div></div>
+                <a class="schedule-video" href="https://youtu.be/UD6Ur1Z0fnM" target="_blank" rel="noopener">Видео трассы ↗</a><div class="schedule-status">—</div>
+            </article>
+        </div>
+        <div class="schedule-legend" aria-label="Обозначения статусов этапов">
+            <span><i class="legend-current"></i>Текущий этап</span>
+            <span><i class="legend-completed"></i>Завершён</span>
+            <span><i class="legend-upcoming"></i>Ещё не начался</span>
+        </div>
+    </section>
     <div class="tabs" id="tabsContainer"></div>
 
     <div id="content" class="table-wrap">
@@ -631,6 +712,44 @@
     </div>
 </div>
 <script>
+    // Календарь: даты задаются в локальном календарном времени браузера.
+    function updateScheduleStatus() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let activeText = 'Между этапами';
+        let foundActive = false;
+        document.querySelectorAll('.schedule-card').forEach(card => {
+            const parse = value => { const [y,m,d] = value.split('-').map(Number); return new Date(y, m - 1, d); };
+            const introStart = parse(card.dataset.introStart);
+            const introEnd = parse(card.dataset.introEnd);
+            const raceStart = parse(card.dataset.raceStart);
+            const raceEnd = parse(card.dataset.raceEnd);
+            let phaseText;
+            let stateClass;
+
+            if (today < introStart) {
+                stateClass = 'upcoming';
+                phaseText = 'Этап ещё не начался';
+            } else if (today > raceEnd) {
+                stateClass = 'completed';
+                phaseText = 'Этап завершён';
+            } else {
+                stateClass = 'current';
+                phaseText = today <= introEnd ? 'Идёт ознакомительный период' : 'Идут зачётные полёты';
+                if (!foundActive) {
+                    activeText = `Сейчас: этап ${card.dataset.stage} · ${phaseText.toLowerCase()}`;
+                    foundActive = true;
+                }
+            }
+
+            card.classList.remove('current', 'completed', 'upcoming');
+            card.classList.add(stateClass);
+            card.querySelector('.schedule-status').textContent = phaseText;
+        });
+        document.getElementById('scheduleCurrent').textContent = activeText;
+    }
+    updateScheduleStatus();
+
     // ================================================================
     //  МОДУЛЬ 1: КОНФИГУРАЦИЯ
     // ================================================================
@@ -779,7 +898,37 @@
             return [...this.aliases[ucid]];
         }
 
+        _isInScheduledScoringWindow(row) {
+            const { trackIdx, timestampIdx } = this.columnIndices;
+            const track = String(row[trackIdx] || '').trim().toLowerCase().replace(/ё/g, 'е');
+            const schedules = [
+                { aliases: ['анапа', 'anapa'], start: '2026-11-23', end: '2026-11-28' },
+                { aliases: ['новороссийск', 'novorossiysk', 'novorossisk'], start: '2026-12-07', end: '2026-12-12' },
+                { aliases: ['майкоп', 'maykop', 'maikop'], start: '2026-12-21', end: '2026-12-26' },
+                { aliases: ['геленджик', 'gelendzhik'], start: '2027-01-11', end: '2027-01-16' },
+                { aliases: ['пашковский', 'pashkovsky', 'pashkovskiy'], start: '2027-01-25', end: '2027-01-30' },
+                { aliases: ['минводы', 'минеральные воды', 'minvody', 'mineralnye vody', 'mineralnye-vody'], start: '2027-02-08', end: '2027-02-13' },
+                { aliases: ['гудаута', 'gudauta'], start: '2027-02-22', end: '2027-02-27' },
+                { aliases: ['сочи', 'sochi'], start: '2027-03-08', end: '2027-03-13' }
+            ];
+            const schedule = schedules.find(item => item.aliases.includes(track));
+            if (!schedule) return true; // неизвестные названия трасс сохраняем для совместимости
+            if (timestampIdx === undefined || timestampIdx === -1 || !row[timestampIdx]) return true;
+            const raw = String(row[timestampIdx]).trim();
+            let dateKey = '';
+            const iso = raw.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+            if (iso) dateKey = `${iso[1]}-${String(iso[2]).padStart(2, '0')}-${String(iso[3]).padStart(2, '0')}`;
+            else {
+                const parsed = new Date(raw);
+                if (!isNaN(parsed)) dateKey = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+            }
+            if (!dateKey) return true;
+            return dateKey >= schedule.start && dateKey <= schedule.end;
+        }
+
         process() {
+            // В зачёт попадают только вылеты в календарном зачётном окне этапа.
+            this.rows = this.rows.filter(row => this._isInScheduledScoringWindow(row));
             const { typeIdx } = this.columnIndices;
             const raceRows = [];
             const streamRows = [];
@@ -810,10 +959,6 @@
                     if (!newOverall[r.ucid]) newOverall[r.ucid] = 0;
                     newOverall[r.ucid] += r.points;
                 });
-            }
-            for (const [ucid, bonus] of Object.entries(this.streamBonuses)) {
-                if (!newOverall[ucid]) newOverall[ucid] = 0;
-                newOverall[ucid] += bonus;
             }
             this.overall = newOverall;
             this._updatePositions();
@@ -1281,7 +1426,7 @@
         }
 
         showError(message) {
-            this.container.innerHTML = `<div class="error">⚠️ Ознакомительный переиод 16.11.2026 - 22.11.2026: ${message}</div>`;
+            this.container.innerHTML = `<div class="error">⚠️ Ошибка загрузки данных: ${message}</div>`;
         }
 
         showEmpty(message = 'Нет данных для отображения') {
@@ -1308,13 +1453,6 @@
             overallBtn.dataset.tab = 'overall';
             overallBtn.textContent = 'Общий зачёт';
             mainTabsDiv.appendChild(overallBtn);
-
-            const streamsBtn = document.createElement('div');
-            streamsBtn.className = 'tab';
-            if (currentTab === 'streams') streamsBtn.classList.add('active');
-            streamsBtn.dataset.tab = 'streams';
-            streamsBtn.textContent = 'Стримы (ФОРСАЖ)';
-            mainTabsDiv.appendChild(streamsBtn);
 
             const labelSpan = document.createElement('span');
             labelSpan.className = 'stage-label';
@@ -1361,7 +1499,6 @@
             this.destroyAllCharts();
 
             if (tabName === 'overall') this._renderOverall(calculator);
-            else if (tabName === 'streams') this._renderStreams(calculator);
             else if (tabName === 'championship_analytics') this._renderInsights(calculator);
             else if (tabName === 'track_analytics') this._renderAnalytics(calculator);
             else if (tabName === 'pilot_analytics') this._renderPilotAnalytics(calculator);
@@ -1371,7 +1508,6 @@
         _renderOverall(calculator) {
             const overall = calculator.getOverall();
             const stages = calculator.getStages();
-            const streamBonuses = calculator.getStreamBonuses();
             const stageOrder = calculator.getStageOrder();
 
             const pilotData = [];
@@ -1392,11 +1528,10 @@
                         stagePoints[track] = 0;
                     }
                 }
-                const bonus = streamBonuses[ucid] || 0;
                 pilotData.push({
                     ucid,
                     name: calculator._getDisplayName(ucid),
-                    points, racePoints, bonus, gold, silver, bronze,
+                    points, racePoints, gold, silver, bronze,
                     dnf: totalDnf, stagePoints
                 });
             }
@@ -1417,7 +1552,7 @@
             let html = `<table>
                 <thead><tr>
                     <th>#</th><th>Пилот</th><th>Сумма очков</th><th>Очки этапов</th>
-                    <th>Бонусы стримов</th><th>DNF</th>`;
+                    <th>DNF</th>`;
             for (const track of stageOrder) html += `<th>${track}</th>`;
             html += `<th>Подиумы (🥇/🥈/🥉)</th></tr></thead><tbody>`;
 
@@ -1441,7 +1576,6 @@
                     >${p.name}</span>${aliasStr}${ucidShort}</td>
                     <td><span class="points">${p.points}</span></td>
                     <td>${p.racePoints}</td>
-                    <td>${p.bonus > 0 ? `<span class="stream-bonus-badge">+${p.bonus}</span>` : '—'}</td>
                     <td>${p.dnf > 0 ? `<span class="dnf-badge">${p.dnf}</span>` : '—'}`;
                 for (const track of stageOrder) {
                     html += `<td>${p.stagePoints[track] || 0}</td>`;
@@ -1449,47 +1583,6 @@
                 html += `<td>${podiumStr}</td></tr>`;
             }
             html += '</tbody></table>';
-            this.container.innerHTML = html;
-
-            this.container.querySelectorAll('.pilot-name').forEach(el => {
-                el.addEventListener('click', (e) => {
-                    document.dispatchEvent(new CustomEvent('showPilotStats', { detail: { pilot: e.currentTarget.dataset.pilot } }));
-                });
-            });
-        }
-
-        _renderStreams(calculator) {
-            const streamResults = calculator.getStreamResults();
-            const stageOrder = calculator.getStageOrder();
-            const orderedStreams = stageOrder.filter(t => streamResults.hasOwnProperty(t));
-
-            if (orderedStreams.length === 0) {
-                this.container.innerHTML = '<div class="empty">Нет данных о стримах</div>';
-                return;
-            }
-
-            let html = `<div class="stage-title">📺 Стримы «ФОРСАЖ»</div>`;
-            for (const track of orderedStreams) {
-                const results = streamResults[track];
-                if (!results || results.length === 0) continue;
-                html += `<h3 style="color:#88ddff; margin: 15px 0 8px;">${track}</h3>`;
-                html += `<table style="font-size:14px; margin-bottom:20px;">
-                    <thead><tr><th>#</th><th>Пилот</th><th>Время</th><th>Бонусы</th></tr></thead><tbody>`;
-                results.forEach(r => {
-                    const cls = r.place === 1 ? 'gold' : r.place === 2 ? 'silver' : r.place === 3 ? 'bronze' : '';
-                    html += `<tr>
-                        <td class="pos ${cls}">${r.place}</td>
-                        <td><span class="pilot-name" 
-                            data-pilot="${r.ucid}"
-                            data-ucid="${r.ucid}"
-                            title="UCID: ${r.ucid}"
-                        >${r.name}</span></td>
-                        <td class="time">${this._formatTime(r.time)}</td>
-                        <td><span class="points">+${r.bonus}</span></td>
-                    </tr>`;
-                });
-                html += '</tbody></table>';
-            }
             this.container.innerHTML = html;
 
             this.container.querySelectorAll('.pilot-name').forEach(el => {
@@ -1539,15 +1632,12 @@
         _renderInsights(calculator) {
             const overall = calculator.getOverall();
             const stages = calculator.getStages();
-            const streamResults = calculator.getStreamResults();
-            const streamBonuses = calculator.getStreamBonuses();
             const stageOrder = calculator.getStageOrder();
 
             const pilotStats = {};
             for (const [ucid, points] of Object.entries(overall)) {
                 let gold = 0, silver = 0, bronze = 0, totalDnf = 0, totalPenalty = 0;
-                let stagesParticipated = 0, streamCount = 0;
-                const streamBonus = streamBonuses[ucid] || 0;
+                let stagesParticipated = 0;
 
                 for (const track of stageOrder) {
                     const results = stages[track] || [];
@@ -1561,16 +1651,13 @@
                         const stats = calculator.getPilotStats(ucid);
                         if (stats && stats[track]) totalPenalty += stats[track].penaltySum || 0;
                     }
-                    if (streamResults[track]) {
-                        if (streamResults[track].find(r => r.ucid === ucid)) streamCount++;
-                    }
                 }
                 pilotStats[ucid] = {
                     ucid,
                     name: calculator._getDisplayName(ucid),
                     points, gold, silver, bronze, dnf: totalDnf,
                     participated: stagesParticipated, penalty: totalPenalty,
-                    totalStages: stageOrder.length, streamCount, streamBonus
+                    totalStages: stageOrder.length
                 };
             }
 
@@ -1628,7 +1715,6 @@
             html += this._insightErrorFrequency(calculator);
             html += this._insightStability(calculator);
             html += this._insightTrends(calculator, stageOrder);
-            html += this._insightStreams(calculator, sorted);
             html += this._insightGeneralRecommendation(calculator);
 
             html += `<div class="insight-block nomination" style="margin-top:5px; padding:8px 16px;">
@@ -1648,24 +1734,6 @@
             const top3 = sorted.slice(0, 3).map(([_, data]) => data.name);
             return `<div class="insight-block position">
                 <strong style="color: #00ff88;">🏅 Текущая тройка лидеров:</strong> ${top3.join(', ')}. Следите за динамикой — позиции могут меняться после каждого этапа.
-            </div>`;
-        }
-
-        _insightStreams(calculator, sorted) {
-            const streamBonuses = calculator.getStreamBonuses();
-            if (Object.keys(streamBonuses).length === 0) return '';
-            let maxBonus = 0, maxName = '', totalBonuses = 0, participants = 0;
-            for (const [ucid, bonus] of Object.entries(streamBonuses)) {
-                totalBonuses += bonus;
-                participants++;
-                if (bonus > maxBonus) {
-                    maxBonus = bonus;
-                    maxName = calculator._getDisplayName(ucid);
-                }
-            }
-            const avgBonus = (totalBonuses / participants).toFixed(1);
-            return `<div class="insight-block stream">
-                <strong style="color: #ffcc44;">🎬 Стримы «ФОРСАЖ»</strong> – всего <strong>${participants}</strong> пилотов получили бонусы. Лидер: <strong>${maxName}</strong> (${maxBonus} очков). Средний бонус: <strong>${avgBonus}</strong>.
             </div>`;
         }
 
@@ -2146,7 +2214,6 @@
             });
 
             const totalPoints = calculator.getOverall()[ucid] || 0;
-            const streamBonus = calculator.getStreamBonuses()[ucid] || 0;
 
             const style = calculator.getPilotStyle(ucid);
             let styleHtml = '';
@@ -2184,7 +2251,6 @@
             html += `<div class="stat-card"><div class="label">DNF</div><div class="value red">${totalDnf}</div></div>`;
             html += `<div class="stat-card"><div class="label">Штрафов (сек)</div><div class="value red">${totalPenalty.toFixed(1)}</div></div>`;
             html += `<div class="stat-card"><div class="label">Сумма очков</div><div class="value blue">${totalPoints}</div></div>`;
-            html += `<div class="stat-card"><div class="label">Бонусы стримов</div><div class="value yellow">${streamBonus}</div></div>`;
             html += `<div class="stat-card" style="flex: 1 1 200px;"><div class="label">Трассы</div><div class="value" style="font-size:14px; font-weight:400;">${tracks.join(', ')}</div></div>`;
             html += `</div>`;
 
